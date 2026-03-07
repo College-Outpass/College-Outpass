@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: outpass-api
+    env: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: DB_HOST
+        value: gateway01.eu-central-1.prod.aws.tidbcloud.com
+      - key: DB_PORT
+        value: 4000
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: test
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_VERSION
+        value: 18.17.0
