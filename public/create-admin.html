@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Admin Account</title>
+</head>
+<body>
+    <h1>Create Admin Account</h1>
+    <p>Open browser console (F12) to see results</p>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    
+    <script>
+        async function createAdmin() {
+            try {
+                const email = 'srinivasnaidu.m@srichaitanyaschool.net';
+                const password = 'Kal@48233';
+                
+                console.log('Creating HOD admin account...');
+                console.log('Email:', email);
+                
+                // Try to create user in Firebase Auth
+                let userCredential;
+                try {
+                    userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    console.log('✅ User created in Firebase Auth:', userCredential.user.uid);
+                } catch (error) {
+                    if (error.code === 'auth/email-already-in-use') {
+                        console.log('⚠️ User already exists in Auth, signing in...');
+                        // User already exists, sign in to get the user
+                        userCredential = await auth.signInWithEmailAndPassword(email, password);
+                        console.log('✅ Signed in to existing account:', userCredential.user.uid);
+                    } else {
+                        throw error;
+                    }
+                }
+                
+                const user = userCredential.user;
+                console.log('User UID:', user.uid);
+                
+                // Create or update admin document in Firestore
+                await db.collection('admins').doc(user.uid).set({
+                    name: 'Head of Department',
+                    email: email,
+                    role: 'HOD',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    permissions: {
+                        viewReports: true,
+                        exportData: true,
+                        manageStaff: true
+                    }
+                }, { merge: true });
+                
+                console.log('✅ Admin document created/updated in Firestore');
+                console.log('✅ Admin setup completed successfully!');
+                console.log('Email:', email);
+                console.log('Password: ' + password);
+                console.log('You can now login at admin-login.html');
+                
+                alert('✅ HOD Admin account created successfully!\n\nEmail: ' + email + '\nPassword: ' + password + '\n\nYou can now login at admin-login.html');
+                
+            } catch (error) {
+                console.error('❌ Error creating admin:', error);
+                alert('❌ Error: ' + error.message + '\n\nCheck console for details.');
+            }
+        }
+        
+        createAdmin();
+    </script>
+</body>
+</html>

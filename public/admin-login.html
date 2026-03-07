@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Sri Chaitanya</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            min-height: 100vh;
+            height: auto;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(rgba(30, 60, 114, 0.85), rgba(42, 82, 152, 0.85)),
+                        url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1920&q=80') center/cover fixed;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            padding: 50px;
+            width: 100%;
+            max-width: 480px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .logo-section {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+        
+        .logo {
+            width: 140px;
+            height: auto;
+            max-width: 100%;
+            object-fit: contain;
+            margin-bottom: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .login-container h1 {
+            font-size: 32px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 900;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 16px;
+            margin-bottom: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .admin-badge {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 25px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: #f8f9fa;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #dc3545;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.1);
+        }
+        
+        .btn-login {
+            width: 100%;
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(220, 53, 69, 0.4);
+        }
+        
+        .btn-login:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 5px solid #dc3545;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 5px solid #28a745;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .loader {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-top: 25px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-box p {
+            color: #856404;
+            font-size: 13px;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .portal-switch {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e8ed;
+        }
+
+        .portal-switch p {
+            color: #6c757d;
+            font-size: 14px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .staff-link {
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .staff-link:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .back-link a {
+            color: #6c757d;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .back-link a:hover {
+            color: #495057;
+            text-decoration: underline;
+        }
+
+        /* Change Password Link */
+        .change-pwd-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .change-pwd-link a {
+            color: #dc3545;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .change-pwd-link a:hover {
+            color: #c82333;
+            text-decoration: underline;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 40px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            animation: slideDown 0.3s;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .modal-header h2 {
+            color: #2c3e50;
+            font-size: 26px;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+
+        .modal-header p {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 20px;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #dc3545;
+        }
+
+        .btn-change-pwd {
+            width: 100%;
+            background: linear-gradient(135deg, #28a745, #218838);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-change-pwd:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-change-pwd:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            
+            .login-container {
+                padding: 35px 25px;
+            }
+            
+            .login-container h1 {
+                font-size: 26px;
+            }
+
+            .logo {
+                width: 110px;
+            }
+
+            .modal-content {
+                padding: 30px 25px;
+                margin: 10% auto;
+            }
+        }
+        
+        @media (max-height: 700px) {
+            body {
+                align-items: flex-start;
+                padding-top: 15px;
+                padding-bottom: 15px;
+            }
+            
+            .login-container {
+                padding: 30px 25px;
+            }
+            
+            .logo {
+                width: 100px;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-section">
+            <img src="SIRI.png" alt="Sri Chaitanya Logo" class="logo" onerror="this.style.display='none'">
+            <h1>Admin Portal</h1>
+            <p class="subtitle">Head of Department Access</p>
+            <span class="admin-badge">
+                <span>🔐</span>
+                ADMIN LOGIN
+            </span>
+        </div>
+        
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+        
+        <form id="adminLoginForm">
+            <div class="form-group">
+                <label for="email">Admin Email</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    placeholder="Enter admin email address" 
+                    required
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Admin Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    placeholder="Enter admin password" 
+                    required
+                >
+            </div>
+            
+            <button type="submit" id="loginBtn" class="btn-login">
+                <span id="loginText" style="display: flex; align-items: center; gap: 8px;">
+                    <span>🔐</span>
+                    Admin Login
+                </span>
+                <span id="loginLoader" class="loader" style="display: none;"></span>
+            </button>
+        </form>
+
+        <div class="change-pwd-link">
+            <a onclick="openChangePasswordModal()">🔑 Change Password</a>
+        </div>
+
+        <div class="info-box">
+            <span>⚠️</span>
+            <p>This portal is restricted to authorized administrators only.</p>
+        </div>
+
+        <div class="portal-switch">
+            <p>Staff Member?</p>
+            <a href="staff-login.html" class="staff-link">
+                👨‍💼 Staff Portal Login
+            </a>
+        </div>
+
+        <div class="back-link">
+            <a href="index.html">← Back to Home</a>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeChangePasswordModal()">&times;</span>
+            <div class="modal-header">
+                <h2>Change Password</h2>
+                <p>Update your admin password</p>
+            </div>
+            
+            <div id="modalErrorMessage" class="error-message"></div>
+            <div id="modalSuccessMessage" class="success-message"></div>
+            
+            <form id="changePasswordForm">
+                <div class="form-group">
+                    <label for="changeEmail">Admin Email</label>
+                    <input 
+                        type="email" 
+                        id="changeEmail" 
+                        placeholder="Enter your admin email" 
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="currentPassword">Current Password</label>
+                    <input 
+                        type="password" 
+                        id="currentPassword" 
+                        placeholder="Enter current password" 
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <input 
+                        type="password" 
+                        id="newPassword" 
+                        placeholder="Enter new password (min 6 characters)" 
+                        required
+                        minlength="6"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm New Password</label>
+                    <input 
+                        type="password" 
+                        id="confirmPassword" 
+                        placeholder="Confirm new password" 
+                        required
+                        minlength="6"
+                    >
+                </div>
+                
+                <button type="submit" id="changePwdBtn" class="btn-change-pwd">
+                    <span id="changePwdText" style="display: flex; align-items: center; gap: 8px;">
+                        <span>🔑</span>
+                        Update Password
+                    </span>
+                    <span id="changePwdLoader" class="loader" style="display: none;"></span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBFHwulhuw9NlGQi0DWzy9mU47RSO5TUkw",
+            authDomain: "college-out-pass-system-62552.firebaseapp.com",
+            projectId: "college-out-pass-system-62552",
+            storageBucket: "college-out-pass-system-62552.firebasestorage.app",
+            messagingSenderId: "71169367861",
+            appId: "1:71169367861:web:7105b401d52c049476f67c"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // =============================================
+        // ALLOWED ADMIN EMAIL (Only one admin)
+        // =============================================
+        const ALLOWED_ADMIN_EMAIL = "srinivasnaidu.m@srichaitanyaschool.net";
+
+        // Only one admin email is allowed for HOD access
+
+        // Check if already logged in
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔐 Admin Login Page Loaded');
+            
+            // Check if already logged in with Firebase Auth
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    // Check if user is admin
+                    db.collection('admins').doc(user.uid).get()
+                        .then((adminDoc) => {
+                            if (adminDoc.exists && adminDoc.data().email === ALLOWED_ADMIN_EMAIL) {
+                                console.log('Already authenticated, redirecting...');
+                                const explicitLogout = sessionStorage.getItem('adminExplicitLogout') === 'true';
+                                if (!explicitLogout) {
+                                    setTimeout(() => {
+                                        window.location.href = 'admin-dashboard.html';
+                                    }, 500);
+                                } else {
+                                    sessionStorage.removeItem('adminExplicitLogout');
+                                    console.log('Explicit logout detected - forcing fresh login');
+                                }
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Error checking admin status:', error);
+                        });
+                }
+            });
+            
+            // Clear form
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            
+            // Form submit handler
+            document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleLogin();
+            });
+
+            // Change password form handler
+            document.getElementById('changePasswordForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleChangePassword();
+            });
+
+            // Focus on email field
+            document.getElementById('email').focus();
+        });
+
+        // Handle login with Firebase Auth
+        async function handleLogin() {
+            const email = document.getElementById('email').value.trim().toLowerCase();
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const loginText = document.getElementById('loginText');
+            const loginLoader = document.getElementById('loginLoader');
+
+            console.log('Login attempt:', email);
+
+            // Validate
+            if (!email || !password) {
+                showMessage('Please enter both email and password', 'error');
+                return;
+            }
+
+            // Check if email matches the only allowed admin email
+            if (email !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
+                showMessage('❌ Access Denied: This email is not authorized for HOD access', 'error');
+                document.getElementById('password').value = '';
+                document.getElementById('email').focus();
+                return;
+            }
+
+            // Show loading
+            loginText.style.display = 'none';
+            loginLoader.style.display = 'block';
+            loginBtn.disabled = true;
+            hideMessages();
+
+            try {
+                // Sign in with Firebase Authentication
+                console.log('Signing in with Firebase Auth...');
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                console.log('✅ Firebase Auth successful, checking admin status...');
+                
+                // Check if user exists in admins collection
+                const adminDoc = await db.collection('admins').doc(user.uid).get();
+                
+                if (!adminDoc.exists) {
+                    // Not in admin collection, sign out
+                    await auth.signOut();
+                    throw new Error('Access Denied: You are not authorized as an administrator. Please contact system administrator.');
+                }
+                
+                const adminData = adminDoc.data();
+                
+                // Verify the email matches (double check)
+                if (adminData.email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
+                    await auth.signOut();
+                    throw new Error('Access Denied: Unauthorized administrator account.');
+                }
+                
+                console.log('✅ Admin verified:', adminData);
+                
+                // Success message
+                showMessage('✅ Login successful! Redirecting...', 'success');
+                
+                // Store session data for display purposes
+                const sessionData = {
+                    email: adminData.email,
+                    name: adminData.name || 'Head of Department',
+                    role: adminData.role || 'HOD',
+                    loginTime: new Date().toISOString(),
+                    authenticated: true
+                };
+                
+                sessionStorage.setItem('adminAuth', JSON.stringify(sessionData));
+                
+                console.log('Session stored:', sessionData);
+                
+                // Redirect to dashboard
+                setTimeout(() => {
+                    window.location.href = 'admin-dashboard.html';
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                
+                // Handle specific Firebase Auth errors
+                let errorMessage = 'Login failed';
+                if (error.code === 'auth/user-not-found') {
+                    errorMessage = 'No account found with this email address';
+                } else if (error.code === 'auth/wrong-password') {
+                    errorMessage = 'Incorrect password';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Invalid email address';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = 'Too many failed login attempts. Please try again later.';
+                } else {
+                    errorMessage = error.message || 'Login failed. Please check your credentials.';
+                }
+                
+                showMessage('❌ ' + errorMessage, 'error');
+                document.getElementById('password').value = '';
+                document.getElementById('password').focus();
+            } finally {
+                // Reset button
+                loginText.style.display = 'flex';
+                loginLoader.style.display = 'none';
+                loginBtn.disabled = false;
+            }
+        }
+
+        // Handle change password using Firebase Auth
+        async function handleChangePassword() {
+            const email = document.getElementById('changeEmail').value.trim().toLowerCase();
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            const changePwdBtn = document.getElementById('changePwdBtn');
+            const changePwdText = document.getElementById('changePwdText');
+            const changePwdLoader = document.getElementById('changePwdLoader');
+
+            // Validate
+            if (!email || !currentPassword || !newPassword || !confirmPassword) {
+                showModalMessage('Please fill in all fields', 'error');
+                return;
+            }
+
+            // Check if email matches the only allowed admin
+            if (email !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
+                showModalMessage('❌ Access Denied: This email is not authorized for HOD access', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showModalMessage('New password must be at least 6 characters', 'error');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showModalMessage('New passwords do not match', 'error');
+                return;
+            }
+
+            if (currentPassword === newPassword) {
+                showModalMessage('New password must be different from current password', 'error');
+                return;
+            }
+
+            // Show loading
+            changePwdText.style.display = 'none';
+            changePwdLoader.style.display = 'block';
+            changePwdBtn.disabled = true;
+            hideModalMessages();
+
+            try {
+                // Re-authenticate user with current password
+                const user = auth.currentUser;
+                
+                if (!user || user.email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
+                    // User not logged in, try to sign in first
+                    const credential = firebase.auth.EmailAuthProvider.credential(email, currentPassword);
+                    await auth.signInWithCredential(credential);
+                } else {
+                    // Re-authenticate current user
+                    const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+                    await user.reauthenticateWithCredential(credential);
+                }
+                
+                // Update password
+                await auth.currentUser.updatePassword(newPassword);
+                
+                console.log('✅ Password changed successfully');
+                
+                // Success message
+                showModalMessage('✅ Password changed successfully! Please login again with your new password.', 'success');
+                
+                // Clear form
+                document.getElementById('changePasswordForm').reset();
+                
+                // Close modal after 3 seconds
+                setTimeout(() => {
+                    closeChangePasswordModal();
+                    // Optionally sign out and redirect to login
+                    auth.signOut().then(() => {
+                        window.location.href = 'admin-login.html';
+                    });
+                }, 3000);
+                
+            } catch (error) {
+                console.error('Change password error:', error);
+                
+                let errorMessage = 'Failed to change password';
+                if (error.code === 'auth/wrong-password') {
+                    errorMessage = 'Current password is incorrect';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = 'New password is too weak. Please use a stronger password.';
+                } else if (error.code === 'auth/requires-recent-login') {
+                    errorMessage = 'Please login again to change your password';
+                } else {
+                    errorMessage = error.message || 'Failed to change password';
+                }
+                
+                showModalMessage('❌ ' + errorMessage, 'error');
+            } finally {
+                // Reset button
+                changePwdText.style.display = 'flex';
+                changePwdLoader.style.display = 'none';
+                changePwdBtn.disabled = false;
+            }
+        }
+
+        // Modal functions
+        function openChangePasswordModal() {
+            document.getElementById('changePasswordModal').style.display = 'block';
+            hideModalMessages();
+            document.getElementById('changePasswordForm').reset();
+            document.getElementById('changeEmail').focus();
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').style.display = 'none';
+            document.getElementById('changePasswordForm').reset();
+            hideModalMessages();
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('changePasswordModal');
+            if (event.target == modal) {
+                closeChangePasswordModal();
+            }
+        }
+
+        // Show message
+        function showMessage(message, type) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            
+            if (type === 'error') {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                successDiv.style.display = 'none';
+            } else {
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                errorDiv.style.display = 'none';
+            }
+        }
+
+        // Hide messages
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        // Show modal message
+        function showModalMessage(message, type) {
+            const errorDiv = document.getElementById('modalErrorMessage');
+            const successDiv = document.getElementById('modalSuccessMessage');
+            
+            if (type === 'error') {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                successDiv.style.display = 'none';
+            } else {
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                errorDiv.style.display = 'none';
+            }
+        }
+
+        // Hide modal messages
+        function hideModalMessages() {
+            document.getElementById('modalErrorMessage').style.display = 'none';
+            document.getElementById('modalSuccessMessage').style.display = 'none';
+        }
+
+        console.log('✅ Admin Login Script Loaded');
+    </script>
+<script>
+// Version check - update this version number when you deploy
+const CURRENT_VERSION = '2.0';
+const STORAGE_KEY = 'app_version';
+
+// Check if user has old cached version
+const savedVersion = localStorage.getItem(STORAGE_KEY);
+if (savedVersion && savedVersion !== CURRENT_VERSION) {
+    if (confirm('New update available! Click OK to reload and get the latest features.')) {
+        localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
+        window.location.reload(true);
+    }
+} else {
+    localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
+}
+
+// Force clear cache on load
+window.addEventListener('load', function() {
+    if (window.performance) {
+        if (performance.navigation.type === 1) {
+            // Page was reloaded
+            console.log('Page was reloaded');
+        }
+    }
+});
+</script>
+</body>
+</html>

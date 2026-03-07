@@ -1,0 +1,110 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is principal
+    // Reads from /settings/authorizedPrincipals document
+    // This document should contain an array field called "emails" with principal emails
+    // Example structure: { "emails": ["email1@example.com", "email2@example.com"] }
+    // IMPORTANT: The authorizedPrincipals document must exist in Firestore!
+    function isPrincipal() {
+      let email = request.auth.token.email;
+      let principalsDoc = get(/databases/$(database)/documents/settings/authorizedPrincipals);
+      // Check if document exists, has emails array, and email is in the array
+      return principalsDoc != null && 
+             'emails' in principalsDoc.data &&
+             email in principalsDoc.data.emails;
+    }
+    
+    // Students collection - for student data upload and auto-fill
+    match /students/{studentId} {
+      // Allow read if user is authenticated (campus filtering done in app code)
+      allow read: if isAuthenticated();
+      
+      // Allow write (create/update) if user is principal
+      // Campus validation is done in the application code
+      allow create: if isAuthenticated() && isPrincipal();
+      
+      allow update: if isAuthenticated() && isPrincipal();
+      
+      allow delete: if isAuthenticated() && isPrincipal();
+    }
+    
+    // Outpasses collection
+    match /outpasses/{outpassId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated() && isPrincipal();
+    }
+    
+    // MediSlips collection
+    match /mediSlips/{mediSlipId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated() && isPrincipal();
+    }
+    
+    // SickSlips collection (if exists)
+    match /sickSlips/{sickSlipId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated() && isPrincipal();
+    }
+    
+    // Settings collection (for counters and authorized principals)
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      // Allow authenticated users to write to settings
+      // For authorizedPrincipals document: 
+      //   - If document doesn't exist, allow first creation by any authenticated user
+      //   - If document exists, only principals can modify it
+      allow create: if isAuthenticated() && 
+                       (settingId != 'authorizedPrincipals' || 
+                        !exists(/databases/$(database)/documents/settings/authorizedPrincipals) ||
+                        isPrincipal());
+      allow update: if isAuthenticated() && 
+                       (settingId != 'authorizedPrincipals' || isPrincipal());
+      allow delete: if isAuthenticated() && isPrincipal();
+    }
+    
+    // Staff users collection
+    match /staffUsers/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isPrincipal();
+    }
+    
+    // Security collection - UPDATED: Allow any authenticated user to read/write
+    match /security/{securityId} {
+      allow read: if isAuthenticated();
+      // Changed from isPrincipal() to isAuthenticated() - any logged-in user can add security
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Admins collection - for HOD admin access
+    match /admins/{adminId} {
+      // Allow users to read their own admin document to verify admin status
+      allow read: if isAuthenticated() && request.auth.uid == adminId;
+      // Allow authenticated users to read all admin docs (for verification)
+      allow read: if isAuthenticated();
+      // Only allow creation/update by authenticated users (admin creation should be done via admin tools)
+      allow write: if isAuthenticated();
+    }
+    
+    // Default: deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Admin Account</title>
+</head>
+<body>
+    <h1>Create Admin Account</h1>
+    <p>Open browser console (F12) to see results</p>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    
+    <script>
+        async function createAdmin() {
+            try {
+                // Create admin user in Firebase Auth
+                const userCredential = await auth.createUserWithEmailAndPassword(
+                    'admin@srichaitanya.edu.in',  // Change this email
+                    'Admin@123'                     // Change this password
+                );
+                
+                const user = userCredential.user;
+                console.log('Admin user created in Auth:', user.uid);
+                
+                // Add admin to Firestore
+                await db.collection('admins').doc(user.uid).set({
+                    name: 'Head of Department',
+                    email: 'admin@srichaitanya.edu.in',
+                    role: 'HOD',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    permissions: {
+                        viewReports: true,
+                        exportData: true,
+                        manageStaff: true
+                    }
+                });
+                
+                console.log('✅ Admin created successfully!');
+                console.log('Email: admin@srichaitanya.edu.in');
+                console.log('Password: Admin@123');
+                console.log('You can now login at admin-login.html');
+                
+                alert('Admin account created! Check console for details.');
+                
+            } catch (error) {
+                console.error('Error creating admin:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        // Auto-create on page load
+        createAdmin();
+    </script>
+</body>
+</html>
