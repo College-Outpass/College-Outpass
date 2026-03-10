@@ -30,7 +30,7 @@ class TiDBFirestoreProxy {
   }
 
   collection(colName) {
-    const buildProxy = (filters = []) => ({
+    const buildProxy = (filters = [], limitVal = null) => ({
       doc: (docId) => ({
         path: docId,
         delete: async () => {
@@ -86,15 +86,16 @@ class TiDBFirestoreProxy {
         const token = user ? await user.getIdToken() : '';
 
         let queryString = '';
-        if (filters.length > 0) {
+        const allFilters = [...filters];
+        if (limitVal) allFilters.push({ field: 'limit', value: limitVal });
+        if (allFilters.length > 0) {
           const params = new URLSearchParams();
-          filters.forEach(f => params.append(f.field, f.value));
+          allFilters.forEach(f => params.append(f.field, f.value));
           queryString = '?' + params.toString();
         }
 
-        const response = await fetch(`${API_URL}/${colName}${queryString}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const response = await fetch(`${API_URL}/${colName}${queryString}`, { headers });
         if (!response.ok) {
           const err = await response.json().catch(() => ({}));
           throw new Error(err.error || 'Fetch failed');
@@ -111,8 +112,9 @@ class TiDBFirestoreProxy {
           size: docs.length
         };
       },
-      where: (field, op, value) => buildProxy([...filters, { field, op, value }]),
-      orderBy: () => buildProxy(filters)
+      where: (field, op, value) => buildProxy([...filters, { field, op, value }], limitVal),
+      orderBy: () => buildProxy(filters, limitVal),
+      limit: (n) => buildProxy(filters, n)
     });
 
     return buildProxy();

@@ -26,7 +26,7 @@ app.get('/', (req, res) => {
 
 app.get('/hello', (req, res) => {
     console.log('✅ HELLO route hit!');
-    res.send('<h1>I am alive!</h1><p>Server version: 2.4 (HOD Bypass Ready)</p>');
+    res.send('<h1>I am alive!</h1><p>Server version: 2.5 (Students API Ready)</p>');
 });
 
 app.get('/diag/db', async (req, res) => {
@@ -243,16 +243,19 @@ app.post('/api/security', authenticateToken, async (req, res) => {
     }
 });
 
-// Students Collection
-app.get('/api/students/:id', authenticateToken, async (req, res) => {
+// Students Collection - No authentication required for staff dashboard
+app.get('/api/students/:id', async (req, res) => {
     try {
-        const studentId = req.params.id;
+        const studentId = req.params.id.toUpperCase();
+        console.log(`📚 Fetching student: ${studentId}`);
         const [rows] = await pool.query('SELECT * FROM students WHERE id = ?', [studentId]);
 
         if (rows.length === 0) {
+            console.log(`❌ Student not found: ${studentId}`);
             return res.json({ exists: false, data: null });
         }
 
+        console.log(`✅ Student found: ${rows[0].studentName}`);
         res.json({ exists: true, data: rows[0] });
     } catch (err) {
         console.error('❌ Error fetching student:', err);
@@ -260,9 +263,10 @@ app.get('/api/students/:id', authenticateToken, async (req, res) => {
     }
 });
 
-app.get('/api/students', authenticateToken, async (req, res) => {
+app.get('/api/students', async (req, res) => {
     try {
         const { campus, limit } = req.query;
+        console.log(`📚 Fetching students list - campus: ${campus}, limit: ${limit}`);
         let query = 'SELECT * FROM students';
         let params = [];
 
@@ -276,6 +280,7 @@ app.get('/api/students', authenticateToken, async (req, res) => {
         }
 
         const [rows] = await pool.query(query, params);
+        console.log(`✅ Returning ${rows.length} student(s)`);
 
         const formattedRows = rows.map(row => ({
             id: row.id,
