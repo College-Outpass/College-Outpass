@@ -196,6 +196,16 @@ app.get('/api/outpasses', authenticateToken, async (req, res) => {
     }
 });
 
+app.get('/api/outpasses/:id', authenticateToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM outpasses WHERE id = ?', [req.params.id]);
+        if (rows.length === 0) return res.json({ exists: false, data: null });
+        res.json({ exists: true, data: rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
 app.post('/api/sickSlips', authenticateToken, async (req, res) => {
     try {
         const data = req.body;
@@ -214,6 +224,42 @@ app.get('/api/sickSlips', authenticateToken, async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM sick_slips ORDER BY timestamp DESC');
         res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+// Alias: mediSlips -> sick_slips (admin dashboard uses mediSlips collection name)
+app.get('/api/mediSlips', authenticateToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM sick_slips ORDER BY timestamp DESC');
+        const formatted = rows.map(r => ({ ...r, mediSlipNumber: r.sickSlipNumber }));
+        res.json(formatted);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.post('/api/mediSlips', authenticateToken, async (req, res) => {
+    try {
+        const data = req.body;
+        const id = data.id || ('sick_' + Date.now());
+        await pool.query(
+            `INSERT INTO sick_slips (id, sickSlipNumber, studentId, studentName, date, time, reason, status, issuedBy, issuedDate, issuedTime, createdBy) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+            [id, data.sickSlipNumber || data.mediSlipNumber, data.studentId, data.studentName, data.date, data.time, data.reason, data.status, data.issuedBy, data.issuedDate, data.issuedTime, data.createdBy]
+        );
+        res.json({ id });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.get('/api/mediSlips/:id', authenticateToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM sick_slips WHERE id = ?', [req.params.id]);
+        if (rows.length === 0) return res.json({ exists: false, data: null });
+        const data = { ...rows[0], mediSlipNumber: rows[0].sickSlipNumber };
+        res.json({ exists: true, data });
     } catch (err) {
         res.status(500).json({ error: 'Failed' });
     }
