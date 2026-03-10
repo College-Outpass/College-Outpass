@@ -29,13 +29,19 @@ app.get('/hello', (req, res) => {
     res.send('<h1>I am alive!</h1><p>Server version: 2.3 (Bypass Active)</p>');
 });
 
-app.get('/migrate', (req, res) => {
-    console.log('✅ MIGRATE route hit!');
-    const targetFile = path.join(publicPath, 'migrate-security.html');
-    if (fs.existsSync(targetFile)) {
-        res.sendFile(targetFile);
-    } else {
-        res.status(404).send(`<h1>File Not Found</h1><p>Looked for: ${targetFile}</p>`);
+app.get('/diag/db', async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT 1 as "connection_test"');
+        const [security] = await pool.query('SELECT COUNT(*) as count FROM security');
+        res.json({
+            status: 'connected',
+            test: rows[0].connection_test,
+            security_count: security[0].count,
+            config_host: process.env.DB_HOST ? 'Present' : 'Missing',
+            config_user: process.env.DB_USER ? 'Present' : 'Missing'
+        });
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack });
     }
 });
 
