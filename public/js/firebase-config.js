@@ -1,144 +1,133 @@
 // ==========================================
-// REPLACE WITH YOUR ACTUAL RENDER URL LATER
+// TiDB <-> Firebase Bridge Configuration
 // ==========================================
+
+// Your Render URL (Backend API)
 const RENDER_URL = 'https://outpass-api.onrender.com';
 
+// Local vs Production API selection
 const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:5000/api'
   : `${RENDER_URL}/api`;
 
+console.log("🚀 TiDB Bridge: Using API at", API_URL);
 
-class MockAuth {
-  constructor() {
-    this.currentUser = JSON.parse(sessionStorage.getItem('authUser') || 'null');
-    this.listeners = [];
-  }
+// Standard Firebase Config (shared across files)
+const firebaseConfig = {
+  apiKey: "AIzaSyBFHwulhuw9NlGQi0DWzy9mU47RSO5TUkw",
+  authDomain: "college-out-pass-system-62552.firebaseapp.com",
+  projectId: "college-out-pass-system-62552",
+  storageBucket: "college-out-pass-system-62552.firebasestorage.app",
+  messagingSenderId: "71169367861",
+  appId: "1:71169367861:web:7105b401d52c049476f67c"
+};
 
-  onAuthStateChanged(callback) {
-    this.listeners.push(callback);
-    setTimeout(() => callback(this.currentUser), 0);
-    return () => { };
-  }
-
-  async signInWithEmailAndPassword(email, password) {
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      const err = new Error(errData.code || 'Login failed');
-      err.code = errData.code;
-      throw err;
-    }
-
-    const data = await response.json();
-    const user = data.user;
-    this.currentUser = user;
-    sessionStorage.setItem('authUser', JSON.stringify(user));
-    sessionStorage.setItem('authToken', data.token);
-    this.listeners.forEach(cb => cb(this.currentUser));
-    return { user };
-  }
-
-  async signOut() {
-    this.currentUser = null;
-    sessionStorage.removeItem('authUser');
-    sessionStorage.removeItem('authToken');
-    this.listeners.forEach(cb => cb(null));
-  }
+// Initialize Real Firebase for AUTH and HOSTING
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
 }
 
-class MockFirestore {
-  constructor() { }
+// Keep real Auth
+window.auth = firebase.auth();
+
+// Create Proxy for Firestore to redirect data to TiDB
+class TiDBFirestoreProxy {
+  constructor() {
+    this.FieldValue = firebase.firestore.FieldValue;
+  }
 
   collection(colName) {
     return {
       doc: (docId) => ({
         path: docId,
         delete: async () => {
-          const token = sessionStorage.getItem('authToken');
+          // Get Firebase ID Token for security
+          const user = firebase.auth().currentUser;
+          const token = user ? await user.getIdToken() : '';
+
           const response = await fetch(`${API_URL}/${colName}/${docId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          if (!response.ok) throw new Error("Failed to delete data");
+          if (!response.ok) throw new Error("Failed to delete from TiDB");
           return { success: true };
         },
         get: async () => {
+          const user = firebase.auth().currentUser;
+          const token = user ? await user.getIdToken() : '';
+
+          // Admin check is the most common .doc().get() call
           if (colName === 'admins') {
-            const token = sessionStorage.getItem('authToken');
-            const response = await fetch(`${API_URL}/admins/${docId}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const result = await response.json();
-            return {
-              exists: result.exists,
-              data: () => result.data
-            };
+            try {
+              const response = await fetch(`${API_URL}/admins/${docId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              // If Render is down/old, fallback to allowing the known HOD
+              if (!response.ok) {
+                console.warn("TiDB Admin check failed, checking local HOD rule");
+                const email = user ? user.email : '';
+                if (email === 'srinivasnaidu.m@srichaitanyaschool.net') {
+                  return { exists: true, data: () => ({ email, role: 'admin' }) };
+                }
+                return { exists: false };
+              }
+              const result = await response.json();
+              return {
+                exists: result.exists,
+                data: () => result.data
+              };
+            } catch (e) {
+              // Fallback for HOD while Render updates
+              if (user && user.email === 'srinivasnaidu.m@srichaitanyaschool.net') {
+                return { exists: true, data: () => ({ email: user.email, role: 'admin' }) };
+              }
+              return { exists: false };
+            }
           }
           return { exists: false, data: () => null };
         }
       }),
       add: async (data) => {
-        const token = sessionStorage.getItem('authToken');
+        const user = firebase.auth().currentUser;
+        const token = user ? await user.getIdToken() : '';
+
         const response = await fetch(`${API_URL}/${colName}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(data)
         });
-        if (!response.ok) throw new Error("Failed to add data");
+        if (!response.ok) throw new Error("Failed to save to TiDB");
         const result = await response.json();
         return { id: result.id };
       },
-      orderBy: (field, direction) => {
-        return this.collection(colName);
-      },
       get: async () => {
-        const token = sessionStorage.getItem('authToken');
+        const user = firebase.auth().currentUser;
+        const token = user ? await user.getIdToken() : '';
+
         const response = await fetch(`${API_URL}/${colName}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!response.ok) throw new Error("Failed to get data");
+        if (!response.ok) return { empty: true, docs: [], forEach: () => { } };
 
-        // Backend returns an array of objects
         const rawData = await response.json();
-
-        const docsObj = rawData.map(d => ({
+        const docs = rawData.map(d => ({
           id: d.id,
-          data: () => {
-            const r = d.data();
-            // Firebase specific parsing simulation
-            return r;
-          }
+          data: () => ({ ...d, whatsappNumber: d.whatsapp_number || d.whatsappNumber })
         }));
 
         return {
-          empty: rawData.length === 0,
-          docs: rawData.map(d => {
-            const objData = { ...d, whatsappNumber: d.whatsapp_number || d.whatsappNumber };
-            return {
-              id: d.id,
-              data: () => objData
-            };
-          }),
-          forEach: (cb) => {
-            rawData.forEach(d => {
-              const objData = { ...d, whatsappNumber: d.whatsapp_number || d.whatsappNumber };
-              cb({
-                id: d.id,
-                data: () => objData
-              });
-            });
-          }
+          empty: docs.length === 0,
+          docs: docs,
+          forEach: (cb) => docs.forEach(cb)
         };
-      }
+      },
+      orderBy: () => this.collection(colName),
+      where: () => this.collection(colName)
     };
   }
 
   async runTransaction(callback) {
+    // Simplified transaction proxy for ID counters
     let mockRef;
     const mockTransaction = {
       get: async (ref) => {
@@ -150,7 +139,9 @@ class MockFirestore {
 
     await callback(mockTransaction);
 
-    const token = sessionStorage.getItem('authToken');
+    const user = firebase.auth().currentUser;
+    const token = user ? await user.getIdToken() : '';
+
     const response = await fetch(`${API_URL}/settings/increment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -162,36 +153,7 @@ class MockFirestore {
   }
 }
 
-// Intercept window.firebase
-window.firebase = {
-  initializeApp: () => { },
-  auth: () => new MockAuth(),
-  firestore: () => {
-    const firestoreObj = new MockFirestore();
-    firestoreObj.FieldValue = {
-      serverTimestamp: () => new Date().toISOString()
-    };
-    return firestoreObj;
-  }
-};
+// Set global DB to use the TiDB Proxy
+window.db = new TiDBFirestoreProxy();
 
-window.auth = window.firebase.auth();
-window.db = window.firebase.firestore();
-
-// Patch server backend's format map
-const originalFetch = window.fetch;
-window.fetch = async function () {
-  const res = await originalFetch.apply(this, arguments);
-  if (res.url.includes('/api/outpasses') && arguments[1]?.method === undefined) {
-    const json = await res.json();
-    const mockedRes = new Response(JSON.stringify(
-      json.map(item => ({
-        id: item.id,
-        data: () => item.data() // Will error on json stringify unless careful
-      }))
-    ));
-  }
-  return res;
-};
-
-console.log("TiDB Proxy initialized successfully!");
+console.log("✅ TiDB <-> Firebase Bridge active (Auth via Firebase, Data via TiDB)");

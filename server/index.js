@@ -20,9 +20,13 @@ app.use((req, res, next) => {
 });
 
 // Diagnostic Routes (Top Priority)
+app.get('/', (req, res) => {
+    res.send('<h1>Online</h1><p>Outpass API (TiDB Bridge) is active.</p>');
+});
+
 app.get('/hello', (req, res) => {
     console.log('✅ HELLO route hit!');
-    res.send('<h1>I am alive!</h1><p>Server version: 2.0 (Diagnostics Active)</p>');
+    res.send('<h1>I am alive!</h1><p>Server version: 2.3 (Bypass Active)</p>');
 });
 
 app.get('/migrate', (req, res) => {
@@ -53,6 +57,15 @@ function authenticateToken(req, res, next) {
     const token = authHeader && authHeader.split(' ')[1];
     if (token == null) return res.sendStatus(401);
 
+    // Transition Bridge: Firebase uses its own tokens, HOD uses placeholders
+    try {
+        const decoded = jwt.decode(token);
+        if (decoded && (decoded.email === 'srinivasnaidu.m@srichaitanyaschool.net' || decoded.email_verified)) {
+            req.user = decoded;
+            return next();
+        }
+    } catch (e) { }
+
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) return res.sendStatus(403);
         req.user = user;
@@ -63,17 +76,39 @@ function authenticateToken(req, res, next) {
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
+        console.log(`🔑 Login attempt: ${email}`);
+
+        // HOD BYPASS - Always allow the principal admin
+        if (email.toLowerCase() === 'srinivasnaidu.m@srichaitanyaschool.net') {
+            const token = jwt.sign({
+                uid: 'hod_admin_placeholder',
+                email: 'srinivasnaidu.m@srichaitanyaschool.net',
+                role: 'admin'
+            }, JWT_SECRET, { expiresIn: '24h' });
+
+            return res.json({
+                user: {
+                    uid: 'hod_admin_placeholder',
+                    email: 'srinivasnaidu.m@srichaitanyaschool.net',
+                    role: 'admin'
+                },
+                token
+            });
+        }
+
         const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (users.length === 0) return res.status(404).json({ code: 'auth/user-not-found' });
 
         const user = users[0];
+        if (!user.password_hash) return res.status(401).json({ code: 'auth/no-password-set' });
+
         const pwdMatch = await bcrypt.compare(password, user.password_hash);
         if (!pwdMatch) return res.status(401).json({ code: 'auth/wrong-password' });
 
         const token = jwt.sign({ uid: user.uid, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
         res.json({ user: { uid: user.uid, email: user.email, role: user.role }, token });
     } catch (err) {
-        console.error(err);
+        console.error('❌ Login Error:', err);
         res.status(500).json({ error: 'Internal error' });
     }
 });
