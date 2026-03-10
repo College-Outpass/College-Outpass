@@ -46,23 +46,27 @@ class TiDBFirestoreProxy {
           const user = firebase.auth().currentUser;
           const token = user ? await user.getIdToken() : '';
 
-          // Admin check fallback
-          if (colName === 'admins') {
-            try {
-              const res = await fetch(`${API_URL}/admins/${docId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-              });
-              if (!res.ok) throw new Error();
-              const result = await res.json();
-              return { exists: result.exists, data: () => result.data };
-            } catch (e) {
-              // Local safety check for HOD
-              if (user && user.email && user.email.toLowerCase() === 'srinivasnaidu.m@srichaitanyaschool.net') {
-                return { exists: true, data: () => ({ email: user.email.toLowerCase(), role: 'admin' }) };
-              }
+          try {
+            const res = await fetch(`${API_URL}/${colName}/${docId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!res.ok) throw new Error();
+            const result = await res.json();
+
+            if (result.exists) {
+              return { exists: true, data: () => result.data };
+            } else {
+              return { exists: false, data: () => null };
             }
+          } catch (e) {
+            // Local safety check for HOD (only for admins collection)
+            if (colName === 'admins' && user && user.email && user.email.toLowerCase() === 'srinivasnaidu.m@srichaitanyaschool.net') {
+              return { exists: true, data: () => ({ email: user.email.toLowerCase(), role: 'admin' }) };
+            }
+            // Not found or error
+            return { exists: false, data: () => null };
           }
-          return { exists: false, data: () => null };
         }
       }),
       add: async (data) => {

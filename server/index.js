@@ -243,6 +243,52 @@ app.post('/api/security', authenticateToken, async (req, res) => {
     }
 });
 
+// Students Collection
+app.get('/api/students/:id', authenticateToken, async (req, res) => {
+    try {
+        const studentId = req.params.id;
+        const [rows] = await pool.query('SELECT * FROM students WHERE id = ?', [studentId]);
+
+        if (rows.length === 0) {
+            return res.json({ exists: false, data: null });
+        }
+
+        res.json({ exists: true, data: rows[0] });
+    } catch (err) {
+        console.error('❌ Error fetching student:', err);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+app.get('/api/students', authenticateToken, async (req, res) => {
+    try {
+        const { campus, limit } = req.query;
+        let query = 'SELECT * FROM students';
+        let params = [];
+
+        if (campus) {
+            query += ' WHERE campus = ?';
+            params.push(campus);
+        }
+
+        if (limit) {
+            query += ` LIMIT ${parseInt(limit, 10)}`;
+        }
+
+        const [rows] = await pool.query(query, params);
+
+        const formattedRows = rows.map(row => ({
+            id: row.id,
+            ...row
+        }));
+
+        res.json(formattedRows);
+    } catch (err) {
+        console.error('❌ Error fetching students collection:', err);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
 app.post('/api/migrate/security-batch', authenticateToken, async (req, res) => {
     try {
         const { batch } = req.body; // Array of {name, campus, whatsappNumber}
