@@ -1,46 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Security to Firebase</title>
+    <title>Manage Security Personnel</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --danger: #ef4444;
+            --success: #22c55e;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px 20px;
             display: flex;
             justify-content: center;
-            align-items: center;
-            padding: 20px;
         }
 
         .container {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 600px;
             width: 100%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
         }
 
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        .subtitle {
-            color: #666;
-            text-align: center;
+        .header {
             margin-bottom: 30px;
-            font-size: 14px;
+            text-align: left;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .card-title {
+            font-weight: 600;
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .form-group {
@@ -50,513 +89,401 @@
         label {
             display: block;
             margin-bottom: 8px;
-            color: #333;
-            font-weight: 600;
-            font-size: 14px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text-muted);
         }
 
-        input, select {
+        input,
+        select {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.2s;
+            box-sizing: border-box;
         }
 
-        input:focus, select:focus {
+        input:focus,
+        select:focus {
             outline: none;
-            border-color: #667eea;
-        }
-
-        /* Custom dropdown styling */
-        .custom-select-wrapper {
-            position: relative;
-        }
-
-        .custom-select:hover {
-            border-color: #667eea;
-        }
-
-        .custom-dropdown label {
-            margin-bottom: 0;
-        }
-
-        .custom-dropdown label:hover {
-            background-color: #f8f9ff;
-        }
-
-        .custom-dropdown label input[type="checkbox"]:checked + span {
-            font-weight: 600;
-            color: #667eea;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
         }
 
         .btn {
             width: 100%;
             padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            border-radius: 12px;
+            background: var(--primary);
+            color: white;
             font-weight: 600;
+            font-size: 1rem;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin-top: 10px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
         }
 
         .btn:active {
             transform: translateY(0);
         }
 
-        .btn-clear {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            margin-top: 10px;
-        }
-
-        .btn-bulk {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            margin-top: 10px;
-        }
-
-        .message {
-            margin-top: 20px;
-            padding: 12px;
+        .btn-delete {
+            background: #fee2e2;
+            color: var(--danger);
+            padding: 8px;
             border-radius: 8px;
-            text-align: center;
-            font-weight: 600;
-            display: none;
+            width: auto;
+            font-size: 0.8rem;
         }
 
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .info-box {
-            background: #e7f3ff;
-            border: 1px solid #b3d9ff;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 25px;
-            font-size: 13px;
-            color: #004085;
-        }
-
-        .info-box strong {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .security-list {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #e0e0e0;
-        }
-
-        .security-item {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .security-item .name {
-            font-weight: 600;
-            color: #333;
-        }
-
-        .security-item .campus {
-            font-size: 12px;
-            color: #666;
-        }
-
-        .security-item .whatsapp {
-            font-size: 12px;
-            color: #25d366;
-            font-weight: 600;
-        }
-
-        .delete-btn {
-            background: #dc3545;
+        .btn-delete:hover {
+            background: var(--danger);
             color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: background 0.3s;
         }
 
-        .delete-btn:hover {
-            background: #c82333;
+        .table-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 16px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.95rem;
+        }
+
+        .campus-badge {
+            background: #f1f5f9;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(4px);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            background: #1e293b;
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            display: none;
+            animation: slideUp 0.3s ease-out;
+            z-index: 1000;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--primary);
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>🔐 Add Security to Firebase</h1>
-        <p class="subtitle">Add security personnel details for each campus</p>
 
-        <div class="info-box">
-            <strong>📋 Instructions:</strong>
-            <ul style="margin-left: 20px; margin-top: 8px;">
-                <li>Enter security name, select one or more campuses, and WhatsApp number</li>
-                <li><strong>You can select multiple campuses</strong> - separate records will be created for each selected campus</li>
-                <li>When you select 3 campuses, 3 separate security records will be created (one for each campus)</li>
-                <li>Available campuses: <code>ECITY_NEET_BOYS</code>, <code>ECITY_GIRLS_RESIDENTIAL</code>, <code>ECITY_ENGG_GIRLS_RESIDENTIAL</code>, or <code>ECITY_SCHOOL</code></li>
-                <li>WhatsApp number should be 10 digits (without country code)</li>
-                <li>Click "Add Security" to save to Firebase</li>
-            </ul>
+<body>
+    <div class="loading-overlay" id="loader">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="container">
+        <a href="admin-dashboard.html" class="back-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back to Dashboard
+        </a>
+
+        <div class="header">
+            <h1>Manage Security</h1>
+            <p>Add and manage security personnel for different campuses.</p>
         </div>
 
-        <form id="securityForm">
-            <div class="form-group">
-                <label for="securityName">Security Name *</label>
-                <input type="text" id="securityName" placeholder="e.g., Ramesh Kumar" required>
+        <div class="grid">
+            <!-- Add Security Form -->
+            <div class="card">
+                <div class="card-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary)">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="8.5" cy="7" r="4"></circle>
+                        <line x1="20" y1="8" x2="20" y2="14"></line>
+                        <line x1="23" y1="11" x2="17" y2="11"></line>
+                    </svg>
+                    New Personnel
+                </div>
+                <form id="addSecurityForm">
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" placeholder="e.g. Ramesh Reddy" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="campus">Campus</label>
+                        <select id="campus" required>
+                            <option value="">Select Campus</option>
+                            <option value="ECITY_SCHOOL">ECITY SCHOOL</option>
+                            <option value="ECITY_NEET_BOYS">ECITY NEET BOYS</option>
+                            <option value="ECITY_GIRLS_RESIDENTIAL">ECITY GIRLS RESIDENTIAL</option>
+                            <option value="ECITY_ENGG_GIRLS_RESIDENTIAL">ECITY ENGG GIRLS RESIDENTIAL</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="whatsapp">WhatsApp Number</label>
+                        <input type="tel" id="whatsapp" placeholder="10-digit mobile number" maxlength="10" required>
+                    </div>
+                    <button type="submit" class="btn">
+                        Add to Database
+                    </button>
+                </form>
             </div>
 
-            <div class="form-group">
-                <label for="campus">Select Campus(s) * <span style="font-size: 12px; color: #666; font-weight: normal;">(You can select multiple campuses - separate records will be created for each)</span></label>
-                <div class="custom-select-wrapper" style="position: relative;">
-                    <div class="custom-select" id="campusSelect" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; min-height: 48px; display: flex; align-items: center; justify-content: space-between;">
-                        <span id="campusSelectText" style="color: #999;">-- Select Campus(s) --</span>
-                        <span style="color: #666;">▼</span>
-                    </div>
-                    <div id="campusDropdown" class="custom-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #e0e0e0; border-radius: 8px; margin-top: 5px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                        <label style="display: flex; align-items: center; cursor: pointer; padding: 12px; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;">
-                            <input type="checkbox" name="campus" value="ECITY_NEET_BOYS" style="margin-right: 10px; width: 18px; height: 18px; cursor: pointer;">
-                            <span>ECITY NEET BOYS</span>
-                        </label>
-                        <label style="display: flex; align-items: center; cursor: pointer; padding: 12px; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;">
-                            <input type="checkbox" name="campus" value="ECITY_GIRLS_RESIDENTIAL" style="margin-right: 10px; width: 18px; height: 18px; cursor: pointer;">
-                            <span>ECITY GIRLS RESIDENTIAL</span>
-                        </label>
-                        <label style="display: flex; align-items: center; cursor: pointer; padding: 12px; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;">
-                            <input type="checkbox" name="campus" value="ECITY_ENGG_GIRLS_RESIDENTIAL" style="margin-right: 10px; width: 18px; height: 18px; cursor: pointer;">
-                            <span>ECITY ENGG GIRLS RESIDENTIAL</span>
-                        </label>
-                        <label style="display: flex; align-items: center; cursor: pointer; padding: 12px; transition: background 0.2s;">
-                            <input type="checkbox" name="campus" value="ECITY_SCHOOL" style="margin-right: 10px; width: 18px; height: 18px; cursor: pointer;">
-                            <span>ECITY SCHOOL</span>
-                        </label>
+            <!-- Security List -->
+            <div class="card">
+                <div class="card-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary)">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Current Personnel
+                </div>
+                <div class="table-container">
+                    <table id="securityTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Campus</th>
+                                <th>WhatsApp</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="securityList">
+                            <!-- Data will be injected here -->
+                        </tbody>
+                    </table>
+                    <div id="noData"
+                        style="display: none; text-align: center; padding: 40px; color: var(--text-muted);">
+                        No security personnel found.
                     </div>
                 </div>
-                <small id="campusError" style="color: #dc3545; display: none; margin-top: 5px;">Please select at least one campus</small>
             </div>
-
-            <div class="form-group">
-                <label for="whatsappNumber">WhatsApp Number *</label>
-                <input type="tel" id="whatsappNumber" placeholder="9876543210" maxlength="10" required>
-            </div>
-
-            <button type="submit" class="btn">➕ Add Security</button>
-            <button type="button" class="btn btn-clear" onclick="clearForm()">🔄 Clear Form</button>
-        </form>
-
-        <div id="message" class="message"></div>
-
-        <div class="security-list">
-            <h3 style="margin-bottom: 15px; color: #333;">Existing Security Personnel</h3>
-            <div id="securityList">Loading...</div>
         </div>
     </div>
 
+    <!-- Firebase SDKs (via compatibility layer) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    
+
+    <!-- Config which uses our TiDB Proxy -->
+    <script src="js/firebase-config.js"></script>
+
     <script>
-        // Initialize Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyBFHwulhuw9NlGQi0DWzy9mU47RSO5TUkw",
-            authDomain: "college-out-pass-system-62552.firebaseapp.com",
-            projectId: "college-out-pass-system-62552",
-            storageBucket: "college-out-pass-system-62552.firebasestorage.app",
-            messagingSenderId: "71169367861",
-            appId: "1:71169367861:web:7105b401d52c049476f67c"
+        const loader = document.getElementById('loader');
+        const toast = document.getElementById('toast');
+        const securityList = document.getElementById('securityList');
+        const noData = document.getElementById('noData');
+        const form = document.getElementById('addSecurityForm');
+
+        const CAMPUS_NAMES = {
+            'ECITY_SCHOOL': 'ECITY SCHOOL',
+            'ECITY_NEET_BOYS': 'ECITY NEET BOYS',
+            'ECITY_GIRLS_RESIDENTIAL': 'ECITY GIRLS RESIDENTIAL',
+            'ECITY_ENGG_GIRLS_RESIDENTIAL': 'ECITY ENGG GIRLS RESIDENTIAL'
         };
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
+        function showToast(message, isError = false) {
+            toast.textContent = message;
+            toast.style.background = isError ? '#ef4444' : '#1e293b';
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
 
-        // Initialize Firebase Auth and Firestore
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        console.log("Firebase initialized successfully!");
-
-        // Hide form initially until authentication is confirmed
-        document.getElementById('securityForm').style.display = 'none';
-        document.getElementById('securityList').innerHTML = 'Checking authentication...';
-
-        // Simple authentication check - just verify user is logged in
-        let isAuthenticated = false;
-
-        // Wait for auth state to check if user is logged in
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                // User is logged in - allow access
-                console.log("✅ User authenticated:", user.email);
-                isAuthenticated = true;
-                // Show form and load security list
-                document.getElementById('securityForm').style.display = 'block';
-                loadSecurityList();
-            } else {
-                // No user logged in
-                console.log("No user logged in");
-                isAuthenticated = false;
-                showMessage("⚠️ Please login first. <a href='admin-login.html' style='color: #667eea; text-decoration: underline;'>Click here to login</a>", 'error');
-                document.getElementById('securityList').innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #dc3545;">
-                        <h3>🔐 Authentication Required</h3>
-                        <p style="margin: 20px 0;">You need to login to access this page.</p>
-                        <a href="admin-login.html" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 10px;">Go to Login Page</a>
-                    </div>
-                `;
-                document.getElementById('securityForm').style.display = 'none';
-            }
-        });
-
-        // Load existing security records
-        async function loadSecurityList() {
+        async function loadSecurity() {
             try {
-                // Check if user is authenticated
-                const user = auth.currentUser;
-                if (!user || !isAuthenticated) {
-                    console.log("No authenticated user");
-                    return;
-                }
-
-                const securityListDiv = document.getElementById('securityList');
-                securityListDiv.innerHTML = 'Loading...';
-
+                loader.style.display = 'flex';
+                // Using our proxied 'db' which talks to TiDB backend
                 const snapshot = await db.collection('security').get();
-                
+                securityList.innerHTML = '';
+
                 if (snapshot.empty) {
-                    securityListDiv.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">No security personnel added yet.</p>';
+                    noData.style.display = 'block';
                     return;
                 }
 
-                let html = '';
+                noData.style.display = 'none';
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    // Each record has a single campus
-                    const campusDisplay = data.campus ? data.campus.replace(/_/g, ' ') : 'No campus assigned';
-                    
-                    html += `
-                        <div class="security-item">
-                            <div>
-                                <div class="name">${data.name}</div>
-                                <div class="campus">📍 ${campusDisplay}</div>
-                                <div class="whatsapp">📱 ${data.whatsappNumber}</div>
-                            </div>
-                            <button class="delete-btn" onclick="deleteSecurity('${doc.id}')">🗑️ Delete</button>
-                        </div>
+                    const tr = document.createElement('tr');
+                    const campusDisplay = CAMPUS_NAMES[data.campus] || data.campus;
+                    tr.innerHTML = `
+                        <td><strong>${data.name}</strong></td>
+                        <td><span class="campus-badge">${campusDisplay}</span></td>
+                        <td>${data.whatsappNumber}</td>
+                        <td align="right">
+                            <button class="btn btn-delete" onclick="deleteSecurity('${doc.id}')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            </button>
+                        </td>
                     `;
+                    securityList.appendChild(tr);
                 });
-
-                securityListDiv.innerHTML = html;
             } catch (error) {
-                console.error('Error loading security list:', error);
-                let errorMessage = 'Error loading security list: ' + error.message;
-                if (error.code === 'permission-denied' || error.message.includes('permission')) {
-                    errorMessage = 'Missing or insufficient permissions. Please ensure you are logged in with the correct admin account. <a href="admin-login.html" style="color: #667eea; text-decoration: underline;">Click here to login</a>';
-                }
-                document.getElementById('securityList').innerHTML = '<p style="color: #dc3545; text-align: center; padding: 20px;">' + errorMessage + '</p>';
+                console.error(error);
+                showToast('Failed to load personnel list', true);
+            } finally {
+                loader.style.display = 'none';
             }
         }
 
-        // Add security to Firebase
-        document.getElementById('securityForm').addEventListener('submit', async (e) => {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const name = document.getElementById('name').value;
+            const campus = document.getElementById('campus').value;
+            const whatsapp = document.getElementById('whatsapp').value;
 
-            // Check if user is authenticated
-            const user = auth.currentUser;
-            if (!user || !isAuthenticated) {
-                showMessage('❌ Not authenticated. Please login first. <a href="admin-login.html" style="color: #667eea;">Click here to login</a>', 'error');
-                return;
-            }
-
-            const name = document.getElementById('securityName').value.trim();
-            const whatsappNumber = document.getElementById('whatsappNumber').value.trim();
-
-            // Get selected campuses
-            const campusCheckboxes = document.querySelectorAll('input[name="campus"]:checked');
-            const selectedCampuses = Array.from(campusCheckboxes).map(cb => cb.value);
-
-            // Validate at least one campus is selected
-            if (selectedCampuses.length === 0) {
-                document.getElementById('campusError').style.display = 'block';
-                showMessage('Please select at least one campus', 'error');
-                return;
-            }
-            document.getElementById('campusError').style.display = 'none';
-
-            // Validate WhatsApp number
-            const cleanNumber = whatsappNumber.replace(/\D/g, '');
-            if (cleanNumber.length !== 10) {
-                showMessage('Please enter a valid 10-digit WhatsApp number', 'error');
+            if (whatsapp.length !== 10) {
+                showToast('WhatsApp number must be 10 digits', true);
                 return;
             }
 
             try {
-                // Create separate records for each selected campus
-                const promises = selectedCampuses.map(campus => {
-                    return db.collection('security').add({
-                        name: name,
-                        campus: campus, // Single campus per record
-                        whatsappNumber: cleanNumber,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                loader.style.display = 'flex';
+                await db.collection('security').add({
+                    name,
+                    campus,
+                    whatsappNumber: whatsapp
                 });
 
-                await Promise.all(promises);
-
-                const campusNames = selectedCampuses.map(c => c.replace(/_/g, ' ')).join(', ');
-                showMessage(`✅ Security "${name}" added successfully to ${selectedCampuses.length} campus(es): ${campusNames}!`, 'success');
-                clearForm();
-                loadSecurityList(); // Refresh the list
+                showToast('Successfully added personnel');
+                form.reset();
+                loadSecurity();
             } catch (error) {
-                console.error('Error adding security:', error);
-                let errorMsg = '❌ Error: ' + error.message;
-                if (error.code === 'permission-denied' || error.message.includes('permission')) {
-                    errorMsg = '❌ Missing or insufficient permissions. Please check your Firebase security rules to allow writes to the security collection.';
-                }
-                showMessage(errorMsg, 'error');
+                console.error(error);
+                showToast('Failed to add personnel', true);
+            } finally {
+                loader.style.display = 'none';
             }
         });
 
-        // Delete security
-        async function deleteSecurity(docId) {
-            // Check if user is authenticated
-            const user = auth.currentUser;
-            if (!user || !isAuthenticated) {
-                showMessage('❌ Not authenticated. Please login first.', 'error');
-                return;
-            }
-
-            if (!confirm('Are you sure you want to delete this security personnel?')) {
-                return;
-            }
+        async function deleteSecurity(id) {
+            if (!confirm('Are you sure you want to remove this person?')) return;
 
             try {
-                await db.collection('security').doc(docId).delete();
-                showMessage('✅ Security personnel deleted successfully!', 'success');
-                loadSecurityList(); // Refresh the list
+                loader.style.display = 'flex';
+                await db.collection('security').doc(id).delete();
+                showToast('Personnel removed');
+                loadSecurity();
             } catch (error) {
-                console.error('Error deleting security:', error);
-                let errorMsg = '❌ Error deleting security: ' + error.message;
-                if (error.code === 'permission-denied' || error.message.includes('permission')) {
-                    errorMsg = '❌ Missing or insufficient permissions. Please check your Firebase security rules to allow deletes from the security collection.';
-                }
-                showMessage(errorMsg, 'error');
+                console.error(error);
+                showToast('Failed to remove personnel', true);
+            } finally {
+                loader.style.display = 'none';
             }
         }
 
-        // Clear form
-        function clearForm() {
-            document.getElementById('securityForm').reset();
-            // Uncheck all campus checkboxes
-            document.querySelectorAll('input[name="campus"]').forEach(cb => {
-                cb.checked = false;
-            });
-            // Reset dropdown display
-            updateCampusSelectText();
-            document.getElementById('campusDropdown').style.display = 'none';
-            document.getElementById('campusError').style.display = 'none';
-            hideMessage();
-        }
-
-        // Update campus select text based on selected checkboxes
-        function updateCampusSelectText() {
-            const checked = document.querySelectorAll('input[name="campus"]:checked');
-            const selectText = document.getElementById('campusSelectText');
-            
-            if (checked.length === 0) {
-                selectText.textContent = '-- Select Campus(s) --';
-                selectText.style.color = '#999';
+        // Check authentication
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = 'login.html';
             } else {
-                const campusNames = Array.from(checked).map(cb => {
-                    return cb.value.replace(/_/g, ' ');
-                });
-                selectText.textContent = campusNames.join(', ');
-                selectText.style.color = '#333';
-            }
-        }
-
-        // Toggle dropdown
-        document.getElementById('campusSelect').addEventListener('click', function(e) {
-            e.stopPropagation();
-            const dropdown = document.getElementById('campusDropdown');
-            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(e) {
-            const wrapper = document.querySelector('.custom-select-wrapper');
-            if (wrapper && !wrapper.contains(e.target)) {
-                document.getElementById('campusDropdown').style.display = 'none';
+                loadSecurity();
             }
         });
-
-        // Update text when checkbox changes
-        document.querySelectorAll('input[name="campus"]').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                updateCampusSelectText();
-            });
-        });
-
-        // Prevent dropdown from closing when clicking inside
-        document.getElementById('campusDropdown').addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-
-        // Show message
-        function showMessage(text, type) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.innerHTML = text; // Use innerHTML to support links
-            messageDiv.className = `message ${type}`;
-            messageDiv.style.display = 'block';
-
-            if (type === 'success') {
-                setTimeout(() => hideMessage(), 5000);
-            }
-        }
-
-        // Hide message
-        function hideMessage() {
-            document.getElementById('message').style.display = 'none';
-        }
-
-        // Auto-format WhatsApp number input
-        document.getElementById('whatsappNumber').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 10) {
-                value = value.slice(0, 10);
-            }
-            e.target.value = value;
-        });
-
-        // Wait for authentication before loading list
-        // List will be loaded after anonymous sign-in completes
     </script>
 </body>
-</html>
 
+</html>

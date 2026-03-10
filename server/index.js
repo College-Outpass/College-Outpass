@@ -1,12 +1,48 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
 const { pool, initDb } = require('./db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+const path = require('path');
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+
+// Settings
+const publicPath = path.join(__dirname, '../public');
+
+// Log all incoming requests for debugging
+app.use((req, res, next) => {
+    console.log(`[${new Date().toLocaleTimeString()}] Browser requested: ${req.method} ${req.url}`);
+    next();
+});
+
+// Diagnostic Routes (Top Priority)
+app.get('/hello', (req, res) => {
+    console.log('✅ HELLO route hit!');
+    res.send('<h1>I am alive!</h1><p>Server version: 2.0 (Diagnostics Active)</p>');
+});
+
+app.get('/migrate', (req, res) => {
+    console.log('✅ MIGRATE route hit!');
+    const targetFile = path.join(publicPath, 'migrate-security.html');
+    if (fs.existsSync(targetFile)) {
+        res.sendFile(targetFile);
+    } else {
+        res.status(404).send(`<h1>File Not Found</h1><p>Looked for: ${targetFile}</p>`);
+    }
+});
+
+// Serve static files from the public directory
+console.log('✅ Serving static files from:', publicPath);
+try {
+    const files = fs.readdirSync(publicPath);
+    console.log('📂 Files in folder:', files.join(', '));
+} catch (e) { console.log('❌ Error reading folder:', e.message); }
+
+app.use(express.static(publicPath));
 
 initDb();
 
@@ -48,10 +84,24 @@ app.post('/api/auth/verify', authenticateToken, (req, res) => {
 
 app.get('/api/admins/:uid', authenticateToken, async (req, res) => {
     try {
-        const [users] = await pool.query('SELECT role FROM users WHERE uid = ? AND role = "admin"', [req.params.uid]);
-        if (users.length > 0) res.json({ exists: true, data: { ...users[0] } });
-        else res.json({ exists: false });
+        // Find by UID first, or by email since we know the authorized HOD email
+        const [users] = await pool.query(
+            'SELECT role, email FROM users WHERE (uid = ? OR email = ?) AND role = "admin"',
+            [req.params.uid, req.user.email]
+        );
+
+        if (users.length > 0) {
+            res.json({ exists: true, data: { ...users[0] } });
+        } else {
+            // Last resort: If the email is the HOD email, they ARE an admin
+            if (req.user.email === 'srinivasnaidu.m@srichaitanyaschool.net') {
+                res.json({ exists: true, data: { role: 'admin', email: req.user.email } });
+            } else {
+                res.json({ exists: false });
+            }
+        }
     } catch (err) {
+        console.error('Admin check error:', err);
         res.status(500).json({ error: 'Failed' });
     }
 });
@@ -97,6 +147,68 @@ app.get('/api/sickSlips', authenticateToken, async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM sick_slips ORDER BY timestamp DESC');
         res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+// Security Management
+app.get('/api/security', async (req, res) => {
+    try {
+        const { campus } = req.query;
+        let query = 'SELECT * FROM security';
+        let params = [];
+        if (campus) {
+            query += ' WHERE campus = ?';
+            params.push(campus);
+        }
+        const [rows] = await pool.query(query, params);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.post('/api/security', authenticateToken, async (req, res) => {
+    try {
+        const { name, campus, whatsappNumber } = req.body;
+        await pool.query(
+            'INSERT INTO security (name, campus, whatsapp_number) VALUES (?, ?, ?)',
+            [name, campus, whatsappNumber]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.post('/api/migrate/security-batch', authenticateToken, async (req, res) => {
+    try {
+        const { batch } = req.body; // Array of {name, campus, whatsappNumber}
+        for (const item of batch) {
+            // Check if already exists to avoid duplicates
+            const [exists] = await pool.query(
+                'SELECT id FROM security WHERE name = ? AND campus = ? AND whatsapp_number = ?',
+                [item.name, item.campus, item.whatsappNumber]
+            );
+            if (exists.length === 0) {
+                await pool.query(
+                    'INSERT INTO security (name, campus, whatsapp_number) VALUES (?, ?, ?)',
+                    [item.name, item.campus, item.whatsappNumber]
+                );
+            }
+        }
+        res.json({ success: true, count: batch.length });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.delete('/api/security/:id', authenticateToken, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM security WHERE id = ?', [req.params.id]);
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Failed' });
     }

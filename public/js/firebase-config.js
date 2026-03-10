@@ -58,6 +58,15 @@ class MockFirestore {
     return {
       doc: (docId) => ({
         path: docId,
+        delete: async () => {
+          const token = sessionStorage.getItem('authToken');
+          const response = await fetch(`${API_URL}/${colName}/${docId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (!response.ok) throw new Error("Failed to delete data");
+          return { success: true };
+        },
         get: async () => {
           if (colName === 'admins') {
             const token = sessionStorage.getItem('authToken');
@@ -109,7 +118,7 @@ class MockFirestore {
         return {
           empty: rawData.length === 0,
           docs: rawData.map(d => {
-            const objData = d.data();
+            const objData = { ...d, whatsappNumber: d.whatsapp_number || d.whatsappNumber };
             return {
               id: d.id,
               data: () => objData
@@ -117,7 +126,7 @@ class MockFirestore {
           }),
           forEach: (cb) => {
             rawData.forEach(d => {
-              const objData = d.data();
+              const objData = { ...d, whatsappNumber: d.whatsapp_number || d.whatsappNumber };
               cb({
                 id: d.id,
                 data: () => objData

@@ -1,0 +1,7 @@
+🧐 DIRECT COLLECTION CHECK...
+- Collection "outpasses": EMPTY/NOT FOUND
+- Collection "outpass": EMPTY/NOT FOUND
+- Collection "Security": EMPTY/NOT FOUND
+- Collection "security": EMPTY/NOT FOUND
+- Collection "Staff": EMPTY/NOT FOUND
+- Collection "staff": EMPTY/NOT FOUND

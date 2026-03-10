@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +15,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: 
+            background:
                 linear-gradient(rgba(30, 60, 114, 0.92), rgba(42, 82, 152, 0.92)),
                 url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1920&q=80') center/cover fixed;
             min-height: 100vh;
@@ -179,10 +180,21 @@
             box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
         }
 
-        .stat-card.total::before { background: linear-gradient(135deg, #667eea, #764ba2); }
-        .stat-card.today::before { background: linear-gradient(135deg, #28a745, #20c997); }
-        .stat-card.week::before { background: linear-gradient(135deg, #ffc107, #fd7e14); }
-        .stat-card.month::before { background: linear-gradient(135deg, #dc3545, #c82333); }
+        .stat-card.total::before {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .stat-card.today::before {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .stat-card.week::before {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+        }
+
+        .stat-card.month::before {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+        }
 
         .stat-icon {
             font-size: 32px;
@@ -450,11 +462,12 @@
             color: #0c5460;
             border: 1px solid #bee5eb;
         }
-	.status-not-reported { 
-    background: #d4edda; 
-    color: #155724; 
-    border: 1px solid #c3e6cb;
-}
+
+        .status-not-reported {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
 
         .no-data {
             text-align: center;
@@ -474,8 +487,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .type-badge {
@@ -499,15 +517,22 @@
             border: 1px solid #ffe0b2;
         }
 
-        .created-by-cell { font-size: 12px; line-height: 1.5; }
-        .role-name { font-weight: 600; color: #2a5298; }
-        
+        .created-by-cell {
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .role-name {
+            font-weight: 600;
+            color: #2a5298;
+        }
+
         .reporting-time {
             color: #dc3545;
             font-weight: bold;
             font-size: 12px;
         }
-        
+
         .authorized-by {
             font-size: 10px;
             color: #155724;
@@ -547,67 +572,79 @@
                 flex-direction: column;
                 gap: 12px;
             }
-            
+
             .nav-logo {
                 width: 40px;
                 max-height: 40px;
             }
-            
+
             .stats-grid {
                 grid-template-columns: 1fr;
             }
+
             .search-box {
                 width: 100%;
             }
+
             .filter-container {
                 flex-direction: column;
                 align-items: stretch;
             }
+
             .date-filter-container {
                 justify-content: space-between;
             }
+
             .page-title {
                 font-size: 26px;
             }
         }
 
         /* ==================== PDF TEMPLATE STYLES (Optimized for A4 - Same as dashboard.html) ==================== */
-        
+
         #pdfTemplate {
             display: none;
             width: 210mm;
             min-height: 297mm;
-            padding: 8mm 10mm; /* Reduced top/bottom padding */
+            padding: 8mm 10mm;
+            /* Reduced top/bottom padding */
             background: white;
             box-sizing: border-box;
             font-family: Arial, sans-serif;
             position: absolute;
             left: -9999px;
-            font-size: 12px; /* Slightly smaller base font */
-            line-height: 1.2; /* Tighter line spacing */
+            font-size: 12px;
+            /* Slightly smaller base font */
+            line-height: 1.2;
+            /* Tighter line spacing */
         }
 
         .outpass-container {
             width: 100%;
             height: 100%;
             border: 2px solid #1e3c72;
-            padding: 8px; /* Reduced padding */
+            padding: 8px;
+            /* Reduced padding */
             position: relative;
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            overflow: hidden; /* Prevent content from going out */
+            overflow: hidden;
+            /* Prevent content from going out */
         }
 
         .header {
             text-align: center;
             border-bottom: 3px double #1e3c72;
-            padding-bottom: 5px; /* Reduced */
-            margin-bottom: 5px; /* Reduced */
+            padding-bottom: 5px;
+            /* Reduced */
+            margin-bottom: 5px;
+            /* Reduced */
         }
 
         .header .logo {
-            margin-bottom: 3px; /* Reduced */
+            margin-bottom: 3px;
+            /* Reduced */
             margin-left: auto;
             margin-right: auto;
             display: flex;
@@ -626,28 +663,32 @@
 
         .college-name {
             font-family: Arial, sans-serif;
-            font-size: 18px; /* Slightly smaller */
+            font-size: 18px;
+            /* Slightly smaller */
             font-weight: bold;
             color: #1e3c72;
             margin-bottom: 2px;
         }
 
         .college-location {
-            font-size: 14px; /* Slightly smaller */
+            font-size: 14px;
+            /* Slightly smaller */
             font-weight: bold;
             color: #000000;
             margin-bottom: 2px;
         }
 
         .outpass-title {
-            font-size: 16px; /* Slightly smaller */
+            font-size: 16px;
+            /* Slightly smaller */
             font-weight: bold;
             color: #1e3c72;
             margin-bottom: 3px;
         }
 
         .outpass-no {
-            font-size: 13px; /* Slightly smaller */
+            font-size: 13px;
+            /* Slightly smaller */
             font-weight: bold;
             color: #333;
             background: #f0f4ff;
@@ -660,42 +701,54 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin: 8px 0; /* Reduced */
-            padding: 0 10px; /* Reduced */
+            margin: 8px 0;
+            /* Reduced */
+            padding: 0 10px;
+            /* Reduced */
             width: 100%;
             box-sizing: border-box;
         }
 
         .date-time-section {
             display: flex;
-            gap: 20px; /* Reduced */
-            padding: 8px 12px; /* Reduced */
+            gap: 20px;
+            /* Reduced */
+            padding: 8px 12px;
+            /* Reduced */
             background: #f8f9fa;
             border-radius: 5px;
-            width: 65%; /* Adjusted */
-            margin-left: 5px; /* Reduced */
+            width: 65%;
+            /* Adjusted */
+            margin-left: 5px;
+            /* Reduced */
             box-sizing: border-box;
         }
 
         .date-time-item {
             text-align: center;
             flex: 1;
-            min-width: 0; /* Prevent overflow */
+            min-width: 0;
+            /* Prevent overflow */
         }
 
         .photo-corner-box {
-            width: 80px; /* Reduced */
-            height: 80px; /* Reduced */
+            width: 80px;
+            /* Reduced */
+            height: 80px;
+            /* Reduced */
             border: 2px solid #1e3c72;
             border-radius: 5px;
             overflow: hidden;
             background: #ffffff;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1); /* Reduced shadow */
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            /* Reduced shadow */
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 15px; /* Reduced */
-            flex-shrink: 0; /* Prevent shrinking */
+            margin-right: 15px;
+            /* Reduced */
+            flex-shrink: 0;
+            /* Prevent shrinking */
         }
 
         .photo-corner-box img {
@@ -708,85 +761,108 @@
 
         .photo-corner-box:empty::before {
             content: "📷";
-            font-size: 22px; /* Slightly smaller */
+            font-size: 22px;
+            /* Slightly smaller */
             color: #ccc;
         }
 
         .info-label {
             font-weight: bold;
             color: #003366;
-            font-size: 10px; /* Slightly smaller */
-            margin-bottom: 1px; /* Reduced */
+            font-size: 10px;
+            /* Slightly smaller */
+            margin-bottom: 1px;
+            /* Reduced */
         }
 
         .info-value {
             font-weight: bold;
             color: #333;
-            font-size: 12px; /* Slightly smaller */
-            word-wrap: break-word; /* Prevent text overflow */
+            font-size: 12px;
+            /* Slightly smaller */
+            word-wrap: break-word;
+            /* Prevent text overflow */
             overflow-wrap: break-word;
         }
 
         .date-time-value {
             color: #ff0000 !important;
-            font-size: 14px !important; /* Slightly smaller */
+            font-size: 14px !important;
+            /* Slightly smaller */
             font-weight: bold;
         }
 
         .section-title {
-            font-size: 14px; /* Slightly smaller */
+            font-size: 14px;
+            /* Slightly smaller */
             font-weight: bold;
             color: #003366;
-            margin: 5px 0 3px 0; /* Reduced margins */
-            padding-bottom: 2px; /* Reduced */
+            margin: 5px 0 3px 0;
+            /* Reduced margins */
+            padding-bottom: 2px;
+            /* Reduced */
             border-bottom: 2px solid #003366;
         }
 
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 3px; /* Reduced */
-            margin-bottom: 5px; /* Reduced */
+            gap: 3px;
+            /* Reduced */
+            margin-bottom: 5px;
+            /* Reduced */
             width: 100%;
             box-sizing: border-box;
         }
 
         .info-item {
-            padding: 3px 5px; /* Reduced */
+            padding: 3px 5px;
+            /* Reduced */
             background: #f8f9fa;
             border-radius: 5px;
-            min-height: 25px; /* Reduced */
+            min-height: 25px;
+            /* Reduced */
             display: flex;
             flex-direction: column;
             justify-content: center;
             box-sizing: border-box;
-            overflow: hidden; /* Prevent content overflow */
+            overflow: hidden;
+            /* Prevent content overflow */
         }
 
         .reason-box {
-            padding: 5px; /* Reduced */
+            padding: 5px;
+            /* Reduced */
             background: #f8f9fa;
             border-radius: 5px;
-            margin-bottom: 4px; /* Reduced */
-            min-height: 30px; /* Reduced */
-            word-wrap: break-word; /* Prevent text overflow */
+            margin-bottom: 4px;
+            /* Reduced */
+            min-height: 30px;
+            /* Reduced */
+            word-wrap: break-word;
+            /* Prevent text overflow */
             overflow-wrap: break-word;
         }
 
         .reason-title {
             font-weight: bold;
             color: #003366;
-            margin-bottom: 1px; /* Reduced */
-            font-size: 11px; /* Slightly smaller */
+            margin-bottom: 1px;
+            /* Reduced */
+            font-size: 11px;
+            /* Slightly smaller */
         }
 
         .signatures {
             display: flex;
             justify-content: space-between;
-            margin-top: 10px; /* Reduced */
-            padding-top: 5px; /* Reduced */
+            margin-top: 10px;
+            /* Reduced */
+            padding-top: 5px;
+            /* Reduced */
             border-top: 2px solid #1e3c72;
-            gap: 8px; /* Reduced */
+            gap: 8px;
+            /* Reduced */
             width: 100%;
             box-sizing: border-box;
         }
@@ -797,34 +873,41 @@
             flex-direction: column;
             justify-content: flex-end;
             flex: 1;
-            min-width: 0; /* Prevent overflow */
+            min-width: 0;
+            /* Prevent overflow */
             box-sizing: border-box;
         }
 
         .issued-by-heading {
             font-weight: bold;
-            font-size: 14px; /* Slightly smaller */
+            font-size: 14px;
+            /* Slightly smaller */
             color: #003366;
-            margin-bottom: 3px; /* Reduced */
+            margin-bottom: 3px;
+            /* Reduced */
             text-align: center;
         }
 
         .principal-name {
             font-weight: bold;
-            font-size: 13px; /* Slightly smaller */
+            font-size: 13px;
+            /* Slightly smaller */
             color: #333;
             text-align: center;
-            margin-bottom: 2px; /* Reduced */
+            margin-bottom: 2px;
+            /* Reduced */
             word-wrap: break-word;
             overflow-wrap: break-word;
         }
 
         .campus-info-normal {
             font-weight: bold;
-            font-size: 10px; /* Slightly smaller */
+            font-size: 10px;
+            /* Slightly smaller */
             color: #666;
             text-align: center;
-            line-height: 1.1; /* Tighter */
+            line-height: 1.1;
+            /* Tighter */
             word-wrap: break-word;
             overflow-wrap: break-word;
         }
@@ -833,18 +916,22 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 3px; /* Reduced gap between sections */
+            gap: 3px;
+            /* Reduced gap between sections */
             width: 100%;
             box-sizing: border-box;
-            overflow: hidden; /* Prevent content overflow */
+            overflow: hidden;
+            /* Prevent content overflow */
         }
 
         .status-section {
-            margin-bottom: 5px; /* Reduced */
+            margin-bottom: 5px;
+            /* Reduced */
         }
 
         .status-item {
-            padding: 4px; /* Reduced */
+            padding: 4px;
+            /* Reduced */
             background: #f8f9fa;
             border-radius: 5px;
             text-align: center;
@@ -856,12 +943,12 @@
             color: #28a745;
             background: #d4edda;
         }
-        
+
         .status-pending {
             color: #ffc107;
             background: #fff3cd;
         }
-        
+
         .status-rejected {
             color: #dc3545;
             background: #f8d7da;
@@ -869,11 +956,14 @@
 
         .footer {
             text-align: center;
-            margin-top: 5px; /* Reduced */
-            padding-top: 4px; /* Reduced */
+            margin-top: 5px;
+            /* Reduced */
+            padding-top: 4px;
+            /* Reduced */
             border-top: 1px solid #ccc;
             color: #666;
-            font-size: 10px; /* Slightly smaller */
+            font-size: 10px;
+            /* Slightly smaller */
             font-family: Arial, sans-serif;
             font-weight: normal;
             word-wrap: break-word;
@@ -884,16 +974,20 @@
 
         .legal-note {
             text-align: center;
-            margin-top: 5px; /* Reduced */
-            padding: 5px; /* Reduced */
+            margin-top: 5px;
+            /* Reduced */
+            padding: 5px;
+            /* Reduced */
             background: #fff3cd;
             border: 1px solid #ffeaa7;
             border-radius: 5px;
-            font-size: 9px; /* Slightly smaller */
+            font-size: 9px;
+            /* Slightly smaller */
             color: #856404;
             font-weight: bold;
             font-family: Arial, sans-serif;
-            line-height: 1.2; /* Tighter */
+            line-height: 1.2;
+            /* Tighter */
             word-wrap: break-word;
             overflow-wrap: break-word;
             box-sizing: border-box;
@@ -1097,6 +1191,7 @@
         }
     </style>
 </head>
+
 <body>
     <nav class="navbar">
         <div class="nav-container">
@@ -1109,6 +1204,8 @@
             </div>
             <div class="nav-right">
                 <span id="userEmail" class="user-email">HOD Administrator</span>
+                <a href="add-security.html" class="btn-logout" style="text-decoration: none; margin-right: 10px;">🛡️
+                    Manage Security</a>
                 <button id="logoutBtn" class="btn-logout">Logout</button>
             </div>
         </div>
@@ -1166,13 +1263,13 @@
                     <option value="ECITY_ENGG_GIRLS_RESIDENTIAL">ECITY ENGG GIRLS RESIDENTIAL</option>
                     <option value="ECITY_SCHOOL">ECITY SCHOOL</option>
                 </select>
-                
+
                 <select class="filter-select" id="typeFilter">
                     <option value="">All Types</option>
                     <option value="outpass">Outpass</option>
                     <option value="MediSlip">Medi Slip</option>
                 </select>
-                
+
                 <select class="filter-select" id="statusFilter">
                     <option value="">All Status</option>
                     <option value="pending">Pending</option>
@@ -1180,7 +1277,7 @@
                     <option value="rejected">Rejected</option>
                     <option value="completed">Completed</option>
                 </select>
-                
+
                 <div class="date-filter-container">
                     <input type="date" class="date-input" id="startDate">
                     <span style="color: #6c757d; font-size: 14px;">to</span>
@@ -1188,7 +1285,7 @@
                     <button class="btn-clear-date" id="clearDateBtn">Clear Dates</button>
                 </div>
             </div>
-            
+
             <div class="table-wrapper">
                 <table class="data-table">
                     <thead>
@@ -1223,9 +1320,10 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
+
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyBFHwulhuw9NlGQi0DWzy9mU47RSO5TUkw",
@@ -1235,7 +1333,7 @@
             messagingSenderId: "71169367861",
             appId: "1:71169367861:web:7105b401d52c049476f67c"
         };
-        
+
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
@@ -1243,7 +1341,7 @@
         const CAMPUS_DISPLAY_NAMES = {
             "ALL_CAMPUSES": "All Campuses",
             "ECITY_NEET_BOYS": "ECITY NEET BOYS",
-            "ECITY_GIRLS_RESIDENTIAL": "ECITY GIRLS RESIDENTIAL", 
+            "ECITY_GIRLS_RESIDENTIAL": "ECITY GIRLS RESIDENTIAL",
             "ECITY_ENGG_GIRLS_RESIDENTIAL": "ECITY ENGG GIRLS RESIDENTIAL",
             "ECITY_SCHOOL": "ECITY SCHOOL"
         };
@@ -1255,33 +1353,33 @@
             "ecitypucprincipal2@srichaitanyacollege.net": "ECITY_GIRLS_RESIDENTIAL",
             "ecitypucprincipal1@srichaitanyacollege.net": "ECITY_ENGG_GIRLS_RESIDENTIAL",
             "electroniccityprincipal@srichaitanyaschool.net": "ECITY_SCHOOL",
-            
+
             // ECITY_NEET_BOYS staff emails
-           "munuswami.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
+            "munuswami.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
             "anilbabu.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
             "veeraiah.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
             "chandrashekar.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
             "ravi.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
             "sai.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            
-           // ECITY_GIRLS_RESIDENTIAL staff emails (replacing staff.ecitygirls@srichaitanya.edu)
-    "aruna.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "rajeswari.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "manjula.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "roja.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "swathika.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "swathi.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "lavanya.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "annapoorna.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "sunitha.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            
+
+            // ECITY_GIRLS_RESIDENTIAL staff emails (replacing staff.ecitygirls@srichaitanya.edu)
+            "aruna.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
+            "rajeswari.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
+            "manjula.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
+            "roja.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
+            "swathika.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
+            "swathi.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
+            "lavanya.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
+            "annapoorna.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
+            "sunitha.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
+
             // ECITY_ENGG_GIRLS_RESIDENTIAL staff emails
             "anitha.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
             "nirmala.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
             "srilakshmi.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
             "vasantha.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
             "chandrakala.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-                        
+
             // ECITY_SCHOOL staff emails
             "sudhakar.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
             "anuf.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
@@ -1299,26 +1397,26 @@
         const ALLOWED_ADMIN_EMAIL = "srinivasnaidu.m@srichaitanyaschool.net";
 
         // Check authentication and load data
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             let dashboardInitialized = false;
-            
+
             // Wait for Firebase Auth to initialize and check auth state
             auth.onAuthStateChanged(async (user) => {
                 // Prevent multiple initializations
                 if (dashboardInitialized) return;
-                
+
                 // No user authenticated, redirect to login
                 if (!user) {
                     console.log('No Firebase user, redirecting to login...');
                     window.location.href = 'admin-login.html';
                     return;
                 }
-                
+
                 // Check if user is an authorized admin
                 try {
                     console.log('Checking admin authorization for:', user.email);
                     const adminDoc = await db.collection('admins').doc(user.uid).get();
-                    
+
                     if (!adminDoc.exists) {
                         console.error('❌ User is not in admins collection');
                         await auth.signOut();
@@ -1326,9 +1424,9 @@
                         window.location.href = 'admin-login.html';
                         return;
                     }
-                    
+
                     const adminData = adminDoc.data();
-                    
+
                     // Verify the email matches the only allowed admin
                     if (adminData.email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
                         console.error('❌ Unauthorized admin email:', adminData.email);
@@ -1337,13 +1435,13 @@
                         window.location.href = 'admin-login.html';
                         return;
                     }
-                    
+
                     console.log('✅ Admin authorized:', adminData.email);
-                    
+
                     // Initialize dashboard
                     initializeDashboard(adminData);
                     dashboardInitialized = true;
-                    
+
                 } catch (error) {
                     console.error('❌ Error checking admin authorization:', error);
                     await auth.signOut();
@@ -1351,15 +1449,15 @@
                     window.location.href = 'admin-login.html';
                 }
             });
-            
+
             function initializeDashboard(adminData) {
                 // Set user email
                 document.getElementById('userEmail').textContent = adminData.email || 'HOD Administrator';
                 console.log('✅ HOD Dashboard initialized for:', adminData.email);
-                
+
                 // Setup event listeners first
                 setupEventListeners();
-                
+
                 // Then load data from Firebase - ALL CAMPUSES
                 setTimeout(() => {
                     loadAllData();
@@ -1368,7 +1466,7 @@
         });
 
         function setupEventListeners() {
-            document.getElementById('refreshBtn').addEventListener('click', function() {
+            document.getElementById('refreshBtn').addEventListener('click', function () {
                 // Reset all filters to default
                 document.getElementById('campusFilter').value = 'ALL_CAMPUSES';
                 document.getElementById('typeFilter').value = '';
@@ -1376,7 +1474,7 @@
                 document.getElementById('searchInput').value = '';
                 document.getElementById('startDate').value = '';
                 document.getElementById('endDate').value = '';
-                
+
                 // Reload data
                 loadAllData();
             });
@@ -1389,15 +1487,15 @@
             document.getElementById('endDate').addEventListener('change', applyFilters);
             document.getElementById('clearDateBtn').addEventListener('click', clearDateFilters);
             document.getElementById('downloadExcelBtn').addEventListener('click', downloadExcel);
-            
+
             document.getElementById('logoutBtn').addEventListener('click', () => {
                 // Set explicit logout flag
                 sessionStorage.setItem('adminExplicitLogout', 'true');
-                
+
                 // Clear session data
                 sessionStorage.removeItem('adminAuth');
                 localStorage.removeItem('adminAuth');
-                
+
                 // Sign out from Firebase
                 auth.signOut()
                     .then(() => {
@@ -1413,7 +1511,7 @@
 
         function loadAllData() {
             const tableBody = document.getElementById('tableBody');
-            
+
             tableBody.innerHTML = `
                 <tr>
                     <td colspan="12" class="no-data">
@@ -1432,19 +1530,19 @@
             ]).then(([outpassSnapshot, mediSlipSnapshot]) => {
                 const outpasses = [];
                 const mediSlips = [];
-                
+
                 console.log("📊 Firebase Response - Outpasses:", outpassSnapshot.size, "Medi Slips:", mediSlipSnapshot.size);
-                
+
                 // Process outpasses - ALL DATA
                 outpassSnapshot.forEach((doc) => {
                     const data = doc.data();
                     // Use email mapping to determine campus
                     const campus = data.campus || getCampusFromEmail(data.createdBy) || 'UNKNOWN_CAMPUS';
-                    
+
                     // Extract reportingTime and inDate properly
                     const reportingTime = data.reportingTime || '--';
                     const inDate = data.inDate || '--';
-                    
+
                     outpasses.push({
                         id: doc.id,
                         type: 'outpass',
@@ -1470,15 +1568,15 @@
                         securityWhatsapp: data.securityWhatsapp || '--'
                     });
                 });
-                
+
                 // Process Medi slips - ALL DATA
                 mediSlipSnapshot.forEach((doc) => {
                     const data = doc.data();
                     console.log("🔍 MediSlip Data:", data); // Debug log
-                    
+
                     // Use email mapping to determine campus
                     const campus = data.campus || getCampusFromEmail(data.createdBy) || 'UNKNOWN_CAMPUS';
-                    
+
                     mediSlips.push({
                         id: doc.id,
                         type: 'MediSlip',
@@ -1500,18 +1598,18 @@
                         authorizedBy: data.authorizedBy || '--'
                     });
                 });
-                
+
                 allData = [...outpasses, ...mediSlips];
-                console.log("✅ HOD: Total data loaded from ALL campuses:", allData.length, 
+                console.log("✅ HOD: Total data loaded from ALL campuses:", allData.length,
                     "(Outpasses:", outpasses.length, ", Medi Slips:", mediSlips.length + ")");
-                
+
                 // Log campus distribution for debugging
                 const campusCounts = {};
                 allData.forEach(item => {
                     campusCounts[item.campus] = (campusCounts[item.campus] || 0) + 1;
                 });
                 console.log("🏫 Campus distribution:", campusCounts);
-                
+
                 filteredData = [...allData];
                 updateStatistics();
                 populateTable();
@@ -1532,15 +1630,15 @@
         // Helper function to determine campus from email
         function getCampusFromEmail(email) {
             if (!email) return null;
-            
+
             // Convert email to lowercase for case-insensitive matching
             const emailLower = email.toLowerCase();
-            
+
             // Direct mapping lookup
             if (EMAIL_CAMPUS_MAPPING[emailLower]) {
                 return EMAIL_CAMPUS_MAPPING[emailLower];
             }
-            
+
             // Pattern matching for staff emails
             if (emailLower.includes('ecityneetboys') || emailLower.includes('reethoys')) {
                 return 'ECITY_NEET_BOYS';
@@ -1554,32 +1652,32 @@
             if (emailLower.includes('ecityschool')) {
                 return 'ECITY_SCHOOL';
             }
-            
+
             return null;
         }
 
         function updateStatistics() {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            
+
             const oneWeekAgo = new Date(today);
             oneWeekAgo.setDate(today.getDate() - 7);
-            
+
             const oneMonthAgo = new Date(today);
             oneMonthAgo.setMonth(today.getMonth() - 1);
-            
+
             const total = filteredData.length;
-            
+
             const todayCount = filteredData.filter(item => {
                 const itemDate = getItemDate(item);
                 return itemDate >= today;
             }).length;
-            
+
             const weekCount = filteredData.filter(item => {
                 const itemDate = getItemDate(item);
                 return itemDate >= oneWeekAgo;
             }).length;
-            
+
             const monthCount = filteredData.filter(item => {
                 const itemDate = getItemDate(item);
                 return itemDate >= oneMonthAgo;
@@ -1602,71 +1700,71 @@
         }
 
         function populateTable() {
-    const tableBody = document.getElementById('tableBody');
-    
-    if (filteredData.length === 0) {
-        tableBody.innerHTML = `
+            const tableBody = document.getElementById('tableBody');
+
+            if (filteredData.length === 0) {
+                tableBody.innerHTML = `
             <tr>
                 <td colspan="12" class="no-data">
                     📭 No applications found for selected filters
                 </td>
             </tr>
         `;
-        return;
-    }
+                return;
+            }
 
-    tableBody.innerHTML = filteredData.map(item => {
-        const typeClass = item.type === 'outpass' ? 'type-outpass' : 'type-Medislip';
-        const typeLabel = item.type === 'outpass' ? 'Outpass' : 'Medi Slip';
-        const statusClass = `status-${item.status}`;
-        const campusDisplay = CAMPUS_DISPLAY_NAMES[item.campus] || item.campus;
-        
-        // Format status with authorized by
-        let statusHtml = `<span class="status-badge ${statusClass}">${item.status.toUpperCase()}</span>`;
-        if (item.status === 'approved' && item.authorizedBy && item.authorizedBy !== '--') {
-            statusHtml += `<div class="authorized-by">By: ${item.authorizedBy}</div>`;
-        }
-        
-        // For outpass, show reporting status
-        // For Medi Slip, show medicine provided
-let reportingStatusHtml = '--';
-if (item.type === 'outpass') {
-    // Check if reportingTime exists and is not '--'
-    if (item.reportingTime && item.reportingTime !== '--') {
-        // Student has reported back - show actual reporting date & time
-        reportingStatusHtml = `
+            tableBody.innerHTML = filteredData.map(item => {
+                const typeClass = item.type === 'outpass' ? 'type-outpass' : 'type-Medislip';
+                const typeLabel = item.type === 'outpass' ? 'Outpass' : 'Medi Slip';
+                const statusClass = `status-${item.status}`;
+                const campusDisplay = CAMPUS_DISPLAY_NAMES[item.campus] || item.campus;
+
+                // Format status with authorized by
+                let statusHtml = `<span class="status-badge ${statusClass}">${item.status.toUpperCase()}</span>`;
+                if (item.status === 'approved' && item.authorizedBy && item.authorizedBy !== '--') {
+                    statusHtml += `<div class="authorized-by">By: ${item.authorizedBy}</div>`;
+                }
+
+                // For outpass, show reporting status
+                // For Medi Slip, show medicine provided
+                let reportingStatusHtml = '--';
+                if (item.type === 'outpass') {
+                    // Check if reportingTime exists and is not '--'
+                    if (item.reportingTime && item.reportingTime !== '--') {
+                        // Student has reported back - show actual reporting date & time
+                        reportingStatusHtml = `
             <div>${formatDate(item.inDate)}</div>
             <div class="reporting-time">${formatTime(item.reportingTime)}</div>
         `;
-    } else {
-        // Student has NOT reported back yet - show "Not Reported"
-        reportingStatusHtml = `<span class="status-badge status-not-reported">Not Reported</span>`;
-    }
-} else if (item.type === 'MediSlip') {
-    // For Medi Slip, show medicine provided if available
-    if (item.medicineGiven && item.medicineGiven !== '--' && item.medicineGiven.trim() !== '') {
-        reportingStatusHtml = `
+                    } else {
+                        // Student has NOT reported back yet - show "Not Reported"
+                        reportingStatusHtml = `<span class="status-badge status-not-reported">Not Reported</span>`;
+                    }
+                } else if (item.type === 'MediSlip') {
+                    // For Medi Slip, show medicine provided if available
+                    if (item.medicineGiven && item.medicineGiven !== '--' && item.medicineGiven.trim() !== '') {
+                        reportingStatusHtml = `
             <span class="status-badge status-approved">Medicine Provided</span>
             <div class="authorized-by" style="margin-top: 4px; font-weight: bold; color: #333;">${item.medicineGiven}</div>
         `;
-    } else {
-        reportingStatusHtml = '--';
-    }
-}
-        
-        // PDF button for both outpass and medi slip
-        let pdfButton = '<span class="no-pdf">-</span>';
-        if (item.type === 'outpass') {
-            pdfButton = `<button class="btn-pdf" onclick="downloadOutpassPDF('${item.id}', event)" title="Download PDF">
+                    } else {
+                        reportingStatusHtml = '--';
+                    }
+                }
+
+                // PDF button for both outpass and medi slip
+                let pdfButton = '<span class="no-pdf">-</span>';
+                if (item.type === 'outpass') {
+                    pdfButton = `<button class="btn-pdf" onclick="downloadOutpassPDF('${item.id}', event)" title="Download PDF">
                 📄 PDF
             </button>`;
-        } else if (item.type === 'MediSlip') {
-            pdfButton = `<button class="btn-pdf" onclick="downloadMediSlipPDF('${item.id}', event)" title="Download PDF">
+                } else if (item.type === 'MediSlip') {
+                    pdfButton = `<button class="btn-pdf" onclick="downloadMediSlipPDF('${item.id}', event)" title="Download PDF">
                 📄 PDF
             </button>`;
-        }
-        
-        return `
+                }
+
+                return `
         <tr>
             <td><strong>${campusDisplay}</strong></td>
             <td><span class="type-badge ${typeClass}">${typeLabel}</span></td>
@@ -1685,8 +1783,8 @@ if (item.type === 'outpass') {
             <td style="text-align: center;">${pdfButton}</td>
         </tr>
         `;
-    }).join('');
-}
+            }).join('');
+        }
 
         function formatDate(dateString) {
             if (!dateString || dateString === 'N/A' || dateString === '--') return '--';
@@ -1703,7 +1801,7 @@ if (item.type === 'outpass') {
             try {
                 // Handle different time formats
                 let hours, minutes;
-                
+
                 if (timeString.includes(':')) {
                     [hours, minutes] = timeString.split(':');
                 } else if (timeString.length === 4) {
@@ -1713,7 +1811,7 @@ if (item.type === 'outpass') {
                 } else {
                     return timeString;
                 }
-                
+
                 const hour = parseInt(hours);
                 const ampm = hour >= 12 ? 'PM' : 'AM';
                 const displayHour = hour % 12 || 12;
@@ -1727,10 +1825,10 @@ if (item.type === 'outpass') {
             if (!timestamp) return '--';
             try {
                 const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-                return date.toLocaleTimeString('en-IN', { 
-                    hour: 'numeric', 
+                return date.toLocaleTimeString('en-IN', {
+                    hour: 'numeric',
                     minute: '2-digit',
-                    hour12: true 
+                    hour12: true
                 }).toLowerCase();
             } catch (e) {
                 return '--';
@@ -1760,28 +1858,28 @@ if (item.type === 'outpass') {
                 if (campusFilter !== "ALL_CAMPUSES" && item.campus !== campusFilter) {
                     return false;
                 }
-                
+
                 if (typeFilter && item.type !== typeFilter) return false;
                 if (statusFilter && item.status !== statusFilter) return false;
-                
+
                 if (searchTerm) {
                     const name = item.studentName.toLowerCase();
                     const id = item.studentId.toLowerCase();
                     const passNum = item.passNumber.toLowerCase();
-                    
+
                     if (!name.includes(searchTerm) && !id.includes(searchTerm) && !passNum.includes(searchTerm)) {
                         return false;
                     }
                 }
-                
+
                 // Date filter logic
                 if (startDate || endDate) {
                     const itemDate = getItemDate(item);
-                    
+
                     if (startDate && itemDate < new Date(startDate)) {
                         return false;
                     }
-                    
+
                     if (endDate) {
                         const endDateTime = new Date(endDate);
                         endDateTime.setHours(23, 59, 59, 999); // End of the day
@@ -1790,10 +1888,10 @@ if (item.type === 'outpass') {
                         }
                     }
                 }
-                
+
                 return true;
             });
-            
+
             updateStatistics();
             populateTable();
         }
@@ -1805,84 +1903,84 @@ if (item.type === 'outpass') {
         }
 
         function downloadExcel() {
-    if (filteredData.length === 0) {
-        alert('No data to download!');
-        return;
-    }
-
-    let csvContent = "Campus,Type,Pass/Slip Number,Student Name,Student ID,Date,Time,Details,Reason,Medicine Given,Status,Authorized By,Issued By,Security,Security WhatsApp,Created By,Reporting Date,Reporting Time\n";
-    
-    filteredData.forEach(item => {
-        // For outpass, show reporting status in Excel
-        let reportingDate = '--';
-        let reportingTime = '--';
-        if (item.type === 'outpass') {
-            if (item.reportingTime && item.reportingTime !== '--') {
-                // Student has reported back
-                reportingDate = formatDate(item.inDate);
-                reportingTime = formatTime(item.reportingTime);
-            } else {
-                // Student has NOT reported back yet
-                reportingDate = 'Not Reported';
-                reportingTime = 'Not Reported';
+            if (filteredData.length === 0) {
+                alert('No data to download!');
+                return;
             }
-        }
-        
-        const row = [
-            CAMPUS_DISPLAY_NAMES[item.campus] || item.campus,
-            item.type === 'outpass' ? 'Outpass' : 'Medi Slip',
-            item.passNumber,
-            item.studentName,
-            item.studentId,
-            formatDate(item.date),
-            formatTimeFromCreatedAt(item.createdAt),
-            item.details,
-            item.reason.replace(/"/g, '""'),
-            item.medicineGiven || '--',
-            item.status.toUpperCase(),
-            item.authorizedBy || '--',
-            item.issuedBy || 'Staff',
-            item.security || '--',
-            item.securityWhatsapp || '--',
-            item.createdBy,
-            reportingDate,
-            reportingTime
-        ].map(field => `"${field}"`).join(',');
-        
-        csvContent += row + '\n';
-    });
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `hod_all_campuses_data_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
+            let csvContent = "Campus,Type,Pass/Slip Number,Student Name,Student ID,Date,Time,Details,Reason,Medicine Given,Status,Authorized By,Issued By,Security,Security WhatsApp,Created By,Reporting Date,Reporting Time\n";
+
+            filteredData.forEach(item => {
+                // For outpass, show reporting status in Excel
+                let reportingDate = '--';
+                let reportingTime = '--';
+                if (item.type === 'outpass') {
+                    if (item.reportingTime && item.reportingTime !== '--') {
+                        // Student has reported back
+                        reportingDate = formatDate(item.inDate);
+                        reportingTime = formatTime(item.reportingTime);
+                    } else {
+                        // Student has NOT reported back yet
+                        reportingDate = 'Not Reported';
+                        reportingTime = 'Not Reported';
+                    }
+                }
+
+                const row = [
+                    CAMPUS_DISPLAY_NAMES[item.campus] || item.campus,
+                    item.type === 'outpass' ? 'Outpass' : 'Medi Slip',
+                    item.passNumber,
+                    item.studentName,
+                    item.studentId,
+                    formatDate(item.date),
+                    formatTimeFromCreatedAt(item.createdAt),
+                    item.details,
+                    item.reason.replace(/"/g, '""'),
+                    item.medicineGiven || '--',
+                    item.status.toUpperCase(),
+                    item.authorizedBy || '--',
+                    item.issuedBy || 'Staff',
+                    item.security || '--',
+                    item.securityWhatsapp || '--',
+                    item.createdBy,
+                    reportingDate,
+                    reportingTime
+                ].map(field => `"${field}"`).join(',');
+
+                csvContent += row + '\n';
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `hod_all_campuses_data_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
         // Function to download PDF for a specific outpass (Silent download - no visible process)
         async function downloadOutpassPDF(outpassId, event) {
             event.stopPropagation();
-            
+
             try {
                 // Fetch full outpass data from Firestore
                 const outpassDoc = await db.collection('outpasses').doc(outpassId).get();
-                
+
                 if (!outpassDoc.exists) {
                     alert('❌ Outpass document not found in database.');
                     return;
                 }
 
                 const outpassData = outpassDoc.data();
-                
+
                 // Generate PDF silently (no button state changes)
                 await generatePDFFromOutpassData(outpassData);
-                
+
                 // PDF will download automatically - no feedback needed
-                
+
             } catch (error) {
                 console.error('Error downloading PDF:', error);
                 alert('❌ Failed to generate PDF: ' + error.message);
@@ -1892,23 +1990,23 @@ if (item.type === 'outpass') {
         // Function to download PDF for a specific medi slip (Silent download - no visible process)
         async function downloadMediSlipPDF(mediSlipId, event) {
             event.stopPropagation();
-            
+
             try {
                 // Fetch full medi slip data from Firestore
                 const mediSlipDoc = await db.collection('mediSlips').doc(mediSlipId).get();
-                
+
                 if (!mediSlipDoc.exists) {
                     alert('❌ Medi Slip document not found in database.');
                     return;
                 }
 
                 const mediSlipData = mediSlipDoc.data();
-                
+
                 // Generate PDF silently (no button state changes)
                 await generateMediSlipPDFFromData(mediSlipData);
-                
+
                 // PDF will download automatically - no feedback needed
-                
+
             } catch (error) {
                 console.error('Error downloading Medi Slip PDF:', error);
                 alert('❌ Failed to generate PDF: ' + error.message);
@@ -1945,7 +2043,7 @@ if (item.type === 'outpass') {
             // Get campus from createdBy email (which is always stored in outpass data)
             const createdByEmail = outpassData.createdBy;
             let campusId = null;
-            
+
             if (createdByEmail && EMAIL_CAMPUS_MAPPING[createdByEmail]) {
                 // Use email mapping to get correct campus
                 campusId = EMAIL_CAMPUS_MAPPING[createdByEmail];
@@ -1956,11 +2054,11 @@ if (item.type === 'outpass') {
                 // Last resort fallback
                 campusId = 'ECITY_NEET_BOYS';
             }
-            
+
             const campusName = CAMPUS_DISPLAY_NAMES[campusId] || campusId.replace(/_/g, ' ');
             // Use createdBy email as campus email (it's the staff email who created it)
             const campusEmail = createdByEmail || 'staff.ecityneetboys@srichaitanya.edu';
-            
+
             return {
                 name: campusName,
                 email: campusEmail,
@@ -1973,10 +2071,10 @@ if (item.type === 'outpass') {
             return new Promise((resolve, reject) => {
                 try {
                     console.log('Updating PDF template with data...');
-                    
+
                     // Get campus info from outpass data
                     const campusInfo = getCampusInfoFromOutpass(outpassData);
-                    
+
                     // Update PDF template with data (Same as dashboard.html)
                     document.getElementById('pdfPassNumber').textContent = outpassData.passNumber;
                     document.getElementById('pdfDate').textContent = outpassData.issuedDate;
@@ -1992,17 +2090,17 @@ if (item.type === 'outpass') {
                     document.getElementById('pdfStatus').textContent = outpassData.status;
                     document.getElementById('pdfOutDate').textContent = formatDateForPDF(outpassData.outDate);
                     document.getElementById('pdfInDate').textContent = formatDateForPDF(outpassData.inDate);
-                    
+
                     // Update Issued By name dynamically
                     document.getElementById('pdfIssuedByName').textContent = outpassData.issuedBy;
-                    
+
                     // Update Authorized By name dynamically
                     document.getElementById('pdfAuthorizedByName').textContent = outpassData.authorizedBy || 'Principal';
-                    
+
                     // Update campus information dynamically
                     document.getElementById('pdfCampusName').textContent = campusInfo.name;
                     document.getElementById('pdfCampusEmail').textContent = campusInfo.email;
-                    
+
                     const statusElement = document.getElementById('pdfStatus');
                     statusElement.className = '';
                     statusElement.classList.add(`status-${outpassData.status.toLowerCase()}`);
@@ -2046,7 +2144,7 @@ if (item.type === 'outpass') {
                             backgroundColor: '#ffffff'
                         }).then(async (canvas) => {
                             console.log('Canvas captured, creating PDF...');
-                            
+
                             pdfTemplate.style.display = 'none';
 
                             const { jsPDF } = window.jspdf;
@@ -2055,31 +2153,31 @@ if (item.type === 'outpass') {
                                 unit: 'mm',
                                 format: 'a4'
                             });
-                            
+
                             // Add Page 1: Outpass
                             const imgData = canvas.toDataURL('image/png', 1.0);
                             const pdfWidth = pdf.internal.pageSize.getWidth();
                             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                            
+
                             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
-                            
+
                             // Add Page 2: Authorized Letter (if exists)
                             if (outpassData.authorizedLetterPhoto) {
                                 console.log('Adding Authorized Letter page...');
-                                
+
                                 // Update authorized letter template
                                 const authorizedLetterImg = document.getElementById('authorizedLetterFullPhotoImg');
                                 // FIX: Set crossOrigin to prevent tainted canvas error
                                 authorizedLetterImg.crossOrigin = 'anonymous';
                                 authorizedLetterImg.src = outpassData.authorizedLetterPhoto;
-                                
+
                                 const authorizedLetterTemplate = document.getElementById('authorizedLetterPdfTemplate');
                                 authorizedLetterTemplate.style.display = 'block';
                                 authorizedLetterTemplate.style.position = 'absolute';
                                 authorizedLetterTemplate.style.left = '0';
                                 authorizedLetterTemplate.style.top = '0';
                                 authorizedLetterTemplate.style.zIndex = '-1';
-                                
+
                                 // Wait for image to load
                                 await new Promise((resolve) => {
                                     if (authorizedLetterImg.complete) {
@@ -2089,10 +2187,10 @@ if (item.type === 'outpass') {
                                         authorizedLetterImg.onerror = resolve;
                                     }
                                 });
-                                
+
                                 // Small delay to ensure rendering
                                 await new Promise(resolve => setTimeout(resolve, 500));
-                                
+
                                 // Capture authorized letter page
                                 const authorizedLetterCanvas = await html2canvas(authorizedLetterTemplate, {
                                     scale: 2,
@@ -2103,45 +2201,45 @@ if (item.type === 'outpass') {
                                     width: 794,
                                     height: 1123
                                 });
-                                
+
                                 authorizedLetterTemplate.style.display = 'none';
-                                
+
                                 // Add as new page
                                 pdf.addPage();
                                 const authorizedLetterImgData = authorizedLetterCanvas.toDataURL('image/png', 1.0);
                                 const authorizedLetterPdfHeight = (authorizedLetterCanvas.height * pdfWidth) / authorizedLetterCanvas.width;
-                                
+
                                 pdf.addImage(authorizedLetterImgData, 'PNG', 0, 0, pdfWidth, authorizedLetterPdfHeight, '', 'FAST');
-                                
+
                                 console.log('Authorized Letter page added successfully');
                             }
-                            
+
                             // Save PDF using blob download (silent - no preview)
                             const filename = `${outpassData.passNumber}_${outpassData.studentName}.pdf`;
-                            
+
                             console.log('Saving PDF:', filename);
-                            
+
                             // Use blob method for silent download (doesn't open in new tab)
                             const pdfBlob = pdf.output('blob');
                             const url = URL.createObjectURL(pdfBlob);
-                            
+
                             // Create download link
                             const downloadLink = document.createElement('a');
                             downloadLink.href = url;
                             downloadLink.download = filename;
                             downloadLink.style.display = 'none';
-                            
+
                             // Add to body, click, and remove
                             document.body.appendChild(downloadLink);
                             downloadLink.click();
                             document.body.removeChild(downloadLink);
-                            
+
                             // Clean up URL
                             setTimeout(() => URL.revokeObjectURL(url), 100);
-                            
+
                             console.log('PDF download triggered successfully (silent)');
                             resolve();
-                            
+
                         }).catch(error => {
                             console.error('html2canvas error:', error);
                             pdfTemplate.style.display = 'none';
@@ -2161,10 +2259,10 @@ if (item.type === 'outpass') {
             return new Promise((resolve, reject) => {
                 try {
                     console.log('Updating Medi Slip PDF template with data...');
-                    
+
                     // Get campus info from medi slip data
                     const campusInfo = getCampusInfoFromMediSlip(mediSlipData);
-                    
+
                     document.getElementById('mediSlipNumber').textContent = mediSlipData.mediSlipNumber;
                     document.getElementById('mediSlipStudentId').textContent = mediSlipData.studentId;
                     document.getElementById('mediSlipStudentName').textContent = mediSlipData.studentName;
@@ -2174,21 +2272,21 @@ if (item.type === 'outpass') {
                     document.getElementById('mediSlipEndTime').textContent = formatTimeForPDF(mediSlipData.endTime);
                     document.getElementById('mediSlipMedicineGiven').textContent = mediSlipData.medicineGiven || '--';
                     document.getElementById('mediSlipReason').textContent = mediSlipData.reason;
-                    
+
                     // Update Issued By name dynamically
                     document.getElementById('mediSlipIssuedByDisplay').textContent = mediSlipData.issuedBy;
-                    
+
                     // Update Authorized By name dynamically
                     document.getElementById('mediSlipAuthorizedByDisplay').textContent = mediSlipData.authorizedBy || 'Principal';
-                    
+
                     // Update campus information dynamically
                     document.getElementById('mediSlipCampusName').textContent = campusInfo.name;
                     document.getElementById('mediSlipCampusEmail').textContent = campusInfo.email;
-                    
+
                     const statusElement = document.getElementById('mediSlipStatus');
                     statusElement.textContent = mediSlipData.status;
                     statusElement.className = 'medi-slip-status-box';
-                    
+
                     if (mediSlipData.status === 'APPROVED') {
                         statusElement.classList.add('status-approved');
                     } else {
@@ -2215,7 +2313,7 @@ if (item.type === 'outpass') {
                             removeContainer: false
                         }).then(canvas => {
                             console.log('Medi slip canvas captured, creating PDF...');
-                            
+
                             pdfTemplate.style.display = 'none';
 
                             const { jsPDF } = window.jspdf;
@@ -2224,28 +2322,28 @@ if (item.type === 'outpass') {
                                 unit: 'mm',
                                 format: 'a4'
                             });
-                            
+
                             const imgData = canvas.toDataURL('image/png', 1.0);
                             const pdfWidth = pdf.internal.pageSize.getWidth();
                             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                            
+
                             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
-                            
+
                             const filename = `${mediSlipData.mediSlipNumber}_${mediSlipData.studentName}.pdf`;
-                            
+
                             console.log('Saving Medi Slip PDF:', filename);
                             pdf.save(filename);
-                            
+
                             console.log('Medi Slip PDF download triggered successfully');
                             resolve();
-                            
+
                         }).catch(error => {
                             console.error('html2canvas error for medi slip:', error);
                             pdfTemplate.style.display = 'none';
                             reject(new Error('Failed to generate medi slip PDF: ' + error.message));
                         });
                     }, 500);
-                    
+
                 } catch (error) {
                     console.error('Error in generateMediSlipPDFFromData:', error);
                     reject(new Error('PDF generation failed: ' + error.message));
@@ -2257,7 +2355,7 @@ if (item.type === 'outpass') {
         function getCampusInfoFromMediSlip(mediSlipData) {
             const createdByEmail = mediSlipData.createdBy;
             let campusId = null;
-            
+
             if (createdByEmail && EMAIL_CAMPUS_MAPPING[createdByEmail]) {
                 campusId = EMAIL_CAMPUS_MAPPING[createdByEmail];
             } else if (mediSlipData.campus && CAMPUS_DISPLAY_NAMES[mediSlipData.campus]) {
@@ -2265,10 +2363,10 @@ if (item.type === 'outpass') {
             } else {
                 campusId = 'ECITY_NEET_BOYS';
             }
-            
+
             const campusName = CAMPUS_DISPLAY_NAMES[campusId] || campusId.replace(/_/g, ' ');
             const campusEmail = createdByEmail || 'staff.ecityneetboys@srichaitanya.edu';
-            
+
             return {
                 name: campusName,
                 email: campusEmail,
@@ -2294,7 +2392,7 @@ if (item.type === 'outpass') {
                 <div class="outpass-title">HOSTEL OUTPASS</div>
                 <div class="outpass-no" id="pdfPassNumber">OUTPASS-0001</div>
             </div>
-            
+
             <div class="content">
                 <div class="header-with-photo">
                     <div class="date-time-section">
@@ -2307,12 +2405,12 @@ if (item.type === 'outpass') {
                             <div class="info-value date-time-value" id="pdfTime">3:39:05 PM</div>
                         </div>
                     </div>
-                    
+
                     <div class="photo-corner-box" id="pdfStudentPhoto">
                         <img id="pdfStudentPhotoImg" src="" alt="Student Photo">
                     </div>
                 </div>
-                
+
                 <div class="section-title">Student Information</div>
                 <div class="info-grid">
                     <div class="info-item">
@@ -2332,7 +2430,7 @@ if (item.type === 'outpass') {
                         <div class="info-value" id="pdfSection">A</div>
                     </div>
                 </div>
-                
+
                 <div class="section-title">Parent Information</div>
                 <div class="info-grid">
                     <div class="info-item">
@@ -2354,7 +2452,7 @@ if (item.type === 'outpass') {
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="section-title">Outpass Dates</div>
                 <div class="info-grid">
                     <div class="info-item">
@@ -2374,13 +2472,13 @@ if (item.type === 'outpass') {
                         <div class="info-value" id="pdfStatus">APPROVED</div>
                     </div>
                 </div>
-                
+
                 <div class="section-title">Reason for Outpass</div>
                 <div class="reason-box">
                     <div class="reason-title">Purpose of Leave</div>
                     <div id="pdfReason">Reason will appear here</div>
                 </div>
-                
+
                 <div class="signatures">
                     <div class="signature-box" style="width: 45%;">
                         <div class="issued-by-heading">Issued by</div>
@@ -2388,7 +2486,7 @@ if (item.type === 'outpass') {
                         <div class="campus-info-normal" id="pdfCampusName">ECITY NEET BOYS</div>
                         <div class="campus-info-normal" id="pdfCampusEmail">staff.ecityneetboys@srichaitanya.edu</div>
                     </div>
-                    
+
                     <div class="signature-box" style="width: 45%;">
                         <div class="issued-by-heading">Authorized by</div>
                         <div class="principal-name" id="pdfAuthorizedByName">Principal</div>
@@ -2396,11 +2494,11 @@ if (item.type === 'outpass') {
                     </div>
                 </div>
             </div>
-            
+
             <div class="legal-note">
                 Note: Editing or tampering with this PDF is not allowed and may lead to legal action.
             </div>
-            
+
             <div class="footer">
                 Sri Chaitanya Educational Institutions Hostel Management System | One-time Outpass
             </div>
@@ -2408,22 +2506,29 @@ if (item.type === 'outpass') {
     </div>
 
     <!-- PDF Template for Authorized Letter (Page 2) -->
-    <div id="authorizedLetterPdfTemplate" style="display: none; width: 794px; min-height: 1123px; background: white; position: absolute; left: -9999px;">
-        <div style="width: 100%; min-height: 1123px; padding: 30px; box-sizing: border-box; display: flex; flex-direction: column;">
-            <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #1e3c72; padding-bottom: 15px;">
-                <div style="font-size: 32px; font-weight: bold; color: #1e3c72; margin-bottom: 8px; font-family: Arial, sans-serif;">
+    <div id="authorizedLetterPdfTemplate"
+        style="display: none; width: 794px; min-height: 1123px; background: white; position: absolute; left: -9999px;">
+        <div
+            style="width: 100%; min-height: 1123px; padding: 30px; box-sizing: border-box; display: flex; flex-direction: column;">
+            <div
+                style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #1e3c72; padding-bottom: 15px;">
+                <div
+                    style="font-size: 32px; font-weight: bold; color: #1e3c72; margin-bottom: 8px; font-family: Arial, sans-serif;">
                     AUTHORIZED LETTER
                 </div>
                 <div style="font-size: 16px; color: #666; font-family: Arial, sans-serif;">
                     Sri Chaitanya Educational Institutions
                 </div>
             </div>
-            
-            <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; min-height: 900px;">
-                <img id="authorizedLetterFullPhotoImg" src="" alt="Authorized Letter" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; border: 2px solid #ddd; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: #f9f9f9;">
+
+            <div
+                style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; min-height: 900px;">
+                <img id="authorizedLetterFullPhotoImg" src="" alt="Authorized Letter"
+                    style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; border: 2px solid #ddd; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: #f9f9f9;">
             </div>
-            
-            <div style="margin-top: auto; text-align: center; font-size: 11px; color: #666; padding-top: 15px; border-top: 1px solid #ddd; font-family: Arial, sans-serif;">
+
+            <div
+                style="margin-top: auto; text-align: center; font-size: 11px; color: #666; padding-top: 15px; border-top: 1px solid #ddd; font-family: Arial, sans-serif;">
                 Sri Chaitanya Educational Institutions Hostel Management System
             </div>
         </div>
@@ -2441,7 +2546,7 @@ if (item.type === 'outpass') {
                 <div class="medi-slip-title">MEDICAL SLIP</div>
                 <div class="medi-slip-no" id="mediSlipNumber">MEDSLIP-0001</div>
             </div>
-            
+
             <div class="medi-slip-content">
                 <div class="medi-slip-info-grid">
                     <div class="medi-slip-info-item">
@@ -2457,24 +2562,24 @@ if (item.type === 'outpass') {
                         <div class="info-value date-time-value" id="mediSlipDate">16/10/2025</div>
                     </div>
                 </div>
-                
+
                 <div class="medi-slip-time-section">
                     <div class="medi-slip-time-item">
                         <div class="info-label">Temperature</div>
                         <div class="info-value date-time-value" id="mediSlipTemperature">101°F</div>
                     </div>
-                    
+
                     <div class="medi-slip-time-item">
                         <div class="info-label">Permission Start Time</div>
                         <div class="info-value date-time-value" id="mediSlipStartTime">12:58 PM</div>
                     </div>
-                    
+
                     <div class="medi-slip-time-item">
                         <div class="info-label">Permission End Time</div>
                         <div class="info-value date-time-value" id="mediSlipEndTime">1:58 PM</div>
                     </div>
                 </div>
-                
+
                 <div class="medi-slip-info-grid" style="margin-top: 10px;">
                     <div class="medi-slip-info-item" style="grid-column: 1 / -1;">
                         <div class="info-label">Medicine Given</div>
@@ -2484,33 +2589,38 @@ if (item.type === 'outpass') {
 
                 <div class="medi-slip-reason-box">
                     <div class="reason-title">Medical Condition / Symptoms</div>
-                    <div id="mediSlipReason" style="font-size: 12px; line-height: 1.4;">Medical reason will appear here</div>
+                    <div id="mediSlipReason" style="font-size: 12px; line-height: 1.4;">Medical reason will appear here
+                    </div>
                 </div>
-                
+
                 <div class="medi-slip-status-section">
                     <div class="medi-slip-status-box" id="mediSlipStatus">APPROVED</div>
                     <div style="margin-top: 8px; font-size: 12px; color: #666;">
                         Issued By: <span id="mediSlipIssuedByDisplay" style="font-weight: bold;">Warden</span><br>
-                        Authorized By: <span id="mediSlipAuthorizedByDisplay" style="font-weight: bold;">Principal</span>
+                        Authorized By: <span id="mediSlipAuthorizedByDisplay"
+                            style="font-weight: bold;">Principal</span>
                     </div>
                 </div>
-                
-                <div style="text-align: center; margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+
+                <div
+                    style="text-align: center; margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
                     <div style="font-size: 12px; color: #666;">
                         <strong>Campus:</strong> <span id="mediSlipCampusName">ECITY NEET BOYS</span><br>
-                        <strong>Staff ID:</strong> <span id="mediSlipCampusEmail">staff.ecityneetboys@srichaitanya.edu</span>
+                        <strong>Staff ID:</strong> <span
+                            id="mediSlipCampusEmail">staff.ecityneetboys@srichaitanya.edu</span>
                     </div>
                 </div>
             </div>
-            
+
             <div class="medi-slip-legal-note">
                 Note: Editing or tampering with this PDF is not allowed and may lead to legal action.
             </div>
-            
+
             <div class="medi-slip-footer">
                 Sri Chaitanya Educational Institutions - Medical Department | Valid for today only
             </div>
         </div>
     </div>
 </body>
+
 </html>

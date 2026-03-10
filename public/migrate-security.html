@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Data Recovery Tool</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f7f6;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #7f8c8d;
+            line-height: 1.6;
+        }
+
+        .step {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+        }
+
+        .step-title {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f9fa;
+            color: #2c3e50;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 2s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        input {
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            width: 200px;
+        }
+
+        .reset-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .reset-btn:hover {
+            background: #c0392b;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🛠️ Security Data Recovery Tool</h1>
+        <p>This tool helps recover security personnel details (Name & WhatsApp) by extracting them from existing outpass
+            records in Firebase and saving them to the new TiDB database.</p>
+
+        <div class="step" id="authStep">
+            <div class="step-title"><span class="badge">Step 0</span> Login to Firebase</div>
+            <p>You must be authenticated as an Admin with permissions to read Firestore `outpasses`.</p>
+            <div id="authStatus" class="status" style="display: block;">Checking Firebase auth...</div>
+            <div id="loginForm"
+                style="display: none; margin-top: 15px; flex-direction: column; gap: 10px; align-items: start;">
+                <div style="margin-bottom: 10px;">
+                    <button id="googleLoginBtn"
+                        style="background: #ffffff; color: #444; border: 1px solid #ddd; display: flex; align-items: center; gap: 10px; padding: 10px 20px;">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18">
+                        Sign in with Google
+                    </button>
+                </div>
+                <hr style="width: 100%; border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+                <p style="font-size: 13px; margin: 0;">Or use Email/Password:</p>
+                <div style="display: flex; gap: 10px;">
+                    <input type="email" id="email" placeholder="Admin Email">
+                    <input type="password" id="password" placeholder="Password">
+                    <button id="loginBtn">Login</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="step" id="step1" style="opacity: 0.5; pointer-events: none;">
+            <div class="step-title"><span class="badge">Step 1</span> Scan Firebase Outpasses</div>
+            <p>Fetch all outpass records and find unique security personnel entries.</p>
+            <button id="scanBtn">🔍 Scan Firebase Outpasses</button>
+            <div id="scanStatus" class="status"></div>
+
+            <div id="resultsTableContainer" style="display: none;">
+                <h3>Results Detected:</h3>
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>Security Name</th>
+                            <th>Campus</th>
+                            <th>WhatsApp Number</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="step" id="step2" style="opacity: 0.5; pointer-events: none;">
+            <div class="step-title"><span class="badge">Step 2</span> Save to TiDB</div>
+            <p>Upload the detected security personnel to the new TiDB database.</p>
+            <button id="saveBtn">💾 Save to TiDB Database</button>
+            <div id="saveStatus" class="status"></div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px;">
+            <a href="admin-dashboard.html" style="color: #667eea; text-decoration: none; font-weight: 600;">← Back to
+                Dashboard</a>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBFHwulhuw9NlGQi0DWzy9mU47RSO5TUkw",
+            authDomain: "college-out-pass-system-62552.firebaseapp.com",
+            projectId: "college-out-pass-system-62552",
+            storageBucket: "college-out-pass-system-62552.firebasestorage.app",
+            messagingSenderId: "71169367861",
+            appId: "1:71169367861:web:7105b401d52c049476f67c"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        let securityData = [];
+
+        // Auth Logic & Redirect Handling
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 1. Check Protocol
+            if (window.location.protocol === 'file:') {
+                const authStatus = document.getElementById('authStatus');
+                authStatus.className = 'status error';
+                authStatus.style.display = 'block';
+                authStatus.innerHTML = `⚠️ <b>STOP!</b> You opened the file directly (file://).<br><br>Firebase <b>Login will NOT work</b> this way. Please use this link instead: <br><a href="http://localhost:5000/migrate" style="color:#000; font-weight:bold;">http://localhost:5000/migrate</a>`;
+                return;
+            }
+
+            // 2. Handle Redirect Result (If returning from Google)
+            try {
+                const result = await auth.getRedirectResult();
+                if (result.user) {
+                    console.log('Redirect Login Success:', result.user.email);
+                }
+            } catch (error) {
+                console.error('Redirect error:', error);
+                if (error.code !== 'auth/no-current-user') {
+                    alert('Login error: ' + error.message);
+                }
+            }
+        });
+
+        auth.onAuthStateChanged(user => {
+            const authStatus = document.getElementById('authStatus');
+            const loginForm = document.getElementById('loginForm');
+            const step1 = document.getElementById('step1');
+
+            if (user) {
+                authStatus.className = 'status success';
+                authStatus.style.display = 'block';
+                authStatus.innerHTML = `✅ Authenticated as: <b>${user.email}</b><br><br><button onclick="auth.signOut()" class="reset-btn">🔄 Reset & Login as Different User</button>`;
+                loginForm.style.display = 'none';
+                step1.style.opacity = '1';
+                step1.style.pointerEvents = 'auto';
+            } else {
+                authStatus.className = 'status error';
+                authStatus.innerHTML = `⚠️ Not logged in to Firebase. Please login below.`;
+                loginForm.style.display = 'flex';
+                step1.style.opacity = '0.5';
+                step1.style.pointerEvents = 'none';
+            }
+        });
+
+        // Google Login Logic (RELIABLE REDIRECT METHOD)
+        document.getElementById('googleLoginBtn').addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            // Redirect instead of popup for better reliability
+            auth.signInWithRedirect(provider);
+        });
+
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                location.reload();
+            } catch (err) {
+                alert('Login failed: ' + err.message);
+            }
+        });
+
+        document.getElementById('scanBtn').addEventListener('click', async () => {
+            const status = document.getElementById('scanStatus');
+            const btn = document.getElementById('scanBtn');
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loader"></span> Scanning...';
+                status.style.display = 'block';
+                status.className = 'status';
+                status.textContent = 'Fetching outpasses from Firestore...';
+
+                // Fetch all outpasses
+                const snapshot = await db.collection('outpasses').get();
+                const outpasses = snapshot.docs.map(doc => doc.data());
+
+                status.textContent = `Found ${outpasses.length} outpass records. Extracting security details...`;
+
+                // Extract unique security personnel
+                const uniqueSecurity = new Map(); // key: "Name_Campus_Phone"
+
+                outpasses.forEach(o => {
+                    const securityName = o.security || o.securityName || o.Security;
+                    const securityPhone = o.securityWhatsapp || o.securityPhone || o.SecurityWhatsapp;
+
+                    if (securityName && securityPhone && securityName !== '--') {
+                        const campus = o.campus || 'UNKNOWN';
+                        const name = securityName.trim();
+                        const phone = securityPhone.replace(/\D/g, '');
+
+                        if (phone.length === 10) {
+                            const key = `${name}_${campus}_${phone}`;
+                            uniqueSecurity.set(key, {
+                                name: name,
+                                campus: campus,
+                                whatsappNumber: phone
+                            });
+                        }
+                    }
+                });
+
+                securityData = Array.from(uniqueSecurity.values());
+
+                if (securityData.length === 0) {
+                    status.className = 'status error';
+                    status.textContent = '❌ No security personnel found in history. They might not have been recorded in outpasses.';
+                    btn.disabled = false;
+                    btn.textContent = '🔍 Retry Scan';
+                } else {
+                    status.className = 'status success';
+                    status.textContent = `✅ Successfully extracted ${securityData.length} unique security personnel!`;
+
+                    // Display results
+                    const resultsBody = document.getElementById('resultsBody');
+                    resultsBody.innerHTML = securityData.map(s => `
+                        <tr>
+                            <td>${s.name}</td>
+                            <td>${s.campus}</td>
+                            <td>${s.whatsappNumber}</td>
+                        </tr>
+                    `).join('');
+                    document.getElementById('resultsTableContainer').style.display = 'block';
+
+                    // Enable Step 2
+                    const step2 = document.getElementById('step2');
+                    step2.style.opacity = '1';
+                    step2.style.pointerEvents = 'auto';
+
+                    btn.innerHTML = '🔍 Rescan';
+                    btn.disabled = false;
+                }
+
+            } catch (error) {
+                console.error(error);
+                status.className = 'status error';
+                status.textContent = '❌ Error: ' + error.message;
+                btn.disabled = false;
+                btn.textContent = '🔍 Retry Scan';
+            }
+        });
+
+        document.getElementById('saveBtn').addEventListener('click', async () => {
+            const status = document.getElementById('saveStatus');
+            const btn = document.getElementById('saveBtn');
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loader"></span> Saving to TiDB...';
+                status.style.display = 'block';
+                status.className = 'status';
+                status.textContent = 'Sending data to backend API...';
+
+                // NOTE: Using token from sessionStorage as per your admin dashboard login
+                const token = sessionStorage.getItem('authToken');
+
+                const response = await fetch('/api/migrate/security-batch', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    },
+                    body: JSON.stringify({ batch: securityData })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    status.className = 'status success';
+                    status.textContent = `🎉 Success! Saved ${securityData.length} records to TiDB.`;
+                    btn.textContent = '✅ Mission Accomplished';
+                } else {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Failed to save to TiDB');
+                }
+
+            } catch (error) {
+                console.error(error);
+                status.className = 'status error';
+                status.textContent = '❌ Error: ' + error.message;
+                btn.disabled = false;
+                btn.textContent = '💾 Retry Save';
+            }
+        });
+    </script>
+</body>
+
+</html>

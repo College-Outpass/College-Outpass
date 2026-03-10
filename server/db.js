@@ -17,7 +17,7 @@ async function initDb() {
     try {
         const connection = await pool.getConnection();
         console.log('Connected to TiDB successfully!');
-        
+
         // Settings table for counters
         await connection.query(`
             CREATE TABLE IF NOT EXISTS settings (
@@ -32,6 +32,8 @@ async function initDb() {
                 uid VARCHAR(100) PRIMARY KEY,
                 email VARCHAR(255) UNIQUE,
                 password_hash VARCHAR(255),
+                name VARCHAR(255),
+                campus VARCHAR(255),
                 role VARCHAR(50) DEFAULT 'staff',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -81,14 +83,28 @@ async function initDb() {
             )
         `);
 
+        // Security Personnel table
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS security (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255),
+                campus VARCHAR(255),
+                whatsapp_number VARCHAR(50),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         // Insert default admin if not exists
-        const [users] = await connection.query("SELECT * FROM users WHERE email = 'admin@college.com'");
+        const [users] = await connection.query("SELECT * FROM users WHERE email = 'admin@college.com' OR email = 'srinivasnaidu.m@srichaitanyaschool.net'");
         if (users.length === 0) {
             const bcrypt = require('bcrypt');
             const adminHash = await bcrypt.hash('admin123', 10);
             await connection.query("INSERT INTO users (uid, email, password_hash, role) VALUES (?, ?, ?, 'admin')", ['admin_uid_1', 'admin@college.com', adminHash]);
         }
-        
+
+        // Specifically ensure the HOD admin exists (if firebase syncs later, this creates a placeholder)
+        await connection.query("INSERT IGNORE INTO users (uid, email, role) VALUES (?, ?, 'admin')", ['hod_admin_placeholder', 'srinivasnaidu.m@srichaitanyaschool.net']);
+
         // Insert default counters if not exist
         await connection.query("INSERT IGNORE INTO settings (setting_key, count_value) VALUES ('outpassCounter', 1)");
         await connection.query("INSERT IGNORE INTO settings (setting_key, count_value) VALUES ('sickSlipCounter', 1)");
