@@ -422,8 +422,8 @@
                     securityList.appendChild(tr);
                 });
             } catch (error) {
-                console.error(error);
-                showToast('Failed to load personnel list', true);
+                console.error('Load security error:', error);
+                showToast('Load Failed: ' + error.message, true);
             } finally {
                 loader.style.display = 'none';
             }
@@ -452,8 +452,8 @@
                 form.reset();
                 loadSecurity();
             } catch (error) {
-                console.error(error);
-                showToast('Failed to add personnel', true);
+                console.error('Add security error:', error);
+                showToast('Failed: ' + error.message, true);
             } finally {
                 loader.style.display = 'none';
             }
