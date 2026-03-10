@@ -214,13 +214,23 @@ app.get('/api/security', async (req, res) => {
 app.post('/api/security', authenticateToken, async (req, res) => {
     try {
         const { name, campus, whatsappNumber } = req.body;
-        await pool.query(
+        console.log(`👤 Adding security: ${name} (${campus}) - ${whatsappNumber}`);
+
+        if (!name || !campus || !whatsappNumber) {
+            console.warn('⚠️ Missing data for security personnel');
+            return res.status(400).json({ error: 'Missing required data' });
+        }
+
+        const [result] = await pool.query(
             'INSERT INTO security (name, campus, whatsapp_number) VALUES (?, ?, ?)',
             [name, campus, whatsappNumber]
         );
-        res.json({ success: true });
+
+        console.log(`✅ Security added successfully! ID: ${result.insertId}`);
+        res.json({ success: true, id: result.insertId });
     } catch (err) {
-        res.status(500).json({ error: 'Failed' });
+        console.error('❌ Failed to add security:', err.message);
+        res.status(500).json({ error: 'Database failure: ' + err.message });
     }
 });
 
