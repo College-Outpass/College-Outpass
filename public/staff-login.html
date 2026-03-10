@@ -749,7 +749,13 @@
 
             } catch (error) {
                 console.error('Login error:', error);
-                showMessage('❌ Login failed: ' + error.message, 'error');
+
+                let friendlyError = 'Invalid credentials. Please try again.';
+                if (error.code === 'auth/too-many-requests') {
+                    friendlyError = 'Too many attempts. Please try again later.';
+                }
+
+                showMessage('❌ ' + friendlyError, 'error');
 
                 loginText.style.display = 'inline';
                 loginLoader.style.display = 'none';
@@ -834,7 +840,13 @@
 
             } catch (error) {
                 console.error('Admin login error:', error);
-                showMessage('❌ Admin login failed: ' + error.message, 'error');
+
+                let friendlyError = 'Invalid credentials. Please try again.';
+                if (error.code === 'auth/too-many-requests') {
+                    friendlyError = 'Too many attempts. Please try again later.';
+                }
+
+                showMessage('❌ ' + friendlyError, 'error');
 
                 adminBtn.innerHTML = '<span>🔐</span><span>Principal Admin Portal</span>';
                 adminBtn.disabled = false;

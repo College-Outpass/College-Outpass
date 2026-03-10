@@ -683,17 +683,9 @@
                 console.error('Login error:', error);
 
                 // Handle specific Firebase Auth errors
-                let errorMessage = 'Login failed';
-                if (error.code === 'auth/user-not-found') {
-                    errorMessage = 'No account found with this email address';
-                } else if (error.code === 'auth/wrong-password') {
-                    errorMessage = 'Incorrect password';
-                } else if (error.code === 'auth/invalid-email') {
-                    errorMessage = 'Invalid email address';
-                } else if (error.code === 'auth/too-many-requests') {
+                let errorMessage = 'Invalid credentials. Please try again.';
+                if (error.code === 'auth/too-many-requests') {
                     errorMessage = 'Too many failed login attempts. Please try again later.';
-                } else {
-                    errorMessage = error.message || 'Login failed. Please check your credentials.';
                 }
 
                 showMessage('❌ ' + errorMessage, 'error');
@@ -788,15 +780,11 @@
             } catch (error) {
                 console.error('Change password error:', error);
 
-                let errorMessage = 'Failed to change password';
-                if (error.code === 'auth/wrong-password') {
-                    errorMessage = 'Current password is incorrect';
-                } else if (error.code === 'auth/weak-password') {
+                let errorMessage = 'Failed to change password. Please check your current password.';
+                if (error.code === 'auth/weak-password') {
                     errorMessage = 'New password is too weak. Please use a stronger password.';
                 } else if (error.code === 'auth/requires-recent-login') {
-                    errorMessage = 'Please login again to change your password';
-                } else {
-                    errorMessage = error.message || 'Failed to change password';
+                    errorMessage = 'Please login again to change your password.';
                 }
 
                 showModalMessage('❌ ' + errorMessage, 'error');

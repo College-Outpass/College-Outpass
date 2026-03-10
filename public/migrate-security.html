@@ -305,7 +305,7 @@
                 await auth.signInWithEmailAndPassword(email, password);
                 location.reload();
             } catch (err) {
-                alert('Login failed: ' + err.message);
+                alert('Invalid credentials. Please try again.');
             }
         });
 
