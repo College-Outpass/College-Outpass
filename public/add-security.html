@@ -478,8 +478,10 @@
         // Check authentication
         auth.onAuthStateChanged(user => {
             if (!user) {
-                window.location.href = 'login.html';
+                console.warn('⚠️ No user detected, redirecting to admin-login.html');
+                window.location.href = 'admin-login.html';
             } else {
+                console.log('✅ Authenticated as:', user.email);
                 loadSecurity();
             }
         });
