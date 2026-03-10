@@ -26,7 +26,7 @@ app.get('/', (req, res) => {
 
 app.get('/hello', (req, res) => {
     console.log('✅ HELLO route hit!');
-    res.send('<h1>I am alive!</h1><p>Server version: 2.3 (Bypass Active)</p>');
+    res.send('<h1>I am alive!</h1><p>Server version: 2.4 (HOD Bypass Ready)</p>');
 });
 
 app.get('/diag/db', async (req, res) => {
@@ -37,11 +37,10 @@ app.get('/diag/db', async (req, res) => {
             status: 'connected',
             test: rows[0].connection_test,
             security_count: security[0].count,
-            config_host: process.env.DB_HOST ? 'Present' : 'Missing',
-            config_user: process.env.DB_USER ? 'Present' : 'Missing'
+            time: new Date().toISOString()
         });
     } catch (err) {
-        res.status(500).json({ status: 'error', message: err.message, stack: err.stack });
+        res.status(500).json({ status: 'error', message: err.message });
     }
 });
 

@@ -1320,7 +1320,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="js/firebase-config.js"></script>
+    <script src="js/firebase-config.js?v=2.4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -1334,9 +1334,9 @@
             appId: "1:71169367861:web:7105b401d52c049476f67c"
         };
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        // Use the Bridge or Initialize fresh
+        const auth = window.auth || firebase.auth();
+        const db = window.db || firebase.firestore();
 
         const CAMPUS_DISPLAY_NAMES = {
             "ALL_CAMPUSES": "All Campuses",
@@ -2621,6 +2621,22 @@
             </div>
         </div>
     </div>
+    <script>
+        // Version check - update this version number when you deploy
+        const CURRENT_VERSION = '2.4';
+        const STORAGE_KEY = 'app_version_dashboard';
+
+        // Check if user has old cached version
+        const savedVersion = localStorage.getItem(STORAGE_KEY);
+        if (savedVersion && savedVersion !== CURRENT_VERSION) {
+            if (confirm('New update available for Dashboard! Click OK to reload and get the latest features.')) {
+                localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
+                window.location.reload(true);
+            }
+        } else {
+            localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
+        }
+    </script>
 </body>
 
 </html>
