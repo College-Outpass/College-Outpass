@@ -310,6 +310,25 @@ app.get('/api/students', async (req, res) => {
     }
 });
 
+app.put('/api/students/:id', authenticateToken, async (req, res) => {
+    try {
+        const studentId = req.params.id.toUpperCase();
+        const { whatsappNumber, studentName, category, section, fatherName, campus } = req.body;
+        console.log(`✏️ Updating student: ${studentId}`);
+        await pool.query(
+            `UPDATE students SET whatsappNumber=COALESCE(?,whatsappNumber), studentName=COALESCE(?,studentName), 
+             category=COALESCE(?,category), section=COALESCE(?,section), fatherName=COALESCE(?,fatherName),
+             campus=COALESCE(?,campus) WHERE id=?`,
+            [whatsappNumber || null, studentName || null, category || null, section || null, fatherName || null, campus || null, studentId]
+        );
+        console.log(`✅ Student ${studentId} updated`);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('❌ Error updating student:', err);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
 app.post('/api/migrate/security-batch', authenticateToken, async (req, res) => {
     try {
         const { batch } = req.body; // Array of {name, campus, whatsappNumber}

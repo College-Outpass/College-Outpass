@@ -67,6 +67,36 @@ class TiDBFirestoreProxy {
             // Not found or error
             return { exists: false, data: () => null };
           }
+        },
+        update: async (data) => {
+          const user = firebase.auth().currentUser;
+          const token = user ? await user.getIdToken() : '';
+          const response = await fetch(`${API_URL}/${colName}/${docId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data)
+          });
+          if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Update failed');
+          }
+          return { success: true };
+        },
+        set: async (data, options = {}) => {
+          const user = firebase.auth().currentUser;
+          const token = user ? await user.getIdToken() : '';
+          const method = options.merge ? 'PUT' : 'POST';
+          const url = options.merge ? `${API_URL}/${colName}/${docId}` : `${API_URL}/${colName}`;
+          const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ ...data, id: docId })
+          });
+          if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Set failed');
+          }
+          return { success: true };
         }
       }),
       add: async (data) => {
@@ -136,6 +166,22 @@ class TiDBFirestoreProxy {
     });
     const result = await response.json();
     return result.currentCount;
+  }
+
+  batch() {
+    const ops = [];
+    return {
+      set: (ref, data) => { ops.push({ type: 'set', ref, data }); },
+      update: (ref, data) => { ops.push({ type: 'update', ref, data }); },
+      delete: (ref) => { ops.push({ type: 'delete', ref }); },
+      commit: async () => {
+        for (const op of ops) {
+          if (op.type === 'set') await op.ref.set(op.data);
+          else if (op.type === 'update') await op.ref.update(op.data);
+          else if (op.type === 'delete') await op.ref.delete();
+        }
+      }
+    };
   }
 }
 
