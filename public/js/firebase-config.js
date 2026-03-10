@@ -3,7 +3,7 @@
 // ==========================================
 
 // Your Render URL (Backend API)
-const RENDER_URL = 'https://outpass-api.onrender.com';
+const RENDER_URL = 'https://college-outpass-api.onrender.com';
 
 // Local vs Production API selection
 const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -154,6 +154,8 @@ class TiDBFirestoreProxy {
 }
 
 // Set global DB to use the TiDB Proxy
-window.db = new TiDBFirestoreProxy();
-
-console.log("✅ TiDB <-> Firebase Bridge active (Auth via Firebase, Data via TiDB)");
+if (!window.dbBridgedFlag) {
+  window.db = new TiDBFirestoreProxy();
+  window.dbBridgedFlag = true;
+  console.log("✅ TiDB <-> Firebase Bridge active (Auth via Firebase, Data via TiDB)");
+}
