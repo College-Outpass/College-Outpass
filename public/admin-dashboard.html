@@ -2629,10 +2629,8 @@
         // Check if user has old cached version
         const savedVersion = localStorage.getItem(STORAGE_KEY);
         if (savedVersion && savedVersion !== CURRENT_VERSION) {
-            if (confirm('New update available for Dashboard! Click OK to reload and get the latest features.')) {
-                localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
-                window.location.reload(true);
-            }
+            localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
+            window.location.reload(true);
         } else {
             localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
         }

@@ -177,12 +177,15 @@ app.post('/api/outpasses', authenticateToken, async (req, res) => {
     try {
         const data = req.body;
         const id = 'out_' + Date.now();
+        const campus = data.campus || (req.user && req.user.campus) || 'UNKNOWN';
+        console.log(`📝 Saving outpass for campus: ${campus}`);
         await pool.query(
-            `INSERT INTO outpasses (id, passNumber, studentId, studentName, category, section, fatherName, whatsappNumber, requestedBy, issuedBy, status, outDate, inDate, reason, issuedDate, issuedTime, studentPhoto, createdBy) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-            [id, data.passNumber, data.studentId, data.studentName, data.category, data.section, data.fatherName, data.whatsappNumber, data.requestedBy, data.issuedBy, data.status, data.outDate, data.inDate, data.reason, data.issuedDate, data.issuedTime, data.studentPhoto, data.createdBy]
+            `INSERT INTO outpasses (id, passNumber, studentId, studentName, category, section, fatherName, whatsappNumber, requestedBy, issuedBy, status, outDate, inDate, reason, issuedDate, issuedTime, studentPhoto, createdBy, campus) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            [id, data.passNumber, data.studentId, data.studentName, data.category, data.section, data.fatherName, data.whatsappNumber, data.requestedBy, data.issuedBy, data.status, data.outDate, data.inDate, data.reason, data.issuedDate, data.issuedTime, data.studentPhoto, data.createdBy, campus]
         );
         res.json({ id });
     } catch (err) {
+        console.error('❌ Error saving outpass:', err);
         res.status(500).json({ error: 'Failed' });
     }
 });
@@ -206,16 +209,47 @@ app.get('/api/outpasses/:id', authenticateToken, async (req, res) => {
     }
 });
 
+app.put('/api/outpasses/:id', authenticateToken, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const data = req.body;
+        console.log(`✏️ Updating outpass: ${id}`);
+
+        // Dynamically build update query
+        const fields = [];
+        const values = [];
+
+        if (data.reportingTime !== undefined) { fields.push('reportingTime = ?'); values.push(data.reportingTime); }
+        if (data.inDate !== undefined) { fields.push('inDate = ?'); values.push(data.inDate); }
+        if (data.status !== undefined) { fields.push('status = ?'); values.push(data.status); }
+        if (data.reportedBy !== undefined) { fields.push('reportedBy = ?'); values.push(data.reportedBy); }
+
+        if (fields.length === 0) return res.json({ success: true });
+
+        values.push(id);
+        const query = `UPDATE outpasses SET ${fields.join(', ')} WHERE id = ?`;
+        await pool.query(query, values);
+
+        console.log(`✅ Outpass ${id} updated`);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('❌ Error updating outpass:', err);
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
 app.post('/api/sickSlips', authenticateToken, async (req, res) => {
     try {
         const data = req.body;
         const id = 'sick_' + Date.now();
+        const campus = data.campus || (req.user && req.user.campus) || 'UNKNOWN';
         await pool.query(
-            `INSERT INTO sick_slips (id, sickSlipNumber, studentId, studentName, date, time, reason, status, issuedBy, issuedDate, issuedTime, createdBy) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-            [id, data.sickSlipNumber, data.studentId, data.studentName, data.date, data.time, data.reason, data.status, data.issuedBy, data.issuedDate, data.issuedTime, data.createdBy]
+            `INSERT INTO sick_slips (id, sickSlipNumber, studentId, studentName, date, time, reason, status, issuedBy, issuedDate, issuedTime, createdBy, campus) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            [id, data.sickSlipNumber, data.studentId, data.studentName, data.date, data.time, data.reason, data.status, data.issuedBy, data.issuedDate, data.issuedTime, data.createdBy, campus]
         );
         res.json({ id });
     } catch (err) {
+        console.error('❌ Error saving sick slip:', err);
         res.status(500).json({ error: 'Failed' });
     }
 });
@@ -244,12 +278,14 @@ app.post('/api/mediSlips', authenticateToken, async (req, res) => {
     try {
         const data = req.body;
         const id = data.id || ('sick_' + Date.now());
+        const campus = data.campus || (req.user && req.user.campus) || 'UNKNOWN';
         await pool.query(
-            `INSERT INTO sick_slips (id, sickSlipNumber, studentId, studentName, date, time, reason, status, issuedBy, issuedDate, issuedTime, createdBy) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-            [id, data.sickSlipNumber || data.mediSlipNumber, data.studentId, data.studentName, data.date, data.time, data.reason, data.status, data.issuedBy, data.issuedDate, data.issuedTime, data.createdBy]
+            `INSERT INTO sick_slips (id, sickSlipNumber, studentId, studentName, date, time, reason, status, issuedBy, issuedDate, issuedTime, createdBy, campus) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            [id, data.sickSlipNumber || data.mediSlipNumber, data.studentId, data.studentName, data.date, data.time, data.reason, data.status, data.issuedBy, data.issuedDate, data.issuedTime, data.createdBy, campus]
         );
         res.json({ id });
     } catch (err) {
+        console.error('❌ Error saving medi slip:', err);
         res.status(500).json({ error: 'Failed' });
     }
 });

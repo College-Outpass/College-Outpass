@@ -3962,7 +3962,16 @@
                 allOutpassesQuery.forEach(doc => {
                     const data = doc.data();
                     if (data.studentId === fullStudentId) {
-                        const timestamp = data.createdAt ? data.createdAt.toMillis() : 0;
+                        // Handle both Firestore Timestamp and TiDB string/ISO date
+                        let timestamp = 0;
+                        if (data.createdAt) {
+                            if (typeof data.createdAt.toMillis === 'function') {
+                                timestamp = data.createdAt.toMillis();
+                            } else {
+                                timestamp = new Date(data.createdAt).getTime();
+                            }
+                        }
+
                         if (!latestOutpass || timestamp > latestTimestamp) {
                             latestOutpass = data;
                             latestTimestamp = timestamp;
@@ -4104,7 +4113,16 @@
                 allOutpassesQuery.forEach(doc => {
                     const data = doc.data();
                     if (data.studentId === fullStudentId) {
-                        const timestamp = data.createdAt ? data.createdAt.toMillis() : 0;
+                        // Handle both Firestore Timestamp and TiDB string/ISO date
+                        let timestamp = 0;
+                        if (data.createdAt) {
+                            if (typeof data.createdAt.toMillis === 'function') {
+                                timestamp = data.createdAt.toMillis();
+                            } else {
+                                timestamp = new Date(data.createdAt).getTime();
+                            }
+                        }
+
                         if (!latestOutpass || timestamp > latestTimestamp) {
                             latestOutpass = data;
                             latestOutpassId = doc.id;
@@ -4486,8 +4504,8 @@
                     document.getElementById('mediSlipStudentName').textContent = mediSlipData.studentName;
                     document.getElementById('mediSlipDate').textContent = formatDateForPDF(mediSlipData.date);
                     document.getElementById('mediSlipTemperature').textContent = (mediSlipData.temperature || 'None') + '°F';
-                    document.getElementById('mediSlipStartTime').textContent = formatTimeForPDF(mediSlipData.startTime);
-                    document.getElementById('mediSlipEndTime').textContent = formatTimeForPDF(mediSlipData.endTime);
+                    document.getElementById('mediSlipStartTime').textContent = formatTimeForPDF(mediSlipData.startTime || mediSlipData.time);
+                    document.getElementById('mediSlipEndTime').textContent = formatTimeForPDF(mediSlipData.endTime || mediSlipData.time);
                     document.getElementById('mediSlipMedicineGiven').textContent = mediSlipData.medicineGiven || '--';
                     document.getElementById('mediSlipReason').textContent = mediSlipData.reason;
 
