@@ -370,6 +370,8 @@
     <script src="js/firebase-config.js"></script>
 
     <script>
+        const auth = window.auth || firebase.auth();
+        const db = window.db || firebase.firestore();
         const loader = document.getElementById('loader');
         const toast = document.getElementById('toast');
         const securityList = document.getElementById('securityList');
