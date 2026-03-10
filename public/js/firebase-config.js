@@ -83,7 +83,11 @@ class TiDBFirestoreProxy {
         const response = await fetch(`${API_URL}/${colName}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        const rawData = await response.json().catch(() => []);
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.error || 'Fetch failed');
+        }
+        const rawData = await response.json();
         const docs = rawData.map(d => ({
           id: d.id,
           data: () => ({ ...d, whatsappNumber: d.whatsapp_number || d.whatsappNumber })
