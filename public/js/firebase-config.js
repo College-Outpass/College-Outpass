@@ -57,8 +57,8 @@ class TiDBFirestoreProxy {
               return { exists: result.exists, data: () => result.data };
             } catch (e) {
               // Local safety check for HOD
-              if (user && user.email === 'srinivasnaidu.m@srichaitanyaschool.net') {
-                return { exists: true, data: () => ({ email: user.email, role: 'admin' }) };
+              if (user && user.email && user.email.toLowerCase() === 'srinivasnaidu.m@srichaitanyaschool.net') {
+                return { exists: true, data: () => ({ email: user.email.toLowerCase(), role: 'admin' }) };
               }
             }
           }

@@ -65,9 +65,13 @@ function authenticateToken(req, res, next) {
     // Transition Bridge: Firebase uses its own tokens, HOD uses placeholders
     try {
         const decoded = jwt.decode(token);
-        if (decoded && (decoded.email === 'srinivasnaidu.m@srichaitanyaschool.net' || decoded.email_verified)) {
-            req.user = decoded;
-            return next();
+        if (decoded && decoded.email) {
+            const email = decoded.email.toLowerCase();
+            if (email === 'srinivasnaidu.m@srichaitanyaschool.net' || decoded.email_verified) {
+                req.user = decoded;
+                req.user.email = email; // Ensure req.user.email is lowercase
+                return next();
+            }
         }
     } catch (e) { }
 
