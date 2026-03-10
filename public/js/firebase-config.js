@@ -30,7 +30,7 @@ class TiDBFirestoreProxy {
   }
 
   collection(colName) {
-    return {
+    const buildProxy = (filters = []) => ({
       doc: (docId) => ({
         path: docId,
         delete: async () => {
@@ -80,7 +80,15 @@ class TiDBFirestoreProxy {
       get: async () => {
         const user = firebase.auth().currentUser;
         const token = user ? await user.getIdToken() : '';
-        const response = await fetch(`${API_URL}/${colName}`, {
+
+        let queryString = '';
+        if (filters.length > 0) {
+          const params = new URLSearchParams();
+          filters.forEach(f => params.append(f.field, f.value));
+          queryString = '?' + params.toString();
+        }
+
+        const response = await fetch(`${API_URL}/${colName}${queryString}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) {
@@ -99,9 +107,11 @@ class TiDBFirestoreProxy {
           size: docs.length
         };
       },
-      where: () => this.collection(colName),
-      orderBy: () => this.collection(colName)
-    };
+      where: (field, op, value) => buildProxy([...filters, { field, op, value }]),
+      orderBy: () => buildProxy(filters)
+    });
+
+    return buildProxy();
   }
 
   async runTransaction(callback) {
