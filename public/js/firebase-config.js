@@ -1,19 +1,16 @@
 // ==========================================
-// TiDB <-> Firebase Bridge Configuration
+// TiDB <-> Firebase Bridge (V2.5)
 // ==========================================
 
-// Your Render URL (Backend API)
 const RENDER_URL = 'https://college-outpass-api.onrender.com';
-
-// Local vs Production API selection
 const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:5000/api'
   : `${RENDER_URL}/api`;
 
-console.log("🚀 TiDB Bridge: Using API at", API_URL);
+console.log("🚀 TiDB Bridge Initializing...");
 
-// Standard Firebase Config (shared across files)
-const firebaseConfig = {
+// 1. SETUP REAL FIREBASE (If not already done)
+const fbConfig = {
   apiKey: "AIzaSyBFHwulhuw9NlGQi0DWzy9mU47RSO5TUkw",
   authDomain: "college-out-pass-system-62552.firebaseapp.com",
   projectId: "college-out-pass-system-62552",
@@ -22,15 +19,11 @@ const firebaseConfig = {
   appId: "1:71169367861:web:7105b401d52c049476f67c"
 };
 
-// Initialize Real Firebase for AUTH and HOSTING
 if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+  firebase.initializeApp(fbConfig);
 }
 
-// Keep real Auth
-window.auth = firebase.auth();
-
-// Create Proxy for Firestore to redirect data to TiDB
+// 2. DEFINE THE TIDB PROXY
 class TiDBFirestoreProxy {
   constructor() {
     this.FieldValue = firebase.firestore.FieldValue;
@@ -41,47 +34,32 @@ class TiDBFirestoreProxy {
       doc: (docId) => ({
         path: docId,
         delete: async () => {
-          // Get Firebase ID Token for security
           const user = firebase.auth().currentUser;
           const token = user ? await user.getIdToken() : '';
-
           const response = await fetch(`${API_URL}/${colName}/${docId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          if (!response.ok) throw new Error("Failed to delete from TiDB");
-          return { success: true };
+          return { success: response.ok };
         },
         get: async () => {
           const user = firebase.auth().currentUser;
           const token = user ? await user.getIdToken() : '';
 
-          // Admin check is the most common .doc().get() call
+          // Admin check fallback
           if (colName === 'admins') {
             try {
-              const response = await fetch(`${API_URL}/admins/${docId}`, {
+              const res = await fetch(`${API_URL}/admins/${docId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
               });
-              // If Render is down/old, fallback to allowing the known HOD
-              if (!response.ok) {
-                console.warn("TiDB Admin check failed, checking local HOD rule");
-                const email = user ? user.email : '';
-                if (email === 'srinivasnaidu.m@srichaitanyaschool.net') {
-                  return { exists: true, data: () => ({ email, role: 'admin' }) };
-                }
-                return { exists: false };
-              }
-              const result = await response.json();
-              return {
-                exists: result.exists,
-                data: () => result.data
-              };
+              if (!res.ok) throw new Error();
+              const result = await res.json();
+              return { exists: result.exists, data: () => result.data };
             } catch (e) {
-              // Fallback for HOD while Render updates
+              // Local safety check for HOD
               if (user && user.email === 'srinivasnaidu.m@srichaitanyaschool.net') {
                 return { exists: true, data: () => ({ email: user.email, role: 'admin' }) };
               }
-              return { exists: false };
             }
           }
           return { exists: false, data: () => null };
@@ -90,72 +68,60 @@ class TiDBFirestoreProxy {
       add: async (data) => {
         const user = firebase.auth().currentUser;
         const token = user ? await user.getIdToken() : '';
-
         const response = await fetch(`${API_URL}/${colName}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(data)
         });
-        if (!response.ok) throw new Error("Failed to save to TiDB");
         const result = await response.json();
         return { id: result.id };
       },
       get: async () => {
         const user = firebase.auth().currentUser;
         const token = user ? await user.getIdToken() : '';
-
         const response = await fetch(`${API_URL}/${colName}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!response.ok) return { empty: true, docs: [], forEach: () => { } };
-
-        const rawData = await response.json();
+        const rawData = await response.json().catch(() => []);
         const docs = rawData.map(d => ({
           id: d.id,
           data: () => ({ ...d, whatsappNumber: d.whatsapp_number || d.whatsappNumber })
         }));
-
         return {
           empty: docs.length === 0,
           docs: docs,
-          forEach: (cb) => docs.forEach(cb)
+          forEach: (cb) => docs.forEach(cb),
+          size: docs.length
         };
       },
-      orderBy: () => this.collection(colName),
-      where: () => this.collection(colName)
+      where: () => this.collection(colName),
+      orderBy: () => this.collection(colName)
     };
   }
 
   async runTransaction(callback) {
-    // Simplified transaction proxy for ID counters
     let mockRef;
     const mockTransaction = {
-      get: async (ref) => {
-        mockRef = ref;
-        return { exists: true, data: () => ({ count: 1 }) };
-      },
+      get: async (ref) => { mockRef = ref; return { exists: true, data: () => ({ count: 1 }) }; },
       set: () => { }
     };
-
     await callback(mockTransaction);
-
     const user = firebase.auth().currentUser;
     const token = user ? await user.getIdToken() : '';
-
     const response = await fetch(`${API_URL}/settings/increment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ collection: 'settings', doc: mockRef.path })
     });
-
     const result = await response.json();
     return result.currentCount;
   }
 }
 
-// Set global DB to use the TiDB Proxy
-if (!window.dbBridgedFlag) {
-  window.db = new TiDBFirestoreProxy();
-  window.dbBridgedFlag = true;
-  console.log("✅ TiDB <-> Firebase Bridge active (Auth via Firebase, Data via TiDB)");
-}
+// 3. EXPOSE GLOBAL VARIABLES
+// window.auth REMAINS REAL FIREBASE AUTH
+window.auth = firebase.auth();
+// window.db BECOMES THE TIDB PROXY
+window.db = new TiDBFirestoreProxy();
+
+console.log("✅ TiDB Bridge: Auth=Firebase, DB=TiDB");

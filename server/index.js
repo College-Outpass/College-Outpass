@@ -119,21 +119,28 @@ app.post('/api/auth/verify', authenticateToken, (req, res) => {
 
 app.get('/api/admins/:uid', authenticateToken, async (req, res) => {
     try {
-        // Find by UID first, or by email since we know the authorized HOD email
+        const uid = req.params.uid;
+        const email = req.user.email ? req.user.email.toLowerCase() : '';
+
+        // PRINCIPAL BYPASS: If email matches the HOD email, they ARE an admin.
+        if (email === 'srinivasnaidu.m@srichaitanyaschool.net') {
+            console.log('👑 HOD detected in Admin Verification!');
+            return res.json({
+                exists: true,
+                data: { role: 'admin', email: email, name: 'Head of Department' }
+            });
+        }
+
+        // Standard check
         const [users] = await pool.query(
             'SELECT role, email FROM users WHERE (uid = ? OR email = ?) AND role = "admin"',
-            [req.params.uid, req.user.email]
+            [uid, email]
         );
 
         if (users.length > 0) {
             res.json({ exists: true, data: { ...users[0] } });
         } else {
-            // Last resort: If the email is the HOD email, they ARE an admin
-            if (req.user.email === 'srinivasnaidu.m@srichaitanyaschool.net') {
-                res.json({ exists: true, data: { role: 'admin', email: req.user.email } });
-            } else {
-                res.json({ exists: false });
-            }
+            res.json({ exists: false });
         }
     } catch (err) {
         console.error('Admin check error:', err);
