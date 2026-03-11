@@ -305,7 +305,13 @@
                 loader.style.display = 'flex';
                 // Use firebase-config.js logic to get token
                 const user = firebase.auth().currentUser;
-                const token = user ? await user.getIdToken() : localStorage.getItem('tidb_token');
+                let token = user ? await user.getIdToken() : null;
+
+                if (!token) {
+                    const authStr = sessionStorage.getItem('adminAuth') || localStorage.getItem('adminAuth');
+                    const adminAuth = authStr ? JSON.parse(authStr) : null;
+                    token = adminAuth ? adminAuth.token : localStorage.getItem('tidb_token');
+                }
 
                 const res = await fetch(`${API_URL}/users`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -347,7 +353,13 @@
             try {
                 loader.style.display = 'flex';
                 const user = firebase.auth().currentUser;
-                const token = user ? await user.getIdToken() : localStorage.getItem('tidb_token');
+                let token = user ? await user.getIdToken() : null;
+
+                if (!token) {
+                    const authStr = sessionStorage.getItem('adminAuth') || localStorage.getItem('adminAuth');
+                    const adminAuth = authStr ? JSON.parse(authStr) : null;
+                    token = adminAuth ? adminAuth.token : localStorage.getItem('tidb_token');
+                }
 
                 const res = await fetch(`${API_URL}/users`, {
                     method: 'POST',
@@ -378,7 +390,13 @@
             try {
                 loader.style.display = 'flex';
                 const user = firebase.auth().currentUser;
-                const token = user ? await user.getIdToken() : localStorage.getItem('tidb_token');
+                let token = user ? await user.getIdToken() : null;
+                
+                if (!token) {
+                    const authStr = sessionStorage.getItem('adminAuth') || localStorage.getItem('adminAuth');
+                    const adminAuth = authStr ? JSON.parse(authStr) : null;
+                    token = adminAuth ? adminAuth.token : localStorage.getItem('tidb_token');
+                }
 
                 const res = await fetch(`${API_URL}/users/${uid}`, {
                     method: 'DELETE',

@@ -1199,12 +1199,7 @@
                 <img src="SIRI.png" alt="Logo" class="nav-logo" onerror="this.style.display='none';">
                 <div>
                     <h2>🔐 HOD Admin Dashboard - All Campuses Access</h2>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <div class="admin-badge">AGM</div>
-                        <div
-                            style="background: #f1c40f; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; animation: pulse 2s infinite;">
-                            VER: 3.0.5 - STAFF READY</div>
-                    </div>
+                    <div class="admin-badge">AGM</div>
                 </div>
             </div>
             <div class="nav-right" style="display: flex; align-items: center; gap: 12px;">
@@ -1494,11 +1489,7 @@
                 console.log('✅ HOD Dashboard initialized for:', adminData.email);
                 console.log('🚀 SYSTEM VERSION: 3.0.5 - Staff Management Active');
 
-                // One-time notification for the user
-                if (!localStorage.getItem('saw_staff_mgmt_v3')) {
-                    alert('🎉 Update Successful!\n\nYou can now manage staff using the blue "👥 Manage Staff" button in the top bar or the new Quick Access panel below it.');
-                    localStorage.setItem('saw_staff_mgmt_v3', 'true');
-                }
+
 
                 // Setup event listeners first
                 setupEventListeners();

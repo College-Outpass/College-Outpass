@@ -151,15 +151,19 @@ app.post('/api/auth/verify', authenticateToken, (req, res) => {
 // User Management (Admins only)
 app.post('/api/users', authenticateToken, async (req, res) => {
     // Only admins or the HOD can create users
-    if (req.user.role !== 'admin' && req.user.email !== 'srinivasnaidu.m@srichaitanyaschool.net') {
-        return res.status(403).json({ error: 'Unauthorized' });
+    console.log(`🔍 USER CREATION ATTEMPT: ${req.user.email} (Role: ${req.user.role})`);
+
+    if (req.user.role !== 'admin' && req.user.email.toLowerCase() !== 'srinivasnaidu.m@srichaitanyaschool.net') {
+        console.warn(`❌ Unauthorized attempt to create user by: ${req.user.email}`);
+        return res.status(403).json({ error: 'Unauthorized: Admin access required' });
     }
 
     try {
         const { email, password, name, campus, role } = req.body;
-        console.log(`👤 Creating user: ${email} (${role})`);
+        console.log(`👤 Data received: email=${email}, name=${name}, campus=${campus}, role=${role}`);
 
         if (!email || !password || !campus) {
+            console.warn('⚠️ Missing fields:', { email: !!email, password: !!password, campus: !!campus });
             return res.status(400).json({ error: 'Missing required fields' });
         }
 

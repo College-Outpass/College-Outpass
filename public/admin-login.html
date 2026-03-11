@@ -661,11 +661,14 @@
                 // Success message
                 showMessage('✅ Login successful! Redirecting...', 'success');
 
+                const token = await user.getIdToken();
+
                 // Store session data for display purposes
                 const sessionData = {
                     email: adminData.email,
                     name: adminData.name || 'Head of Department',
                     role: adminData.role || 'HOD',
+                    token: token,
                     loginTime: new Date().toISOString(),
                     authenticated: true
                 };
