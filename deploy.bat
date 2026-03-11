@@ -3,7 +3,7 @@ setlocal
 
 echo.
 echo ==============================================
-echo COLLEGE OUTPASS - DEPLOYMENT TOOL v2.2
+echo COLLEGE OUTPASS - DEPLOYMENT TOOL v3.0
 echo ==============================================
 echo.
 
@@ -21,7 +21,7 @@ echo.
 git status -s
 echo.
 
-set /p proceed="Ready to deploy to Render? (Y/N): "
+set /p proceed="Ready to deploy to FIREBASE and RENDER? (Y/N): "
 if /i "%proceed%" neq "Y" (
     echo [INFO] Deployment cancelled.
     pause
@@ -30,68 +30,51 @@ if /i "%proceed%" neq "Y" (
 
 :: 3. GIT PROCESS
 echo.
-echo [1/5] Indexing files...
+echo [1/6] Indexing files...
 git add .
-if %errorlevel% neq 0 (
-    echo [ERROR] Failed to add files.
-    pause
-    exit /b
-)
 
 echo.
-set "commitMsg=Update: General System Enhancements"
-set /p userInput="[2/5] Enter update summary (or press ENTER for default): "
+set "commitMsg=Update: Security and Staff Management Full Sync"
+set /p userInput="[2/6] Enter update summary (or press ENTER for default): "
 if not "%userInput%"=="" set "commitMsg=%userInput%"
 
 echo.
-echo [3/5] Committing changes...
+echo [3/6] Committing changes...
 git commit -m "%commitMsg%"
-if %errorlevel% neq 0 (
-    echo [INFO] No new changes to commit or commit failed.
-)
 
 echo.
-echo [4/5] Pushing to GitHub...
+echo [4/6] Pushing to GitHub...
 git push origin main
+if %errorlevel% neq 0 (
+    echo [WARNING] Normal push failed.
+    set /p force="Force push? (Y/N): "
+    if /i "%force%"=="Y" git push origin main --force
+)
 
+:: 4. FIREBASE DEPLOYMENT
+echo.
+echo [5/6] Deploying to Firebase Hosting...
+call firebase deploy --only hosting
 if %errorlevel% neq 0 (
     echo.
-    echo [WARNING] Normal push failed.
-    echo This usually happens if the server has changes you don't have.
-    
-    set /p force="Would you like to FORCE the update? (Y/N): "
-    if /i "%force%"=="Y" (
-        echo.
-        echo [INFO] Force pushing updates...
-        git push origin main --force
-    ) else (
-        echo.
-        echo [ERROR] GitHub push failed.
-        pause
-        exit /b
-    )
+    echo [ERROR] Firebase deploy failed! 
+    echo Please make sure firebase-tools are installed: npm install -g firebase-tools
 )
 
-:: 4. TRIGGER RENDER DEPLOY HOOK
+:: 5. TRIGGER RENDER DEPLOY HOOK
 echo.
-echo [5/5] Triggering Render Deploy Hook...
+echo [6/6] Triggering Render API Hook...
 powershell -Command "Invoke-RestMethod -Uri 'https://api.render.com/deploy/srv-d6lvh724d50c73ciedo0?key=AnNe9gTr_oM' -Method Post"
 
-if %errorlevel% == 0 (
-    echo.
-    echo ==============================================
-    echo SUCCESS: Updates sent and Deploy Hook fired!
-    echo ==============================================
-    echo.
-    echo Build Status: https://dashboard.render.com
-    echo API Health: https://college-outpass-api.onrender.com/hello
-    echo.
-    echo ==============================================
-) else (
-    echo.
-    echo [WARNING] Render Hook failed, but GitHub push succeeded.
-    echo Your changes will still deploy if Auto-Deploy is ON.
-)
+echo.
+echo ==============================================
+echo SUCCESS: Updates sent to GitHub, Firebase, and Render!
+echo ==============================================
+echo.
+echo Firebase Web: https://college-out-pass-system-62552.web.app
+echo Render API: https://college-outpass-api.onrender.com/hello
+echo.
+echo ==============================================
 
 echo.
 echo Press any key to exit...
