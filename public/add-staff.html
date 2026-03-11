@@ -209,6 +209,27 @@
             margin-bottom: 20px;
             font-weight: 500;
         }
+
+        /* Toast Styles */
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            background: #1e293b;
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            display: none;
+            z-index: 2000;
+            animation: slideUp 0.3s ease-out;
+            font-weight: 600;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 
@@ -216,6 +237,8 @@
     <div class="loading-overlay" id="loader">
         <div class="spinner"></div>
     </div>
+
+    <div id="toast"></div>
 
     <div class="container">
         <a href="admin-dashboard.html" class="back-link">
@@ -250,11 +273,11 @@
                     <div class="form-group">
                         <label>Campus</label>
                         <select id="campus" required>
-                            <option value="">Select Campus</option>
-                            <option value="ECITY_SCHOOL">ECITY SCHOOL</option>
-                            <option value="ECITY_NEET_BOYS">ECITY NEET BOYS</option>
-                            <option value="ECITY_GIRLS_RESIDENTIAL">ECITY GIRLS RESIDENTIAL</option>
-                            <option value="ECITY_ENGG_GIRLS_RESIDENTIAL">ECITY ENGG GIRLS RESIDENTIAL</option>
+                            <option value="">-- Choose Campus --</option>
+                            <option value="ECITY_SCHOOL">Ecity - School</option>
+                            <option value="ECITY_NEET_BOYS">Ecity - NEET Boys Hostel</option>
+                            <option value="ECITY_GIRLS_RESIDENTIAL">Ecity - Girls Residential Campus</option>
+                            <option value="ECITY_ENGG_GIRLS_RESIDENTIAL">Ecity - Engg Girls Residential Campus</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -264,7 +287,7 @@
                             <option value="admin">Admin (Full Access)</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn">Create Account</button>
+                    <button type="submit" class="btn" id="submitBtn">Create Account</button>
                 </form>
             </div>
 
@@ -300,6 +323,17 @@
         const loader = document.getElementById('loader');
         const userList = document.getElementById('userList');
         const staffForm = document.getElementById('staffForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const toast = document.getElementById('toast');
+
+        function showMessage(msg, isError = false) {
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            toast.style.background = isError ? '#ef4444' : '#22c55e';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 4000);
+        }
 
         async function fetchUsers() {
             try {
@@ -351,8 +385,13 @@
                 role: document.getElementById('role').value
             };
 
+            console.log("🚀 Attempting to create staff:", data.email);
+
             try {
                 loader.style.display = 'flex';
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creating Account...';
+
                 const user = firebase.auth().currentUser;
                 let token = user ? await user.getIdToken() : null;
 
@@ -371,18 +410,23 @@
                     body: JSON.stringify(data)
                 });
 
+                const result = await res.json();
+
                 if (!res.ok) {
-                    const error = await res.json();
-                    throw new Error(error.error || 'Creation failed');
+                    throw new Error(result.error || 'Creation failed');
                 }
 
-                alert('Account created successfully!');
+                console.log("✅ Success:", result);
+                showMessage('Account created successfully!');
                 staffForm.reset();
                 fetchUsers();
             } catch (err) {
-                alert(err.message);
+                console.error("❌ Error:", err.message);
+                showMessage(err.message, true);
             } finally {
                 loader.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Account';
             }
         });
 
