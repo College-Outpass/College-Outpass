@@ -5,6 +5,18 @@ const { pool, initDb } = require('./db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const admin = require('firebase-admin');
+
+// Initialize Firebase Admin
+try {
+    const serviceAccount = require('../key.json');
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+    });
+    console.log('✅ Firebase Admin initialized');
+} catch (e) {
+    console.error('❌ Firebase Admin initialization failed:', e.message);
+}
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -188,7 +200,28 @@ app.post('/api/users', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        const uid = req.body.uid || 'u_' + Date.now();
+        let uid = req.body.uid;
+
+        // Create user in Firebase Authentication if UID is not provided or if we want to ensure it exists
+        try {
+            const userRecord = await admin.auth().createUser({
+                email: email.toLowerCase(),
+                password: password,
+                displayName: name || null,
+            });
+            uid = userRecord.uid;
+            console.log(`✅ Firebase user created: ${uid}`);
+        } catch (fbErr) {
+            if (fbErr.code === 'auth/email-already-exists') {
+                console.log('ℹ️ User already exists in Firebase Auth, fetching UID...');
+                const existingUser = await admin.auth().getUserByEmail(email.toLowerCase());
+                uid = existingUser.uid;
+            } else {
+                console.error('❌ Firebase creation error:', fbErr);
+                throw new Error('Firebase Auth Error: ' + fbErr.message);
+            }
+        }
+
         const password_hash = await bcrypt.hash(password, 10);
 
         await pool.query(
@@ -200,7 +233,7 @@ app.post('/api/users', authenticateToken, async (req, res) => {
     } catch (err) {
         console.error('❌ User creation error:', err);
         if (err.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ error: 'User with this email already exists' });
+            return res.status(400).json({ error: 'User with this email already exists in Database' });
         }
         res.status(500).json({ error: 'Failed: ' + err.message });
     }
@@ -227,10 +260,23 @@ app.delete('/api/users/:uid', authenticateToken, async (req, res) => {
     }
 
     try {
-        await pool.query('DELETE FROM users WHERE uid = ?', [req.params.uid]);
+        const uid = req.params.uid;
+
+        // Delete from Firebase Auth
+        try {
+            await admin.auth().deleteUser(uid);
+            console.log(`✅ Firebase user deleted: ${uid}`);
+        } catch (fbErr) {
+            // If user doesn't exist in Firebase, we just log it and continue to delete from DB
+            console.warn(`⚠️ Could not delete ${uid} from Firebase: ${fbErr.message}`);
+        }
+
+        // Delete from TiDB
+        await pool.query('DELETE FROM users WHERE uid = ?', [uid]);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Failed' });
+        console.error('❌ User deletion error:', err);
+        res.status(500).json({ error: 'Failed: ' + err.message });
     }
 });
 
