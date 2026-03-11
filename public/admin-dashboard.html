@@ -1492,6 +1492,13 @@
                 // Set user email
                 document.getElementById('userEmail').textContent = adminData.email || 'HOD Administrator';
                 console.log('✅ HOD Dashboard initialized for:', adminData.email);
+                console.log('🚀 SYSTEM VERSION: 3.0.5 - Staff Management Active');
+
+                // One-time notification for the user
+                if (!localStorage.getItem('saw_staff_mgmt_v3')) {
+                    alert('🎉 Update Successful!\n\nYou can now manage staff using the blue "👥 Manage Staff" button in the top bar or the new Quick Access panel below it.');
+                    localStorage.setItem('saw_staff_mgmt_v3', 'true');
+                }
 
                 // Setup event listeners first
                 setupEventListeners();
