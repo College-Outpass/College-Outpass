@@ -318,7 +318,9 @@
     <script>
         const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:5000/api'
-            : 'https://college-outpass-api.onrender.com/api';
+            : '/api';
+
+        console.log("📍 Connected to API at:", API_URL);
 
         const loader = document.getElementById('loader');
         const userList = document.getElementById('userList');
@@ -396,9 +398,7 @@
                 let token = user ? await user.getIdToken() : null;
 
                 if (!token) {
-                    const authStr = sessionStorage.getItem('adminAuth') || localStorage.getItem('adminAuth');
-                    const adminAuth = authStr ? JSON.parse(authStr) : null;
-                    token = adminAuth ? adminAuth.token : localStorage.getItem('tidb_token');
+                    console.warn("⚠️ No authentication token found. Using default.");
                 }
 
                 const res = await fetch(`${API_URL}/users`, {
@@ -408,12 +408,20 @@
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(data)
+                }).catch(err => {
+                    console.error("🌐 Network Error:", err);
+                    throw new Error("Cannot connect to server at " + API_URL + ". Is the server running?");
                 });
 
-                const result = await res.json();
+                let result;
+                try {
+                    result = await res.json();
+                } catch (e) {
+                    result = { error: 'Server returned an invalid response (' + res.status + ')' };
+                }
 
                 if (!res.ok) {
-                    throw new Error(result.error || 'Creation failed');
+                    throw new Error(result.error || result.message || 'Creation failed (Status: ' + res.status + ')');
                 }
 
                 console.log("✅ Success:", result);
