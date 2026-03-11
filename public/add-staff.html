@@ -289,6 +289,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="js/firebase-config.js"></script>
 
     <script>
@@ -419,6 +420,18 @@
                 window.location.href = 'admin-login.html';
             }
         });
+    </script>
+    <script>
+        // Version check to force cache busting
+        const CURRENT_VERSION = '3.0.6';
+        const STORAGE_KEY = 'app_version_add_staff';
+        const savedVersion = localStorage.getItem(STORAGE_KEY);
+        if (savedVersion && savedVersion !== CURRENT_VERSION) {
+            localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
+            window.location.reload(true);
+        } else {
+            localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
+        }
     </script>
 </body>
 

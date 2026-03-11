@@ -186,7 +186,9 @@ app.post('/api/users', authenticateToken, async (req, res) => {
 });
 
 app.get('/api/users', authenticateToken, async (req, res) => {
+    console.log(`🔍 FETCHING USERS LIST: requested by ${req.user.email}`);
     if (req.user.role !== 'admin' && req.user.email !== 'srinivasnaidu.m@srichaitanyaschool.net') {
+        console.warn(`❌ Unauthorized users list fetch attempt by: ${req.user.email}`);
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
