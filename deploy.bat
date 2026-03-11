@@ -3,7 +3,7 @@ setlocal
 
 echo.
 echo ==============================================
-echo COLLEGE OUTPASS - DEPLOYMENT TOOL v2.1
+echo COLLEGE OUTPASS - DEPLOYMENT TOOL v2.2
 echo ==============================================
 echo.
 
@@ -30,7 +30,7 @@ if /i "%proceed%" neq "Y" (
 
 :: 3. GIT PROCESS
 echo.
-echo [1/4] Indexing files...
+echo [1/5] Indexing files...
 git add .
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to add files.
@@ -39,20 +39,19 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-set "commitMsg=Update: Security and Staff Management Enhancements"
-set /p userInput="[2/4] Enter update summary (or press ENTER for default): "
+set "commitMsg=Update: General System Enhancements"
+set /p userInput="[2/5] Enter update summary (or press ENTER for default): "
 if not "%userInput%"=="" set "commitMsg=%userInput%"
 
 echo.
-echo [3/4] Committing changes...
+echo [3/5] Committing changes...
 git commit -m "%commitMsg%"
 if %errorlevel% neq 0 (
     echo [INFO] No new changes to commit or commit failed.
 )
 
 echo.
-echo [4/4] Pushing to Render...
-:: Try pushing normally first
+echo [4/5] Pushing to GitHub...
 git push origin main
 
 if %errorlevel% neq 0 (
@@ -67,22 +66,31 @@ if %errorlevel% neq 0 (
         git push origin main --force
     ) else (
         echo.
-        echo [ERROR] Deployment failed.
+        echo [ERROR] GitHub push failed.
         pause
         exit /b
     )
 )
 
+:: 4. TRIGGER RENDER DEPLOY HOOK
+echo.
+echo [5/5] Triggering Render Deploy Hook...
+powershell -Command "Invoke-RestMethod -Uri 'https://api.render.com/deploy/srv-d6lvh724d50c73ciedo0?key=AnNe9gTr_oM' -Method Post"
+
 if %errorlevel% == 0 (
     echo.
     echo ==============================================
-    echo SUCCESS: Updates have been sent to Render!
+    echo SUCCESS: Updates sent and Deploy Hook fired!
     echo ==============================================
     echo.
     echo Build Status: https://dashboard.render.com
     echo API Health: https://college-outpass-api.onrender.com/hello
     echo.
     echo ==============================================
+) else (
+    echo.
+    echo [WARNING] Render Hook failed, but GitHub push succeeded.
+    echo Your changes will still deploy if Auto-Deploy is ON.
 )
 
 echo.
