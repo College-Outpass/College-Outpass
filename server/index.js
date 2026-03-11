@@ -200,9 +200,9 @@ app.post('/api/users', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        let uid = req.body.uid;
+        let uid = req.body.uid || 'u_' + Date.now();
 
-        // Create user in Firebase Authentication if UID is not provided or if we want to ensure it exists
+        // Optional: Attempt to create in Firebase, but don't block DB save
         try {
             const userRecord = await admin.auth().createUser({
                 email: email.toLowerCase(),
@@ -213,12 +213,13 @@ app.post('/api/users', authenticateToken, async (req, res) => {
             console.log(`✅ Firebase user created: ${uid}`);
         } catch (fbErr) {
             if (fbErr.code === 'auth/email-already-exists') {
-                console.log('ℹ️ User already exists in Firebase Auth, fetching UID...');
-                const existingUser = await admin.auth().getUserByEmail(email.toLowerCase());
-                uid = existingUser.uid;
+                try {
+                    const existingUser = await admin.auth().getUserByEmail(email.toLowerCase());
+                    uid = existingUser.uid;
+                    console.log(`ℹ️ Linking to existing Firebase user: ${uid}`);
+                } catch (e) {}
             } else {
-                console.error('❌ Firebase creation error:', fbErr);
-                throw new Error('Firebase Auth Error: ' + fbErr.message);
+                console.warn(`⚠️ Firebase sync skipped: ${fbErr.message}`);
             }
         }
 
