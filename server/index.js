@@ -125,13 +125,19 @@ app.post('/api/auth/login', async (req, res) => {
         if (users.length === 0) return res.status(404).json({ code: 'auth/user-not-found' });
 
         const user = users[0];
+
+        // CHECK CAMPUS (Only for staff roles, or if campus is specified)
+        if (req.body.campus && user.campus && user.campus !== req.body.campus && user.role !== 'admin') {
+            return res.status(401).json({ code: 'auth/wrong-campus', error: `This account belongs to ${user.campus}` });
+        }
+
         if (!user.password_hash) return res.status(401).json({ code: 'auth/no-password-set' });
 
         const pwdMatch = await bcrypt.compare(password, user.password_hash);
         if (!pwdMatch) return res.status(401).json({ code: 'auth/wrong-password' });
 
-        const token = jwt.sign({ uid: user.uid, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
-        res.json({ user: { uid: user.uid, email: user.email, role: user.role }, token });
+        const token = jwt.sign({ uid: user.uid, email: user.email, role: user.role, campus: user.campus }, JWT_SECRET, { expiresIn: '24h' });
+        res.json({ user: { uid: user.uid, email: user.email, role: user.role, campus: user.campus }, token });
     } catch (err) {
         console.error('❌ Login Error:', err);
         res.status(500).json({ error: 'Internal error' });
@@ -140,6 +146,65 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.post('/api/auth/verify', authenticateToken, (req, res) => {
     res.json({ user: req.user });
+});
+
+// User Management (Admins only)
+app.post('/api/users', authenticateToken, async (req, res) => {
+    // Only admins or the HOD can create users
+    if (req.user.role !== 'admin' && req.user.email !== 'srinivasnaidu.m@srichaitanyaschool.net') {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        const { email, password, name, campus, role } = req.body;
+        console.log(`👤 Creating user: ${email} (${role})`);
+
+        if (!email || !password || !campus) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const uid = 'u_' + Date.now();
+        const password_hash = await bcrypt.hash(password, 10);
+
+        await pool.query(
+            'INSERT INTO users (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?)',
+            [uid, email.toLowerCase(), password_hash, name || null, campus, role || 'staff']
+        );
+
+        res.json({ success: true, uid });
+    } catch (err) {
+        console.error('❌ User creation error:', err);
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ error: 'User with this email already exists' });
+        }
+        res.status(500).json({ error: 'Failed: ' + err.message });
+    }
+});
+
+app.get('/api/users', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin' && req.user.email !== 'srinivasnaidu.m@srichaitanyaschool.net') {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        const [rows] = await pool.query('SELECT uid, email, name, campus, role, created_at FROM users ORDER BY created_at DESC');
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.delete('/api/users/:uid', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin' && req.user.email !== 'srinivasnaidu.m@srichaitanyaschool.net') {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        await pool.query('DELETE FROM users WHERE uid = ?', [req.params.uid]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed' });
+    }
 });
 
 app.get('/api/admins/:uid', authenticateToken, async (req, res) => {

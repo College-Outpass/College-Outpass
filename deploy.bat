@@ -2,69 +2,73 @@
 setlocal enabledelayedexpansion
 
 :: ==========================================
-:: 🚀 DEPLOYMENT SCRIPT FOR COLLEGE OUTPASS
+:: 🚀 PRO DEPLOYMENT TOOL - COLLEGE OUTPASS
 :: ==========================================
 
 echo.
 echo  ############################################
 echo  #                                          #
 echo  #   COLLEGE OUTPASS - DEPLOYMENT TOOL      #
+echo  #    (TiDB Authentication & Security)      #
 echo  #                                          #
 echo  ############################################
 echo.
 
-:: Check for Git
+:: 1. PREREQUISITE CHECK
 git --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERROR] Git is not installed! Please install Git to deploy to Render.
+    echo [ERROR] Git is not installed! 
+    echo Please install Git to deploy to Render.
     pause
     exit /b
 )
 
-echo [INFO] Detected changes in project...
+:: 2. SHOW CHANGES
+echo [INFO] Scanning for project updates...
+echo.
+git status -s
 echo.
 
-:: Show status
-git status
-
-echo.
-set /p proceed="Do you want to proceed with deployment? (Y/N): "
+set /p proceed="🚀 Ready to deploy to Render? (Y/N): "
 if /i "%proceed%" neq "Y" (
-    echo [INFO] Deployment cancelled.
+    echo [INFO] Deployment cancelled by user.
     exit /b
 )
 
-:: Step 1: Add all changes
+:: 3. GIT PROCESS
 echo.
-echo [1/3] Adding files to git...
+echo 📥 Stage 1: Indexing files...
 git add .
 
-:: Step 2: Commit changes
 echo.
-set "defaultMsg=Update: Added manual security management and dashboard links"
-set /p commitMsg="[2/3] Enter commit message (or press ENTER for default): "
+set "defaultMsg=🚀 DEPLOY: Unified TiDB Authentication, Staff Management UI, and Enhanced Security"
+set /p commitMsg="📝 Stage 2: Enter update summary (or press ENTER for default): "
 if "%commitMsg%"=="" set "commitMsg=%defaultMsg%"
 
+echo.
+echo 🛠️ Stage 3: Committing changes...
 git commit -m "!commitMsg!"
 
-:: Step 3: Push to remote
 echo.
-echo [3/3] Pushing code to repository...
-git push
+echo 📤 Stage 4: Pushing to Render/Cloud...
+git push origin main
 
 if %errorlevel% neq 0 (
     echo.
-    echo [ERROR] Git push failed! 
-    echo Please make sure you have a remote origin configured (git remote -v).
+    echo ❌ [ERROR] Deployment push failed! 
+    echo Check your internet connection or repository permissions.
 ) else (
     echo.
     echo ========================================================
-    echo ✅ SUCCESS: Code pushed to repository!
+    echo ✅ SUCCESS: Updates are being deployed!
     echo ========================================================
-    echo Render will now automatically start the build process.
-    echo Visit your dashboard: https://dashboard.render.com
+    echo.
+    echo 🛰️  API Status: https://college-outpass-api.onrender.com/hello
+    echo 📋 Render Portal: https://dashboard.render.com
+    echo.
     echo ========================================================
 )
 
 echo.
-pause
+echo Press any key to exit...
+pause >nul

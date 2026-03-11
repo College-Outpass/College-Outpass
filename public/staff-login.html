@@ -490,54 +490,7 @@
             }
         }
 
-        const EMAIL_CAMPUS_MAPPING = {
-            // Principal emails
-            "pucneetboysprincipal@srichaitanyacollege.net": "ECITY_NEET_BOYS",
-            "ecitypucprincipal2@srichaitanyacollege.net": "ECITY_GIRLS_RESIDENTIAL",
-            "ecitypucprincipal1@srichaitanyacollege.net": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "electroniccityprincipal@srichaitanyaschool.net": "ECITY_SCHOOL",
-
-            // ECITY_NEET_BOYS staff emails
-            "munuswami.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "anilbabu.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "veeraiah.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "chandrashekar.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "ravi.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "sai.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-
-            // ECITY_GIRLS_RESIDENTIAL staff emails (replacing staff.ecitygirls@srichaitanya.edu)
-            "aruna.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "rajeswari.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "manjula.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "roja.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "swathika.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "swathi.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "lavanya.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "annapoorna.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "sunitha.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-
-            // ECITY_ENGG_GIRLS_RESIDENTIAL staff emails (replacing staff.ecitygrapegarden@srichaitanya.edu)
-            "anitha.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "nirmala.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "srilakshmi.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "vasantha.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "chandrakala.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-
-            // ECITY_SCHOOL staff emails
-            "sudhakar.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "anuf.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "santhosh.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "naresh.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "manjunath.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "huseenbee.ecityschool@srichaitanya.edu": "ECITY_SCHOOL"
-        };
-
-        const PRINCIPAL_EMAILS = [
-            "pucneetboysprincipal@srichaitanyacollege.net",
-            "ecitypucprincipal2@srichaitanyacollege.net",
-            "ecitypucprincipal1@srichaitanyacollege.net",
-            "electroniccityprincipal@srichaitanyaschool.net"
-        ];
+        // Hardcoded mappings removed in favor of TiDB DB verification
 
         // CRITICAL FLAG: Prevent auto-redirect when user is actively trying to login
         let isLoggingIn = false;
@@ -605,61 +558,11 @@
                     emailField.disabled = false;
                     passwordField.disabled = false;
                     loginBtn.disabled = false;
-                    adminBtn.disabled = true;
+                    adminBtn.disabled = false;
                     emailField.focus();
                 } else {
                     emailField.disabled = true;
                     passwordField.disabled = true;
-                    loginBtn.disabled = true;
-                    adminBtn.disabled = true;
-                    emailField.value = '';
-                    passwordField.value = '';
-                }
-            });
-
-            document.getElementById('email').addEventListener('input', function () {
-                const loginBtn = document.getElementById('loginBtn');
-                const adminBtn = document.getElementById('adminPortalBtn');
-                const passwordField = document.getElementById('password');
-                const email = this.value.trim().toLowerCase();
-                const campus = document.getElementById('campus').value;
-
-                const isPrincipalEmail = PRINCIPAL_EMAILS.includes(email);
-                const emailCampus = EMAIL_CAMPUS_MAPPING[email];
-
-                if (campus && emailCampus === campus) {
-                    if (isPrincipalEmail) {
-                        loginBtn.disabled = true;
-                        adminBtn.disabled = passwordField.value.length === 0;
-                    } else {
-                        loginBtn.disabled = passwordField.value.length === 0;
-                        adminBtn.disabled = true;
-                    }
-                } else {
-                    loginBtn.disabled = true;
-                    adminBtn.disabled = true;
-                }
-            });
-
-            document.getElementById('password').addEventListener('input', function () {
-                const loginBtn = document.getElementById('loginBtn');
-                const adminBtn = document.getElementById('adminPortalBtn');
-                const email = document.getElementById('email').value.trim().toLowerCase();
-                const campus = document.getElementById('campus').value;
-                const password = this.value;
-
-                const isPrincipalEmail = PRINCIPAL_EMAILS.includes(email);
-                const emailCampus = EMAIL_CAMPUS_MAPPING[email];
-
-                if (campus && emailCampus === campus && password.length > 0) {
-                    if (isPrincipalEmail) {
-                        loginBtn.disabled = true;
-                        adminBtn.disabled = false;
-                    } else {
-                        loginBtn.disabled = false;
-                        adminBtn.disabled = true;
-                    }
-                } else {
                     loginBtn.disabled = true;
                     adminBtn.disabled = true;
                 }
@@ -672,8 +575,6 @@
 
         async function handleStaffLogin(e) {
             e.preventDefault();
-
-            // SET FLAG: We're now logging in
             isLoggingIn = true;
 
             const campus = document.getElementById('campus').value;
@@ -682,26 +583,6 @@
 
             if (!campus || !email || !password) {
                 showMessage('Please fill all fields', 'error');
-                isLoggingIn = false;
-                return;
-            }
-
-            const emailCampus = EMAIL_CAMPUS_MAPPING[email];
-
-            if (!emailCampus) {
-                showMessage('❌ This email is not authorized', 'error');
-                isLoggingIn = false;
-                return;
-            }
-
-            if (emailCampus !== campus) {
-                showMessage(`❌ This email belongs to ${emailCampus}, not ${campus}`, 'error');
-                isLoggingIn = false;
-                return;
-            }
-
-            if (PRINCIPAL_EMAILS.includes(email)) {
-                showMessage('❌ Principals must use the Principal Admin Portal', 'error');
                 isLoggingIn = false;
                 return;
             }
@@ -714,32 +595,32 @@
             hideMessages();
 
             try {
-                // FIRST: Sign out any existing user
-                await auth.signOut();
+                const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    ? 'http://localhost:5000/api'
+                    : 'https://college-outpass-api.onrender.com/api';
 
-                // Wait 500ms for clean state
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                // THEN: Sign in fresh
-                await auth.signInWithEmailAndPassword(email, password);
-
-                // STAFF LOGIN - Clear old data and set new
-                localStorage.clear(); // Clear everything first
-                localStorage.setItem('userCampus', campus);
-                localStorage.setItem('userEmail', email);
-                localStorage.setItem('lastDashboard', 'staff');
-                localStorage.setItem('isPrincipal', 'false');
-
-                // Clear logout flag
-                sessionStorage.removeItem('explicitLogout');
-
-                console.log("✅ STAFF LOGIN - Going to dashboard.html");
-                console.log("Saved data:", {
-                    campus: localStorage.getItem('userCampus'),
-                    email: localStorage.getItem('userEmail'),
-                    lastDashboard: localStorage.getItem('lastDashboard'),
-                    isPrincipal: localStorage.getItem('isPrincipal')
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, campus })
                 });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || result.code || 'Login failed');
+                }
+
+                // TiDB LOGIN SUCCESS
+                localStorage.clear();
+                localStorage.setItem('tidb_token', result.token);
+                localStorage.setItem('userCampus', result.user.campus);
+                localStorage.setItem('userEmail', result.user.email);
+                localStorage.setItem('lastDashboard', 'staff');
+                localStorage.setItem('isPrincipal', result.user.role === 'admin' ? 'true' : 'false');
+
+                // Also sign in to firebase as fallback if needed (optional)
+                // await auth.signInWithEmailAndPassword(email, password).catch(e => console.warn('Firebase sync failed'));
 
                 showMessage('✅ Login successful! Redirecting...', 'success');
 
@@ -749,14 +630,7 @@
 
             } catch (error) {
                 console.error('Login error:', error);
-
-                let friendlyError = 'Invalid credentials. Please try again.';
-                if (error.code === 'auth/too-many-requests') {
-                    friendlyError = 'Too many attempts. Please try again later.';
-                }
-
-                showMessage('❌ ' + friendlyError, 'error');
-
+                showMessage('❌ ' + error.message, 'error');
                 loginText.style.display = 'inline';
                 loginLoader.style.display = 'none';
                 document.getElementById('loginBtn').disabled = false;
@@ -765,7 +639,6 @@
         }
 
         async function handleAdminLogin() {
-            // SET FLAG: We're now logging in
             isLoggingIn = true;
 
             const campus = document.getElementById('campus').value;
@@ -778,59 +651,39 @@
                 return;
             }
 
-            const emailCampus = EMAIL_CAMPUS_MAPPING[email];
-            const isPrincipalEmail = PRINCIPAL_EMAILS.includes(email);
-
-            if (!emailCampus) {
-                showMessage('❌ This email is not authorized', 'error');
-                isLoggingIn = false;
-                return;
-            }
-
-            if (emailCampus !== campus) {
-                showMessage(`❌ This email belongs to ${emailCampus}, not ${campus}`, 'error');
-                isLoggingIn = false;
-                return;
-            }
-
-            if (!isPrincipalEmail) {
-                showMessage('❌ Only principals can access Admin Portal', 'error');
-                isLoggingIn = false;
-                return;
-            }
-
             const adminBtn = document.getElementById('adminPortalBtn');
             adminBtn.innerHTML = '<span class="loader"></span> Verifying...';
             adminBtn.disabled = true;
             hideMessages();
 
             try {
-                // FIRST: Sign out any existing user
-                await auth.signOut();
+                const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    ? 'http://localhost:5000/api'
+                    : 'https://college-outpass-api.onrender.com/api';
 
-                // Wait 500ms for clean state
-                await new Promise(resolve => setTimeout(resolve, 500));
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, campus })
+                });
 
-                // THEN: Sign in fresh
-                await auth.signInWithEmailAndPassword(email, password);
+                const result = await response.json();
 
-                // PRINCIPAL LOGIN - Clear old data and set new
-                localStorage.clear(); // Clear everything first
-                localStorage.setItem('userCampus', campus);
-                localStorage.setItem('userEmail', email);
+                if (!response.ok) {
+                    throw new Error(result.error || result.code || 'Login failed');
+                }
+
+                if (result.user.role !== 'admin') {
+                    throw new Error('This account does not have Admin access');
+                }
+
+                // TiDB LOGIN SUCCESS
+                localStorage.clear();
+                localStorage.setItem('tidb_token', result.token);
+                localStorage.setItem('userCampus', result.user.campus);
+                localStorage.setItem('userEmail', result.user.email);
                 localStorage.setItem('isPrincipal', 'true');
                 localStorage.setItem('lastDashboard', 'admin');
-
-                // Clear logout flag
-                sessionStorage.removeItem('explicitLogout');
-
-                console.log("✅ PRINCIPAL LOGIN - Going to staff-admin-dashboard.html");
-                console.log("Saved data:", {
-                    campus: localStorage.getItem('userCampus'),
-                    email: localStorage.getItem('userEmail'),
-                    lastDashboard: localStorage.getItem('lastDashboard'),
-                    isPrincipal: localStorage.getItem('isPrincipal')
-                });
 
                 showMessage('✅ Admin login successful!', 'success');
 
@@ -840,14 +693,7 @@
 
             } catch (error) {
                 console.error('Admin login error:', error);
-
-                let friendlyError = 'Invalid credentials. Please try again.';
-                if (error.code === 'auth/too-many-requests') {
-                    friendlyError = 'Too many attempts. Please try again later.';
-                }
-
-                showMessage('❌ ' + friendlyError, 'error');
-
+                showMessage('❌ ' + error.message, 'error');
                 adminBtn.innerHTML = '<span>🔐</span><span>Principal Admin Portal</span>';
                 adminBtn.disabled = false;
                 isLoggingIn = false;
