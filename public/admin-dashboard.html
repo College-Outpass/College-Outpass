@@ -1202,13 +1202,23 @@
                     <div class="admin-badge">AGM</div>
                 </div>
             </div>
-            <div class="nav-right">
-                <span id="userEmail" class="user-email">HOD Administrator</span>
-                <a href="add-staff.html" class="btn-logout" style="text-decoration: none; margin-right: 10px;">👥
-                    Manage Staff</a>
-                <a href="add-security.html" class="btn-logout" style="text-decoration: none; margin-right: 10px;">🛡️
-                    Manage Security</a>
-                <button id="logoutBtn" class="btn-logout">Logout</button>
+            <div class="nav-right" style="display: flex; align-items: center; gap: 15px; flex-wrap: nowrap;">
+                <span id="userEmail" class="user-email" style="margin-right: 10px;">HOD Administrator</span>
+
+                <a href="add-staff.html" class="btn-logout" id="manageStaffBtn"
+                    style="text-decoration: none; display: flex; align-items: center; gap: 8px; background: rgba(52, 152, 219, 0.2); border: 1px solid rgba(52, 152, 219, 0.4);">
+                    <span style="font-size: 18px;">👥</span>
+                    <span>Manage Staff</span>
+                </a>
+
+                <a href="add-security.html" class="btn-logout" id="manageSecurityBtn"
+                    style="text-decoration: none; display: flex; align-items: center; gap: 8px; background: rgba(52, 152, 219, 0.2); border: 1px solid rgba(52, 152, 219, 0.4);">
+                    <span style="font-size: 18px;">🛡️</span>
+                    <span>Manage Security</span>
+                </a>
+
+                <button id="logoutBtn" class="btn-logout"
+                    style="background: rgba(231, 76, 60, 0.2); border: 1px solid rgba(231, 76, 60, 0.4);">Logout</button>
             </div>
         </div>
     </nav>
