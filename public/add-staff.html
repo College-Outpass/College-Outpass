@@ -362,6 +362,25 @@
                     token = adminAuth ? adminAuth.token : localStorage.getItem('tidb_token');
                 }
 
+                // Create Firebase User First
+                let secondaryApp;
+                try {
+                    secondaryApp = firebase.app("SecondaryApp");
+                } catch (e) {
+                    secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryApp");
+                }
+
+                try {
+                    const userCred = await secondaryApp.auth().createUserWithEmailAndPassword(data.email, data.password);
+                    data.uid = userCred.user.uid;
+                    await secondaryApp.auth().signOut();
+                } catch (fbErr) {
+                    if (fbErr.code !== 'auth/email-already-exists') {
+                        throw new Error("Firebase Auth Error: " + fbErr.message);
+                    }
+                    console.log("User already exists in Firebase, linking to TiDB backend...");
+                }
+
                 const res = await fetch(`${API_URL}/users`, {
                     method: 'POST',
                     headers: {

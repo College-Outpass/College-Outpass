@@ -4,7 +4,6 @@ const fs = require('fs');
 const { pool, initDb } = require('./db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
 const path = require('path');
 const app = express();
 app.use(cors());
@@ -144,6 +143,28 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+app.post('/api/auth/verify_firebase_staff', authenticateToken, async (req, res) => {
+    try {
+        const email = req.user.email;
+        const [users] = await pool.query('SELECT uid, email, role, campus FROM users WHERE email = ?', [email]);
+        
+        if (users.length === 0) {
+            return res.status(404).json({ error: 'Staff profile not found in database.' });
+        }
+        
+        const user = users[0];
+        if (req.body.campus && user.campus && user.campus !== req.body.campus && user.role !== 'admin') {
+            return res.status(403).json({ error: 'Unauthorized: This account belongs to a different campus.' });
+        }
+        
+        // Return user data (role and campus are needed for the frontend)
+        res.json({ user });
+    } catch (err) {
+        console.error('Firebase Staff Verify Error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 app.post('/api/auth/verify', authenticateToken, (req, res) => {
     res.json({ user: req.user });
 });
@@ -167,7 +188,7 @@ app.post('/api/users', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        const uid = 'u_' + Date.now();
+        const uid = req.body.uid || 'u_' + Date.now();
         const password_hash = await bcrypt.hash(password, 10);
 
         await pool.query(
