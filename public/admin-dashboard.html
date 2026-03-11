@@ -2668,13 +2668,14 @@
     </div>
     <script>
         // Version check - update this version number when you deploy
-        const CURRENT_VERSION = '2.4';
+        const CURRENT_VERSION = '3.0.5';
         const STORAGE_KEY = 'app_version_dashboard';
 
         // Check if user has old cached version
         const savedVersion = localStorage.getItem(STORAGE_KEY);
         if (savedVersion && savedVersion !== CURRENT_VERSION) {
             localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
+            // Force reload from server bypassing cache
             window.location.reload(true);
         } else {
             localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
