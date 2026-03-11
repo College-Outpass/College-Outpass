@@ -1,24 +1,16 @@
 @echo off
 setlocal
 
-:: ==========================================
-:: 🚀 PRO DEPLOYMENT TOOL v2.0 - COLLEGE OUTPASS
-:: ==========================================
-
 echo.
-echo  ############################################
-echo  #                                          #
-echo  #   COLLEGE OUTPASS - DEPLOYMENT TOOL      #
-echo  #    (TiDB Authentication & Security)      #
-echo  #                                          #
-echo  ############################################
+echo ==============================================
+echo COLLEGE OUTPASS - DEPLOYMENT TOOL v2.1
+echo ==============================================
 echo.
 
 :: 1. PREREQUISITE CHECK
 git --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERROR] Git is not installed! 
-    echo Please install Git to deploy to Render.
+    echo [ERROR] Git is not installed or not in PATH!
     pause
     exit /b
 )
@@ -29,50 +21,53 @@ echo.
 git status -s
 echo.
 
-set /p proceed="🚀 Ready to deploy to Render? (Y/N): "
+set /p proceed="Ready to deploy to Render? (Y/N): "
 if /i "%proceed%" neq "Y" (
     echo [INFO] Deployment cancelled.
+    pause
     exit /b
 )
 
-:: 3. SYNC WITH REMOTE (Optional but safer)
+:: 3. GIT PROCESS
 echo.
-echo 🔄 Stage 1: Synchronizing with GitHub...
-git fetch origin main
-
-:: 4. GIT PROCESS
-echo.
-echo 📥 Stage 2: Indexing files...
+echo [1/4] Indexing files...
 git add .
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to add files.
+    pause
+    exit /b
+)
 
 echo.
-set "commitMsg=🚀 DEPLOY: Unified TiDB Authentication and Security Fixes"
-set /p userInput="📝 Stage 3: Enter update summary (or press ENTER for default): "
+set "commitMsg=Update: Security and Staff Management Enhancements"
+set /p userInput="[2/4] Enter update summary (or press ENTER for default): "
 if not "%userInput%"=="" set "commitMsg=%userInput%"
 
 echo.
-echo 🛠️ Stage 4: Committing changes...
-:: Using %commitMsg% directly without delayed expansion to avoid issues with special chars
+echo [3/4] Committing changes...
 git commit -m "%commitMsg%"
+if %errorlevel% neq 0 (
+    echo [INFO] No new changes to commit or commit failed.
+)
 
 echo.
-echo 📤 Stage 5: Pushing to Render/Cloud...
+echo [4/4] Pushing to Render...
 :: Try pushing normally first
 git push origin main
 
 if %errorlevel% neq 0 (
     echo.
-    echo ⚠️  [WARNING] Normal push failed. 
-    echo There might be a conflict with the server.
+    echo [WARNING] Normal push failed.
+    echo This usually happens if the server has changes you don't have.
     
-    set /p force="Would you like to FORCE the update? This fixes most errors. (Y/N): "
+    set /p force="Would you like to FORCE the update? (Y/N): "
     if /i "%force%"=="Y" (
         echo.
-        echo 🚀 Force pushing updates...
+        echo [INFO] Force pushing updates...
         git push origin main --force
     ) else (
         echo.
-        echo ❌ Deployment failed. Please resolve conflicts manually.
+        echo [ERROR] Deployment failed.
         pause
         exit /b
     )
@@ -80,14 +75,14 @@ if %errorlevel% neq 0 (
 
 if %errorlevel% == 0 (
     echo.
-    echo ========================================================
-    echo ✅ SUCCESS: Updates are being deployed!
-    echo ========================================================
+    echo ==============================================
+    echo SUCCESS: Updates have been sent to Render!
+    echo ==============================================
     echo.
-    echo 🛰️  API Status: https://college-outpass-api.onrender.com/hello
-    echo 📋 Render Portal: https://dashboard.render.com
+    echo Build Status: https://dashboard.render.com
+    echo API Health: https://college-outpass-api.onrender.com/hello
     echo.
-    echo ========================================================
+    echo ==============================================
 )
 
 echo.
