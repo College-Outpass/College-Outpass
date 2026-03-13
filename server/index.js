@@ -67,9 +67,9 @@ app.get('/api/admin/reset_db', async (req, res) => {
             await pool.query(`TRUNCATE TABLE ${table}`).catch(e => console.warn(`Warn: ${table} truncate failed:`, e.message));
         }
         
-        // 2. Re-insert HOD (Pre-hashed for admin123 to avoid bcrypt delay/errors during reset)
+        // 2. Re-insert HOD (Pre-hashed for admin123)
         const hodEmail = 'srinivasnaidu.m@srichaitanyaschool.net';
-        const dummyHash = '$2b$10$7Rksyv.0E1v7zKzW.oJq2u6p8E8V.q8Z.q8Z.q8Z.q8Z.q8Z.q8Z'; // dummy but valid format
+        const dummyHash = '$2b$10$Bq1NsrnOsZFWkFlA1iG9i.G..MVWCVm98S2qucglsOxJXcF152QEWG';
         const hodUid = 'hod_' + Date.now();
 
         await pool.query("INSERT INTO users (uid, email, password_hash, role, name) VALUES (?, ?, ?, 'admin', ?)", [hodUid, hodEmail, dummyHash, 'Head of Department']);
