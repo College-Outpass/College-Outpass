@@ -9,14 +9,25 @@ const jwt = require('jsonwebtoken');
 // Firebase Admin Setup
 const admin = require('firebase-admin');
 const serviceAccountPath = path.join(__dirname, '../key.json');
-if (fs.existsSync(serviceAccountPath)) {
+if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
+    try {
+        const decodedKey = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_B64, 'base64').toString('utf8');
+        const serviceAccount = JSON.parse(decodedKey);
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        console.log('🔥 Firebase Admin initialized from ENV');
+    } catch (e) {
+        console.error('❌ Failed to initialize Firebase Admin from ENV:', e.message);
+    }
+} else if (fs.existsSync(serviceAccountPath)) {
     const serviceAccount = require(serviceAccountPath);
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
     });
-    console.log('🔥 Firebase Admin initialized');
+    console.log('🔥 Firebase Admin initialized from key.json');
 } else {
-    console.warn('⚠️ Firebase Admin Initialization failed: key.json not found');
+    console.warn('⚠️ Firebase Admin Initialization failed: key.json or ENV not found');
 }
 
 console.log('🚀 Final Pure-Database Mode v3.0');
