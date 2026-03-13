@@ -34,20 +34,25 @@ app.get('/hello', (req, res) => {
 
 app.get('/diag/db', async (req, res) => {
     try {
-        const [[users]] = await pool.query('SELECT COUNT(*) as count FROM users');
-        const [[staff]] = await pool.query('SELECT COUNT(*) as count FROM staff');
-        const [[admins]] = await pool.query('SELECT COUNT(*) as count FROM admins');
-        const [[security]] = await pool.query('SELECT COUNT(*) as count FROM security');
-        const [[students]] = await pool.query('SELECT COUNT(*) as count FROM students').catch(() => [{count: 'ERROR/MISSING'}]);
+        const [[usersCount]] = await pool.query('SELECT COUNT(*) as count FROM users');
+        const [[staffCount]] = await pool.query('SELECT COUNT(*) as count FROM staff');
+        const [[adminsCount]] = await pool.query('SELECT COUNT(*) as count FROM admins');
+        const [[securityCount]] = await pool.query('SELECT COUNT(*) as count FROM security');
+        const [[studentsCount]] = await pool.query('SELECT COUNT(*) as count FROM students').catch(() => [{count: 'ERROR/MISSING'}]);
+        
+        // Fetch last 5 users for verification
+        const [lastUsers] = await pool.query('SELECT uid, email, role, created_at FROM users ORDER BY created_at DESC LIMIT 5');
+
         res.json({
             status: 'connected',
             counts: { 
-                users: users.count, 
-                staff: staff.count, 
-                admins: admins.count, 
-                security: security.count,
-                students: students.count 
+                users: usersCount.count, 
+                staff: staffCount.count, 
+                admins: adminsCount.count, 
+                security: securityCount.count,
+                students: studentsCount.count 
             },
+            recent_users: lastUsers,
             time: new Date().toISOString()
         });
     } catch (err) {
