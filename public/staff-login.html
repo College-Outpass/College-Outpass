@@ -599,32 +599,40 @@
                     ? 'http://localhost:5000/api'
                     : 'https://college-outpass-api.onrender.com/api';
 
-                // Step 1: Sign in with Database API directly
-                console.log('Authenticating with Database...');
-                const loginResponse = await fetch(`${API_URL}/auth/login`, {
+                // Step 1: Sign in with Firebase Authentication
+                console.log('Signing in with Firebase Auth...');
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                const token = await user.getIdToken();
+
+                console.log('✅ Firebase Auth successful, fetching staff metadata...');
+
+                // Step 2: Fetch staff metadata from database to verify campus and role
+                const verifyResponse = await fetch(`${API_URL}/auth/verify_firebase_staff`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, campus })
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ campus })
                 });
 
-                const loginResult = await loginResponse.json();
+                const result = await verifyResponse.json();
 
-                if (!loginResponse.ok) {
-                    throw new Error(loginResult.error || loginResult.code || 'Login failed');
+                if (!verifyResponse.ok) {
+                    await auth.signOut();
+                    throw new Error(result.error || result.code || 'Staff verification failed');
                 }
 
-                const token = loginResult.token;
-                const userData = loginResult.user;
+                console.log('✅ Database Verification successful!');
 
-                console.log('✅ Database Login successful!');
-
-                // Step 2: Set local storage with verified data
+                // Step 3: Set local storage with verified data
                 localStorage.clear();
                 localStorage.setItem('tidb_token', token);
-                localStorage.setItem('userCampus', userData.campus);
-                localStorage.setItem('userEmail', userData.email);
+                localStorage.setItem('userCampus', result.user.campus);
+                localStorage.setItem('userEmail', result.user.email);
                 localStorage.setItem('lastDashboard', 'staff');
-                localStorage.setItem('isPrincipal', userData.role === 'admin' ? 'true' : 'false');
+                localStorage.setItem('isPrincipal', result.user.role === 'admin' ? 'true' : 'false');
 
                 showMessage('✅ Login successful! Redirecting...', 'success');
 
@@ -665,32 +673,39 @@
                     ? 'http://localhost:5000/api'
                     : 'https://college-outpass-api.onrender.com/api';
 
-                // Step 1: Sign in with Database API directly
-                console.log('Authenticating Admin with Database...');
-                const loginResponse = await fetch(`${API_URL}/auth/login`, {
+                // Step 1: Sign in with Firebase Authentication
+                console.log('Signing in with Firebase Auth (Admin)...');
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                const token = await user.getIdToken();
+
+                // Step 2: Fetch staff metadata from database to verify role
+                const verifyResponse = await fetch(`${API_URL}/auth/verify_firebase_staff`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, campus })
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ campus })
                 });
 
-                const loginResult = await loginResponse.json();
+                const result = await verifyResponse.json();
 
-                if (!loginResponse.ok) {
-                    throw new Error(loginResult.error || loginResult.code || 'Admin login failed');
+                if (!verifyResponse.ok) {
+                    await auth.signOut();
+                    throw new Error(result.error || result.code || 'Admin verification failed');
                 }
 
-                if (loginResult.user.role !== 'admin') {
+                if (result.user.role !== 'admin') {
+                    await auth.signOut();
                     throw new Error('This account does not have Admin access');
                 }
-
-                const token = loginResult.token;
-                const userData = loginResult.user;
 
                 // TiDB LOGIN SUCCESS
                 localStorage.clear();
                 localStorage.setItem('tidb_token', token);
-                localStorage.setItem('userCampus', userData.campus);
-                localStorage.setItem('userEmail', userData.email);
+                localStorage.setItem('userCampus', result.user.campus);
+                localStorage.setItem('userEmail', result.user.email);
                 localStorage.setItem('isPrincipal', 'true');
                 localStorage.setItem('lastDashboard', 'admin');
 

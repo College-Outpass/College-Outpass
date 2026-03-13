@@ -9,11 +9,19 @@ const admin = require('firebase-admin');
 
 // Initialize Firebase Admin
 try {
-    const serviceAccount = require('../key.json');
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
-    console.log('✅ Firebase Admin initialized');
+    const keyPath = path.join(__dirname, '../key.json');
+    if (fs.existsSync(keyPath)) {
+        const serviceAccount = require(keyPath);
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        console.log('✅ Firebase Admin initialized with key.json');
+    } else {
+        console.warn('⚠️ key.json not found, using Environment Variables for Firebase');
+        admin.initializeApp({
+            credential: admin.credential.applicationDefault()
+        });
+    }
 } catch (e) {
     console.error('❌ Firebase Admin initialization failed:', e.message);
 }
@@ -157,23 +165,30 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.post('/api/auth/verify_firebase_staff', authenticateToken, async (req, res) => {
     try {
-        const email = req.user.email;
+        const { campus } = req.body;
+        const email = req.user.email; // Already verified by authenticateToken
+
+        console.log(`🔍 Verifying TiDB profile for: ${email}`);
+
+        // Fetch profile from TiDB
         const [users] = await pool.query('SELECT uid, email, role, campus FROM users WHERE email = ?', [email]);
         
         if (users.length === 0) {
-            return res.status(404).json({ error: 'Staff profile not found in database.' });
+            console.error(`❌ Profile missing in TiDB for: ${email}`);
+            return res.status(404).json({ error: 'Staff profile not found in database. Please contact Admin.' });
         }
-        
+
         const user = users[0];
-        if (req.body.campus && user.campus && user.campus !== req.body.campus && user.role !== 'admin') {
-            return res.status(403).json({ error: 'Unauthorized: This account belongs to a different campus.' });
+
+        // Verify campus for staff
+        if (campus && user.campus !== campus && user.role !== 'admin') {
+            return res.status(403).json({ error: `This account belongs to ${user.campus.replace(/_/g, ' ')}` });
         }
         
-        // Return user data (role and campus are needed for the frontend)
         res.json({ user });
     } catch (err) {
         console.error('Firebase Staff Verify Error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Authorization error: ' + err.message });
     }
 });
 
@@ -202,7 +217,7 @@ app.post('/api/users', authenticateToken, async (req, res) => {
 
         let uid = req.body.uid || 'u_' + Date.now();
 
-        // Optional: Attempt to create in Firebase, but don't block DB save
+        // REQUIRED: Create in Firebase first
         try {
             const userRecord = await admin.auth().createUser({
                 email: email.toLowerCase(),
@@ -213,13 +228,12 @@ app.post('/api/users', authenticateToken, async (req, res) => {
             console.log(`✅ Firebase user created: ${uid}`);
         } catch (fbErr) {
             if (fbErr.code === 'auth/email-already-exists') {
-                try {
-                    const existingUser = await admin.auth().getUserByEmail(email.toLowerCase());
-                    uid = existingUser.uid;
-                    console.log(`ℹ️ Linking to existing Firebase user: ${uid}`);
-                } catch (e) {}
+                const existingUser = await admin.auth().getUserByEmail(email.toLowerCase());
+                uid = existingUser.uid;
+                console.log(`ℹ️ Linking to existing Firebase user: ${uid}`);
             } else {
-                console.warn(`⚠️ Firebase sync skipped: ${fbErr.message}`);
+                console.error(`❌ Firebase Error: ${fbErr.message}`);
+                return res.status(500).json({ error: 'Firebase Account Creation Failed: ' + fbErr.message });
             }
         }
 
