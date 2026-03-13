@@ -55,34 +55,6 @@ try {
     console.log('📂 Files in folder:', files.join(', '));
 } catch (e) { console.log('❌ Error reading folder:', e.message); }
 
-app.get('/api/admin/reset_db', async (req, res) => {
-    if (req.query.key !== 'hod_reset_2024') return res.status(403).send('Unauthorized');
-
-    try {
-        console.log('🔄 Performing Full Database Reset...');
-        
-        // 1. Clear everything
-        const tables = ['users', 'staff', 'admins'];
-        for (const table of tables) {
-            await pool.query(`TRUNCATE TABLE ${table}`).catch(e => console.warn(`Warn: ${table} truncate failed:`, e.message));
-        }
-        
-        // 2. Re-insert HOD (Pre-hashed for admin123)
-        const hodEmail = 'srinivasnaidu.m@srichaitanyaschool.net';
-        const dummyHash = '$2b$10$Bq1NsrnOsZFWkFlA1iG9i.G..MVWCVm98S2qucglsOxJXcF152QEWG';
-        const hodUid = 'hod_' + Date.now();
-
-        await pool.query("INSERT INTO users (uid, email, password_hash, role, name) VALUES (?, ?, ?, 'admin', ?)", [hodUid, hodEmail, dummyHash, 'Head of Department']);
-        await pool.query("INSERT INTO admins (uid, email, password_hash, role, name) VALUES (?, ?, ?, 'admin', ?)", [hodUid, hodEmail, dummyHash, 'Head of Department']);
-
-        console.log('✅ Reset Complete');
-        res.send('✅ Database Reset Successful. Old data deleted. HOD account restored.');
-    } catch (err) {
-        console.error('❌ Reset error:', err);
-        res.status(500).send('❌ Error: ' + err.message);
-    }
-});
-
 app.use(express.static(publicPath));
 
 initDb();
