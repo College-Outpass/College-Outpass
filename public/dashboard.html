@@ -2443,33 +2443,36 @@
 
         // Check authentication
         let authStateInitialized = false;
-        auth.onAuthStateChanged((user) => {
-            // Prevent redirects during camera operations
-            if (isCameraActive) {
-                console.log('Camera is active, skipping auth check to prevent redirect');
-                return;
-            }
 
-            if (!user) {
-                // Only redirect if not already on login page and not during camera operation
-                if (!window.location.href.includes('staff-login.html') && !authStateInitialized) {
-                    console.log('No user logged in, redirecting to staff login...');
-                    window.location.href = 'staff-login.html';
+        // [TiDB MODE] First check for our database token
+        const tidbToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+        const storedEmail = localStorage.getItem('userEmail');
+
+        if (tidbToken && storedEmail) {
+            console.log('✅ TiDB Session found for Staff:', storedEmail);
+            initializeDashboardWithUser({ email: storedEmail });
+        } else {
+            // Fallback to Firebase for older sessions
+            auth.onAuthStateChanged((user) => {
+                if (isCameraActive) return;
+                if (!user) {
+                    if (!window.location.href.includes('staff-login.html') && !authStateInitialized) {
+                        window.location.href = 'staff-login.html';
+                    }
+                    return;
                 }
-                return;
-            }
+                initializeDashboardWithUser(user);
+            });
+        }
 
+        function initializeDashboardWithUser(user) {
             authStateInitialized = true;
-
             console.log('User logged in:', user.email);
             document.getElementById('userEmail').textContent = user.email;
 
             // STRICT: Get campus information from user email (no fallback)
             campusInfo = getCampusInfoFromUserEmail(user.email);
-            if (!campusInfo) {
-                // Access denied or redirect happening
-                return;
-            }
+            if (!campusInfo) return;
 
             console.log('Campus Info:', campusInfo);
 
@@ -2523,7 +2526,7 @@
             // Disable student data fields on page load
             clearStudentFields();
             clearMediSlipStudentField();
-        });
+        }
 
         // ==================== STUDENT ID VALIDATION FUNCTIONS ====================
 
