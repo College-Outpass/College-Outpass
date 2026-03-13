@@ -1226,107 +1226,60 @@
         let currentUserEmail = "";
         let campusStaffEmails = []; // Staff emails belonging to this campus
 
-        auth.onAuthStateChanged((user) => {
-            if (!user) {
-                // No user is signed in, redirect to login
-                window.location.href = 'staff-login.html';
-                return;
-            }
-            
-            currentUserEmail = user.email;
-            document.getElementById('userEmail').textContent = currentUserEmail;
-            
-            currentCampus = localStorage.getItem('userCampus');
+        // [TiDB MODE] First check for our database token
+        document.addEventListener('DOMContentLoaded', function() {
+            const tidbToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+            const storedEmail = localStorage.getItem('userEmail');
             const isPrincipal = localStorage.getItem('isPrincipal');
-            
-            console.log("✅ Principal Dashboard Auth:", { 
-                currentCampus, 
-                isPrincipal, 
-                email: user.email 
-            });
-            
-            // STRICT: Verify email exists in mapping
-            const emailCampus = EMAIL_CAMPUS_MAPPING[currentUserEmail];
-            if (!emailCampus) {
-                console.error('❌ Unauthorized email:', currentUserEmail);
-                alert('❌ Access Denied: This email is not authorized. Please contact administrator.');
-                auth.signOut().then(() => {
-                    localStorage.clear();
-                    window.location.href = 'staff-login.html';
-                });
+            const storedCampus = localStorage.getItem('userCampus');
+
+            if (tidbToken && storedEmail && isPrincipal === 'true') {
+                console.log('✅ TiDB Session found for Principal:', storedEmail);
+                currentUserEmail = storedEmail;
+                currentCampus = storedCampus;
+                document.getElementById('userEmail').textContent = currentUserEmail;
+                
+                // Get all staff emails for this campus
+                campusStaffEmails = Object.keys(EMAIL_CAMPUS_MAPPING).filter(
+                    email => EMAIL_CAMPUS_MAPPING[email] === currentCampus
+                );
+                
+                updateCampusDisplay();
+                loadAllData();
+                setupEventListeners();
                 return;
             }
-            
-            // STRICT: Verify campus from localStorage matches email's actual campus
-            if (!currentCampus) {
-                // Set campus from email mapping if not in localStorage
+
+            // Fallback to Firebase for older sessions
+            auth.onAuthStateChanged((user) => {
+                if (!user) {
+                    window.location.href = 'staff-login.html';
+                    return;
+                }
+                
+                currentUserEmail = user.email;
+                document.getElementById('userEmail').textContent = currentUserEmail;
+                
+                currentCampus = localStorage.getItem('userCampus');
+                const isPrincipalStored = localStorage.getItem('isPrincipal');
+                
+                const emailCampus = EMAIL_CAMPUS_MAPPING[currentUserEmail];
+                if (!emailCampus || isPrincipalStored !== 'true') {
+                    window.location.href = 'staff-login.html';
+                    return;
+                }
+                
                 currentCampus = emailCampus;
                 localStorage.setItem('userCampus', currentCampus);
-            } else if (currentCampus !== emailCampus) {
-                // STRICT: Campus mismatch - reject access
-                console.error('❌ Campus mismatch:', { email: currentUserEmail, storedCampus: currentCampus, actualCampus: emailCampus });
-                alert('❌ Access Denied: Campus mismatch detected. This email belongs to ' + (CAMPUS_DISPLAY_NAMES[emailCampus] || emailCampus) + ', not ' + (CAMPUS_DISPLAY_NAMES[currentCampus] || currentCampus) + '. Please login again.');
-                auth.signOut().then(() => {
-                    localStorage.clear();
-                    window.location.href = 'staff-login.html';
-                });
-                return;
-            }
-            
-            // STRICT: Verify user is principal
-            if (isPrincipal !== 'true') {
-                window.location.href = 'dashboard.html';
-                return;
-            }
-            
-            // STRICT: Verify principal email (complete list matching staff-login.html)
-            const PRINCIPAL_EMAILS = [
-                'pucneetboysprincipal@srichaitanyacollege.net',
-                'ecitypucprincipal2@srichaitanyacollege.net',
-                'ecitypucprincipal1@srichaitanyacollege.net',
-                'electroniccityprincipal@srichaitanyaschool.net'
-            ];
-            
-            // Normalize email for comparison (remove whitespace, lowercase)
-            const emailLower = (currentUserEmail || '').trim().toLowerCase();
-            console.log('🔍 Checking principal access:', { 
-                currentUserEmail, 
-                emailLower, 
-                isPrincipal,
-                storedEmail: localStorage.getItem('userEmail'),
-                principalEmails: PRINCIPAL_EMAILS 
+                
+                campusStaffEmails = Object.keys(EMAIL_CAMPUS_MAPPING).filter(
+                    email => EMAIL_CAMPUS_MAPPING[email] === currentCampus
+                );
+                
+                updateCampusDisplay();
+                loadAllData();
+                setupEventListeners();
             });
-            
-            // Check if email is in principal list (case-insensitive)
-            const isPrincipalEmail = PRINCIPAL_EMAILS.some(email => email.trim().toLowerCase() === emailLower);
-            
-            if (!isPrincipalEmail) {
-                console.error('❌ Not a principal email:', { 
-                    currentUserEmail, 
-                    emailLower,
-                    principalEmails: PRINCIPAL_EMAILS,
-                    storedEmail: localStorage.getItem('userEmail')
-                });
-                alert('❌ Access Denied: Only principals can access this dashboard.\n\nYour email: ' + currentUserEmail + '\n\nPlease login using the "Principal Admin Portal" button with a principal email account.');
-                auth.signOut().then(() => {
-                    localStorage.clear();
-                    window.location.href = 'staff-login.html';
-                });
-                return;
-            }
-            
-            console.log('✅ Principal email verified:', currentUserEmail);
-            
-            // Get all staff emails for this campus
-            campusStaffEmails = Object.keys(EMAIL_CAMPUS_MAPPING).filter(
-                email => EMAIL_CAMPUS_MAPPING[email] === currentCampus
-            );
-            
-            console.log("🏫 Campus Staff Emails:", campusStaffEmails);
-            
-            updateCampusDisplay();
-            loadAllData();
-            setupEventListeners();
         });
 
         function updateCampusDisplay() {

@@ -1418,55 +1418,39 @@
         const ALLOWED_ADMIN_EMAIL = "srinivasnaidu.m@srichaitanyaschool.net";
 
         // Check authentication and load data
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', async function () {
             let dashboardInitialized = false;
 
-            // Wait for Firebase Auth to initialize and check auth state
+            // [TiDB MODE] First check for our database token
+            const tidbToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+            const adminEmail = localStorage.getItem('userEmail');
+
+            if (tidbToken && adminEmail) {
+                console.log('✅ TiDB Token found, initializing dashboard for:', adminEmail);
+                initializeDashboard({ email: adminEmail, role: 'admin' });
+                dashboardInitialized = true;
+                return;
+            }
+
+            // Fallback to Firebase Auth (for older sessions)
             auth.onAuthStateChanged(async (user) => {
-                // Prevent multiple initializations
                 if (dashboardInitialized) return;
 
-                // No user authenticated, redirect to login
                 if (!user) {
-                    console.log('No Firebase user, redirecting to login...');
+                    console.log('No user session found, redirecting...');
                     window.location.href = 'admin-login.html';
                     return;
                 }
 
-                // Check if user is an authorized admin
                 try {
-                    console.log('Checking admin authorization for:', user.email);
                     const adminDoc = await db.collection('admins').doc(user.uid).get();
-
                     if (!adminDoc.exists) {
-                        console.error('❌ User is not in admins collection');
-                        await auth.signOut();
-                        alert('❌ Access Denied: You are not authorized as an administrator.');
                         window.location.href = 'admin-login.html';
                         return;
                     }
-
-                    const adminData = adminDoc.data();
-
-                    // Verify the email matches the only allowed admin
-                    if (adminData.email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
-                        console.error('❌ Unauthorized admin email:', adminData.email);
-                        await auth.signOut();
-                        alert('❌ Access Denied: Unauthorized administrator account.');
-                        window.location.href = 'admin-login.html';
-                        return;
-                    }
-
-                    console.log('✅ Admin authorized:', adminData.email);
-
-                    // Initialize dashboard
-                    initializeDashboard(adminData);
+                    initializeDashboard(adminDoc.data());
                     dashboardInitialized = true;
-
                 } catch (error) {
-                    console.error('❌ Error checking admin authorization:', error);
-                    await auth.signOut();
-                    alert('❌ Authentication error. Please login again.');
                     window.location.href = 'admin-login.html';
                 }
             });

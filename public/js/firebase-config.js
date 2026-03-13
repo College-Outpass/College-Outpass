@@ -35,7 +35,9 @@ class TiDBFirestoreProxy {
         path: docId,
         delete: async () => {
           const user = firebase.auth().currentUser;
-          const token = user ? await user.getIdToken() : '';
+          let token = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+          if (!token && user) token = await user.getIdToken();
+          
           const response = await fetch(`${API_URL}/${colName}/${docId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
@@ -44,7 +46,8 @@ class TiDBFirestoreProxy {
         },
         get: async () => {
           const user = firebase.auth().currentUser;
-          const token = user ? await user.getIdToken() : '';
+          let token = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+          if (!token && user) token = await user.getIdToken();
 
           try {
             const res = await fetch(`${API_URL}/${colName}/${docId}`, {
@@ -70,7 +73,8 @@ class TiDBFirestoreProxy {
         },
         update: async (data) => {
           const user = firebase.auth().currentUser;
-          const token = user ? await user.getIdToken() : '';
+          let token = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+          if (!token && user) token = await user.getIdToken();
           const response = await fetch(`${API_URL}/${colName}/${docId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -84,7 +88,8 @@ class TiDBFirestoreProxy {
         },
         set: async (data, options = {}) => {
           const user = firebase.auth().currentUser;
-          const token = user ? await user.getIdToken() : '';
+          let token = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+          if (!token && user) token = await user.getIdToken();
           const method = options.merge ? 'PUT' : 'POST';
           const url = options.merge ? `${API_URL}/${colName}/${docId}` : `${API_URL}/${colName}`;
           const response = await fetch(url, {
@@ -101,7 +106,8 @@ class TiDBFirestoreProxy {
       }),
       add: async (data) => {
         const user = firebase.auth().currentUser;
-        const token = user ? await user.getIdToken() : '';
+        let token = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+        if (!token && user) token = await user.getIdToken();
         const response = await fetch(`${API_URL}/${colName}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -113,7 +119,8 @@ class TiDBFirestoreProxy {
       },
       get: async () => {
         const user = firebase.auth().currentUser;
-        const token = user ? await user.getIdToken() : '';
+        let token = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+        if (!token && user) token = await user.getIdToken();
 
         let queryString = '';
         const allFilters = [...filters];
@@ -158,7 +165,8 @@ class TiDBFirestoreProxy {
     };
     await callback(mockTransaction);
     const user = firebase.auth().currentUser;
-    const token = user ? await user.getIdToken() : '';
+    let token = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+    if (!token && user) token = await user.getIdToken();
     const response = await fetch(`${API_URL}/settings/increment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
