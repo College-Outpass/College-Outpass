@@ -115,26 +115,12 @@ app.post('/api/auth/login', async (req, res) => {
         const { email, password } = req.body;
         console.log(`🔑 Login attempt: ${email}`);
 
-        // HOD BYPASS - Always allow the principal admin
-        if (email.toLowerCase() === 'srinivasnaidu.m@srichaitanyaschool.net') {
-            const token = jwt.sign({
-                uid: 'hod_admin_placeholder',
-                email: 'srinivasnaidu.m@srichaitanyaschool.net',
-                role: 'admin'
-            }, JWT_SECRET, { expiresIn: '24h' });
-
-            return res.json({
-                user: {
-                    uid: 'hod_admin_placeholder',
-                    email: 'srinivasnaidu.m@srichaitanyaschool.net',
-                    role: 'admin'
-                },
-                token
-            });
+        // [SECURE MODE] Fetch user from database - NO MORE HARDCODED BYPASS
+        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email.toLowerCase()]);
+        
+        if (users.length === 0) {
+            return res.status(404).json({ code: 'auth/user-not-found' });
         }
-
-        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (users.length === 0) return res.status(404).json({ code: 'auth/user-not-found' });
 
         const user = users[0];
 
@@ -143,16 +129,61 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ code: 'auth/wrong-campus', error: `This account belongs to ${user.campus}` });
         }
 
-        if (!user.password_hash) return res.status(401).json({ code: 'auth/no-password-set' });
+        if (!user.password_hash) {
+            return res.status(401).json({ code: 'auth/no-password-set' });
+        }
 
         const pwdMatch = await bcrypt.compare(password, user.password_hash);
-        if (!pwdMatch) return res.status(401).json({ code: 'auth/wrong-password' });
+        if (!pwdMatch) {
+            return res.status(401).json({ code: 'auth/wrong-password' });
+        }
 
-        const token = jwt.sign({ uid: user.uid, email: user.email, role: user.role, campus: user.campus }, JWT_SECRET, { expiresIn: '24h' });
-        res.json({ user: { uid: user.uid, email: user.email, role: user.role, campus: user.campus }, token });
+        const token = jwt.sign({ 
+            uid: user.uid, 
+            email: user.email, 
+            role: user.role, 
+            campus: user.campus 
+        }, JWT_SECRET, { expiresIn: '24h' });
+
+        res.json({ 
+            user: { 
+                uid: user.uid, 
+                email: user.email, 
+                role: user.role, 
+                campus: user.campus 
+            }, 
+            token 
+        });
     } catch (err) {
         console.error('❌ Login Error:', err);
         res.status(500).json({ error: 'Internal error' });
+    }
+});
+
+app.patch('/api/users/:uid/password', authenticateToken, async (req, res) => {
+    // Only admins or the HOD can reset passwords
+    if (req.user.role !== 'admin' && req.user.email.toLowerCase() !== 'srinivasnaidu.m@srichaitanyaschool.net') {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        const { password } = req.body;
+        const { uid } = req.params;
+
+        if (!password) return res.status(400).json({ error: 'New password required' });
+
+        const hash = await bcrypt.hash(password, 10);
+        
+        // Update in all three tables to stay synced
+        await pool.query('UPDATE users SET password_hash = ? WHERE uid = ?', [hash, uid]);
+        await pool.query('UPDATE staff SET password_hash = ? WHERE uid = ?', [hash, uid]);
+        await pool.query('UPDATE admins SET password_hash = ? WHERE uid = ?', [hash, uid]);
+
+        console.log(`✅ Password reset successful for UID: ${uid}`);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('❌ Password Reset Error:', err);
+        res.status(500).json({ error: 'Failed' });
     }
 });
 

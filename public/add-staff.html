@@ -417,9 +417,14 @@
                         </td>
                         <td><span class="campus-badge">${(u.campus || 'Global').replace(/_/g, ' ')}</span></td>
                         <td align="right">
-                            <button class="btn-delete" onclick="deleteUser('${u.uid}')">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </button>
+                            <div style="display:flex;gap:8px;justify-content:flex-end">
+                                <button class="btn-delete" style="background:#f1f5f9;color:#64748b" onclick="resetPassword('${u.uid}', '${u.email}')" title="Reset Password">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3L15.5 7.5z"></path></svg>
+                                </button>
+                                <button class="btn-delete" onclick="deleteUser('${u.uid}')" title="Delete Account">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `).join('');
@@ -480,9 +485,38 @@
                 });
 
                 if (!res.ok) throw new Error('Delete failed');
+                showMessage('🗑️ Account Deleted');
                 fetchUsers();
             } catch (err) {
-                alert(err.message);
+                showMessage(err.message, true);
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        async function resetPassword(uid, email) {
+            const newPassword = prompt(`Enter new password for ${email}:`);
+            if (!newPassword) return;
+            if (newPassword.length < 6) return alert('Password must be at least 6 characters');
+
+            try {
+                loader.style.display = 'flex';
+                let token = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+
+                const res = await fetch(`${API_URL}/users/${uid}/password`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ password: newPassword })
+                });
+
+                if (!res.ok) throw new Error('Reset failed');
+                showMessage('🔐 Password Updated Successfully!');
+                alert('✅ Password Reset Complete!');
+            } catch (err) {
+                showMessage(err.message, true);
             } finally {
                 loader.style.display = 'none';
             }
