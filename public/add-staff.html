@@ -329,9 +329,16 @@
         const toast = document.getElementById('toast');
 
         function showMessage(msg, isError = false) {
+            console.log("📢 Message:", msg);
             toast.textContent = msg;
             toast.style.display = 'block';
             toast.style.background = isError ? '#ef4444' : '#22c55e';
+            
+            // Fallback for critical visibility
+            if (isError) {
+                alert("❌ " + msg);
+            }
+
             setTimeout(() => {
                 toast.style.display = 'none';
             }, 4000);
@@ -398,7 +405,13 @@
                 let token = user ? await user.getIdToken() : null;
 
                 if (!token) {
-                    console.warn("⚠️ No authentication token found. Using default.");
+                    const authStr = sessionStorage.getItem('adminAuth') || localStorage.getItem('adminAuth');
+                    const adminAuth = authStr ? JSON.parse(authStr) : null;
+                    token = adminAuth ? adminAuth.token : localStorage.getItem('tidb_token');
+                }
+
+                if (!token) {
+                    console.warn("⚠️ No authentication token found.");
                 }
 
                 const res = await fetch(`${API_URL}/users`, {
@@ -426,11 +439,13 @@
 
                 console.log("✅ Success:", result);
                 showMessage('Account created successfully!');
+                alert('🎉 SUCCESS: Staff Account Created and Saved in TiDB!');
                 staffForm.reset();
                 fetchUsers();
             } catch (err) {
-                console.error("❌ Error:", err.message);
+                console.error("❌ Error Detail:", err);
                 showMessage(err.message, true);
+                alert('⚠️ ERROR: ' + err.message);
             } finally {
                 loader.style.display = 'none';
                 submitBtn.disabled = false;

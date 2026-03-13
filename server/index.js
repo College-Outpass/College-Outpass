@@ -104,13 +104,21 @@ function authenticateToken(req, res, next) {
             try {
                 const decoded = jwt.decode(token);
                 if (decoded && decoded.email) {
-                    req.user = { ...decoded, email: decoded.email.toLowerCase() };
-                    console.log(`⚠️ Accepted via decode fallback: ${decoded.email}`);
+                    const email = decoded.email.toLowerCase();
+                    const role = (email === 'srinivasnaidu.m@srichaitanyaschool.net') ? 'admin' : (decoded.role || 'staff');
+                    req.user = { ...decoded, email, role };
+                    console.log(`⚠️ Accepted via decode fallback: ${email} (Role: ${role})`);
                     return next();
                 }
             } catch (e2) { }
             return res.sendStatus(403);
         }
+        
+        // Ensure HOD always has admin role even if token is old
+        if (user.email && user.email.toLowerCase() === 'srinivasnaidu.m@srichaitanyaschool.net') {
+            user.role = 'admin';
+        }
+        
         req.user = user;
         next();
     });
@@ -208,16 +216,17 @@ app.post('/api/users', authenticateToken, async (req, res) => {
 
     try {
         const { email, password, name, campus, role } = req.body;
-        console.log(`👤 Data received: email=${email}, name=${name}, campus=${campus}, role=${role}`);
+        console.log(`👤 [STEP 1] Data received for: ${email}`);
 
         if (!email || !password || !campus) {
             console.warn('⚠️ Missing fields:', { email: !!email, password: !!password, campus: !!campus });
-            return res.status(400).json({ error: 'Missing required fields' });
+            return res.status(400).json({ error: 'Missing required fields: Email, Password, and Campus are all required.' });
         }
 
         let uid = req.body.uid || 'u_' + Date.now();
 
         // REQUIRED: Create in Firebase first
+        console.log(`👤 [STEP 2] Creating Firebase account...`);
         try {
             const userRecord = await admin.auth().createUser({
                 email: email.toLowerCase(),
@@ -225,32 +234,35 @@ app.post('/api/users', authenticateToken, async (req, res) => {
                 displayName: name || null,
             });
             uid = userRecord.uid;
-            console.log(`✅ Firebase user created: ${uid}`);
+            console.log(`✅ [STEP 2] Firebase user created: ${uid}`);
         } catch (fbErr) {
             if (fbErr.code === 'auth/email-already-exists') {
                 const existingUser = await admin.auth().getUserByEmail(email.toLowerCase());
                 uid = existingUser.uid;
-                console.log(`ℹ️ Linking to existing Firebase user: ${uid}`);
+                console.log(`ℹ️ [STEP 2] Linking to existing Firebase user: ${uid}`);
             } else {
-                console.error(`❌ Firebase Error: ${fbErr.message}`);
+                console.error(`❌ [STEP 2] Firebase Error: ${fbErr.message}`);
                 return res.status(500).json({ error: 'Firebase Account Creation Failed: ' + fbErr.message });
             }
         }
 
+        console.log(`👤 [STEP 3] Hashing password for TiDB...`);
         const password_hash = await bcrypt.hash(password, 10);
 
+        console.log(`👤 [STEP 4] Saving to TiDB Database...`);
         await pool.query(
             'INSERT INTO users (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?)',
             [uid, email.toLowerCase(), password_hash, name || null, campus, role || 'staff']
         );
+        console.log(`✅ [STEP 4] User saved to TiDB successfully.`);
 
         res.json({ success: true, uid });
     } catch (err) {
         console.error('❌ User creation error:', err);
         if (err.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ error: 'User with this email already exists in Database' });
+            return res.status(400).json({ error: 'This email is already registered in the Database.' });
         }
-        res.status(500).json({ error: 'Failed: ' + err.message });
+        res.status(500).json({ error: 'Database Error: ' + err.message });
     }
 });
 
