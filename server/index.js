@@ -13,6 +13,26 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
+// Remote Logger for Debugging
+const logs = [];
+const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+
+function captureLog(type, args) {
+    const msg = `[${type}] ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ')}`;
+    logs.push(`${new Date().toLocaleTimeString()} ${msg}`);
+    if (logs.length > 100) logs.shift();
+}
+
+console.log = (...args) => { captureLog('LOG', args); originalLog(...args); };
+console.error = (...args) => { captureLog('ERR', args); originalError(...args); };
+console.warn = (...args) => { captureLog('WRN', args); originalWarn(...args); };
+
+app.get('/diag/logs', (req, res) => {
+    res.send(`<pre>${logs.join('\n')}</pre>`);
+});
+
 // Settings
 const publicPath = path.join(__dirname, '../public');
 
