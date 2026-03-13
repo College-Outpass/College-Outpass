@@ -7,24 +7,8 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const admin = require('firebase-admin');
 
-// Initialize Firebase Admin
-try {
-    const keyPath = path.join(__dirname, '../key.json');
-    if (fs.existsSync(keyPath)) {
-        const serviceAccount = require(keyPath);
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
-        });
-        console.log('✅ Firebase Admin initialized with key.json');
-    } else {
-        console.warn('⚠️ key.json not found, using Environment Variables for Firebase');
-        admin.initializeApp({
-            credential: admin.credential.applicationDefault()
-        });
-    }
-} catch (e) {
-    console.error('❌ Firebase Admin initialization failed:', e.message);
-}
+// Initialize System - Firebase Admin removed for "Security Process" (Database Only)
+console.log('✅ System starting in Pure-Database Mode');
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -216,51 +200,26 @@ app.post('/api/users', authenticateToken, async (req, res) => {
 
     try {
         const { email, password, name, campus, role } = req.body;
-        console.log(`👤 [STEP 1] Data received for: ${email}`);
+        console.log(`👤 [TiDB CREATE] Data received for: ${email}`);
 
         if (!email || !password || !campus) {
-            console.warn('⚠️ Missing fields:', { email: !!email, password: !!password, campus: !!campus });
             return res.status(400).json({ error: 'Missing required fields: Email, Password, and Campus are all required.' });
         }
 
-        let uid = req.body.uid || 'u_' + Date.now();
-
-        // REQUIRED: Create in Firebase first
-        console.log(`👤 [STEP 2] Creating Firebase account...`);
-        try {
-            const userRecord = await admin.auth().createUser({
-                email: email.toLowerCase(),
-                password: password,
-                displayName: name || null,
-            });
-            uid = userRecord.uid;
-            console.log(`✅ [STEP 2] Firebase user created: ${uid}`);
-        } catch (fbErr) {
-            if (fbErr.code === 'auth/email-already-exists') {
-                const existingUser = await admin.auth().getUserByEmail(email.toLowerCase());
-                uid = existingUser.uid;
-                console.log(`ℹ️ [STEP 2] Linking to existing Firebase user: ${uid}`);
-            } else {
-                console.error(`❌ [STEP 2] Firebase Error: ${fbErr.message}`);
-                return res.status(500).json({ error: 'Firebase Account Creation Failed: ' + fbErr.message });
-            }
-        }
-
-        console.log(`👤 [STEP 3] Hashing password for TiDB...`);
+        const uid = 'u_' + Date.now();
         const password_hash = await bcrypt.hash(password, 10);
 
-        console.log(`👤 [STEP 4] Saving to TiDB Database...`);
         await pool.query(
             'INSERT INTO users (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?)',
             [uid, email.toLowerCase(), password_hash, name || null, campus, role || 'staff']
         );
-        console.log(`✅ [STEP 4] User saved to TiDB successfully.`);
+        console.log(`✅ User saved to TiDB successfully.`);
 
         res.json({ success: true, uid });
     } catch (err) {
         console.error('❌ User creation error:', err);
         if (err.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ error: 'This email is already registered in the Database.' });
+            return res.status(400).json({ error: 'This email is already registered.' });
         }
         res.status(500).json({ error: 'Database Error: ' + err.message });
     }

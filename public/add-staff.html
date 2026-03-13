@@ -356,17 +356,24 @@
             statusDot.style.background = "#94a3b8";
 
             try {
-                const res = await fetch(`${API_URL}/hello`, { signal: AbortSignal.timeout(5000) });
+                // Compatible timeout pattern
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+                const res = await fetch(`${API_URL}/hello`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
                 if (res.ok) {
                     statusDot.style.background = "#22c55e";
                     statusText.textContent = "System Connected (Render)";
                     console.log("✅ API Connection OK");
                 } else {
-                    throw new Error("Status: " + res.status);
+                    throw new Error("Server error " + res.status);
                 }
             } catch (err) {
                 statusDot.style.background = "#ef4444";
                 statusText.textContent = "Connection Failed: " + err.message;
+                alert("❌ Cannot reach Render Server: " + err.message + "\n\n1. Ensure Render is not 'Sleeping'.\n2. Check Render Logs for 'Firebase Error'.");
                 console.error("❌ API Connection Failed:", err);
             }
         }
@@ -375,14 +382,13 @@
             checkConnection(); // Check connection whenever we fetch users
             try {
                 loader.style.display = 'flex';
-                // Use firebase-config.js logic to get token
-                const user = firebase.auth().currentUser;
-                let token = user ? await user.getIdToken() : null;
-
+                // [TiDB MODE] Get Admin Token
+                let token = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+                
                 if (!token) {
                     const authStr = sessionStorage.getItem('adminAuth') || localStorage.getItem('adminAuth');
                     const adminAuth = authStr ? JSON.parse(authStr) : null;
-                    token = adminAuth ? adminAuth.token : localStorage.getItem('tidb_token');
+                    token = adminAuth ? adminAuth.token : null;
                 }
 
                 const res = await fetch(`${API_URL}/users`, {
@@ -430,13 +436,12 @@
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Creating Account...';
 
-                const user = firebase.auth().currentUser;
-                let token = user ? await user.getIdToken() : null;
-
+                // [TiDB MODE] Get Admin Token
+                let token = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
                 if (!token) {
                     const authStr = sessionStorage.getItem('adminAuth') || localStorage.getItem('adminAuth');
                     const adminAuth = authStr ? JSON.parse(authStr) : null;
-                    token = adminAuth ? adminAuth.token : localStorage.getItem('tidb_token');
+                    token = adminAuth ? adminAuth.token : null;
                 }
 
                 console.log("📡 Sending data to:", `${API_URL}/users`);
