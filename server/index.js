@@ -38,9 +38,16 @@ app.get('/diag/db', async (req, res) => {
         const [[staff]] = await pool.query('SELECT COUNT(*) as count FROM staff');
         const [[admins]] = await pool.query('SELECT COUNT(*) as count FROM admins');
         const [[security]] = await pool.query('SELECT COUNT(*) as count FROM security');
+        const [[students]] = await pool.query('SELECT COUNT(*) as count FROM students').catch(() => [{count: 'ERROR/MISSING'}]);
         res.json({
             status: 'connected',
-            counts: { users: users.count, staff: staff.count, admins: admins.count, security: security.count },
+            counts: { 
+                users: users.count, 
+                staff: staff.count, 
+                admins: admins.count, 
+                security: security.count,
+                students: students.count 
+            },
             time: new Date().toISOString()
         });
     } catch (err) {
