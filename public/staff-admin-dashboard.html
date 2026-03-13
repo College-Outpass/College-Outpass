@@ -1170,49 +1170,6 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // UPDATED: EMAIL TO CAMPUS MAPPING with named email addresses
-        const EMAIL_CAMPUS_MAPPING = {
-            // Principal Emails
-            "pucneetboysprincipal@srichaitanyacollege.net": "ECITY_NEET_BOYS",
-            "ecitypucprincipal2@srichaitanyacollege.net": "ECITY_GIRLS_RESIDENTIAL",
-            "ecitypucprincipal1@srichaitanyacollege.net": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "electroniccityprincipal@srichaitanyaschool.net": "ECITY_SCHOOL",
-            
-            // ECITY_NEET_BOYS staff emails
-           "munuswami.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "anilbabu.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "veeraiah.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "chandrashekar.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "ravi.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "sai.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            
-            // ECITY_GIRLS_RESIDENTIAL staff emails (replacing staff.ecitygirls@srichaitanya.edu)
-    "aruna.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "rajeswari.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "manjula.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "roja.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "swathika.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "swathi.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "lavanya.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "annapoorna.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-    "sunitha.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            
-            // ECITY_ENGG_GIRLS_RESIDENTIAL staff emails
-            "anitha.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "nirmala.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "srilakshmi.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "vasantha.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "chandrakala.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-                       
-            // ECITY_SCHOOL staff emails
-            "sudhakar.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "anuf.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "santhosh.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "naresh.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "manjunath.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "huseenbee.ecityschool@srichaitanya.edu": "ECITY_SCHOOL"
-        };
-
         const CAMPUS_DISPLAY_NAMES = {
             "ECITY_SCHOOL": "Ecity - School",
             "ECITY_NEET_BOYS": "Ecity - NEET Boys Hostel",
@@ -1228,21 +1185,11 @@
 
         // [TiDB MODE] First check for our database token
         document.addEventListener('DOMContentLoaded', function() {
-            const tidbToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
-            const storedEmail = localStorage.getItem('userEmail');
-            const isPrincipal = localStorage.getItem('isPrincipal');
-            const storedCampus = localStorage.getItem('userCampus');
-
             if (tidbToken && storedEmail && isPrincipal === 'true') {
                 console.log('✅ TiDB Session found for Principal:', storedEmail);
                 currentUserEmail = storedEmail;
                 currentCampus = storedCampus;
                 document.getElementById('userEmail').textContent = currentUserEmail;
-                
-                // Get all staff emails for this campus
-                campusStaffEmails = Object.keys(EMAIL_CAMPUS_MAPPING).filter(
-                    email => EMAIL_CAMPUS_MAPPING[email] === currentCampus
-                );
                 
                 updateCampusDisplay();
                 loadAllData();
@@ -1263,18 +1210,13 @@
                 currentCampus = localStorage.getItem('userCampus');
                 const isPrincipalStored = localStorage.getItem('isPrincipal');
                 
-                const emailCampus = EMAIL_CAMPUS_MAPPING[currentUserEmail];
-                if (!emailCampus || isPrincipalStored !== 'true') {
+                if (!currentCampus || isPrincipalStored !== 'true') {
                     window.location.href = 'staff-login.html';
                     return;
                 }
                 
-                currentCampus = emailCampus;
                 localStorage.setItem('userCampus', currentCampus);
-                
-                campusStaffEmails = Object.keys(EMAIL_CAMPUS_MAPPING).filter(
-                    email => EMAIL_CAMPUS_MAPPING[email] === currentCampus
-                );
+                campusStaffEmails = [];
                 
                 updateCampusDisplay();
                 loadAllData();
@@ -1299,12 +1241,12 @@
                 </tr>
             `;
 
-            console.log("🔍 Loading data created by staff from campus:", currentCampus);
+            console.log("🔍 Loading data for campus:", currentCampus);
 
-            // Load all data from both collections
+            // Load all data filtered by CAMPUS directly from database
             Promise.all([
-                db.collection('outpasses').get(),
-                db.collection('mediSlips').get()
+                db.collection('outpasses').where('campus', '==', currentCampus).get(),
+                db.collection('mediSlips').where('campus', '==', currentCampus).get()
             ]).then(([outpassSnapshot, mediSlipSnapshot]) => {
                 const outpasses = [];
                 const mediSlips = [];
@@ -1312,65 +1254,59 @@
                 // Process outpasses
                 outpassSnapshot.forEach((doc) => {
                     const data = doc.data();
-                    // Filter by campus staff
-                    if (campusStaffEmails.includes(data.createdBy)) {
-                        // FIXED: Extract reportingTime and inDate properly
-                        const reportingTime = data.reportingTime || '--';
-                        const inDate = data.inDate || '--';
-                        
-                        outpasses.push({
-                            id: doc.id,
-                            type: 'outpass',
-                            campus: currentCampus,
-                            passNumber: data.passNumber || `OUTPASS-${doc.id.substring(0, 8)}`,
-                            studentName: data.studentName || 'N/A',
-                            studentId: data.studentId || 'N/A',
-                            date: data.outDate || data.issuedDate || 'N/A',
-                            details: `Out: ${formatDate(data.outDate)} | In: ${formatDate(data.inDate)}`,
-                            reason: data.reason || 'N/A',
-                            status: (data.status || 'pending').toLowerCase(),
-                            createdBy: data.createdBy || 'Unknown',
-                            issuedBy: data.issuedBy || data.IssuedBy || data.issuerRole || data.issuerName || data.issuedByRole || 'Staff',
-                            createdAt: data.createdAt,
-                            // FIXED: Use the actual reportingTime and inDate fields
-                            reportingTime: reportingTime,
-                            inDate: inDate,
-                            authorizedBy: data.authorizedBy || '--',
-                            // Store full data for PDF generation
-                            fullData: data,
-                            // Security details
-                            security: data.security || '--',
-                            securityWhatsapp: data.securityWhatsapp || '--'
-                        });
-                    }
+                    // FIXED: Extract reportingTime and inDate properly
+                    const reportingTime = data.reportingTime || '--';
+                    const inDate = data.inDate || '--';
+                    
+                    outpasses.push({
+                        id: doc.id,
+                        type: 'outpass',
+                        campus: currentCampus,
+                        passNumber: data.passNumber || `OUTPASS-${doc.id.substring(0, 8)}`,
+                        studentName: data.studentName || 'N/A',
+                        studentId: data.studentId || 'N/A',
+                        date: data.outDate || data.issuedDate || 'N/A',
+                        details: `Out: ${formatDate(data.outDate)} | In: ${formatDate(data.inDate)}`,
+                        reason: data.reason || 'N/A',
+                        status: (data.status || 'pending').toLowerCase(),
+                        createdBy: data.createdBy || 'Unknown',
+                        issuedBy: data.issuedBy || data.IssuedBy || data.issuerRole || data.issuerName || data.issuedByRole || 'Staff',
+                        createdAt: data.createdAt,
+                        // FIXED: Use the actual reportingTime and inDate fields
+                        reportingTime: reportingTime,
+                        inDate: inDate,
+                        authorizedBy: data.authorizedBy || '--',
+                        // Store full data for PDF generation
+                        fullData: data,
+                        // Security details
+                        security: data.security || '--',
+                        securityWhatsapp: data.securityWhatsapp || '--'
+                    });
                 });
                 
                 // Process Medi slips - UPDATED WITH TEMPERATURE
                 mediSlipSnapshot.forEach((doc) => {
                     const data = doc.data();
-                    // Filter by campus staff
-                    if (campusStaffEmails.includes(data.createdBy)) {
-                        mediSlips.push({
-                            id: doc.id,
-                            type: 'mediSlip',
-                            campus: currentCampus,
-                            passNumber: data.mediSlipNumber || `MEDSLIP-${doc.id.substring(0, 8)}`,
-                            studentName: data.studentName || 'N/A',
-                            studentId: data.studentId || 'N/A',
-                            date: data.date || data.issuedDate || 'N/A',
-                            // FIXED: Ensure temperature shows with °F symbol
-                            details: `Temp: ${data.temperature || 'None'}°F | ${formatTime(data.startTime)} - ${formatTime(data.endTime)}`,
-                            reason: data.reason || 'N/A',
-                            medicineGiven: data.medicineGiven || '--',
-                            status: (data.status || 'pending').toLowerCase(),
-                            createdBy: data.createdBy || 'Unknown',
-                            issuedBy: data.issuedBy || data.IssuedBy || data.issuerRole || data.issuerName || data.issuedByRole || 'Staff',
-                            createdAt: data.createdAt,
-                            reportingTime: '--',
-                            inDate: '--',
-                            authorizedBy: data.authorizedBy || '--'
-                        });
-                    }
+                    mediSlips.push({
+                        id: doc.id,
+                        type: 'mediSlip',
+                        campus: currentCampus,
+                        passNumber: data.mediSlipNumber || `MEDSLIP-${doc.id.substring(0, 8)}`,
+                        studentName: data.studentName || 'N/A',
+                        studentId: data.studentId || 'N/A',
+                        date: data.date || data.issuedDate || 'N/A',
+                        // FIXED: Ensure temperature shows with °F symbol
+                        details: `Temp: ${data.temperature || 'None'}°F | ${formatTime(data.startTime)} - ${formatTime(data.endTime)}`,
+                        reason: data.reason || 'N/A',
+                        medicineGiven: data.medicineGiven || '--',
+                        status: (data.status || 'pending').toLowerCase(),
+                        createdBy: data.createdBy || 'Unknown',
+                        issuedBy: data.issuedBy || data.IssuedBy || data.issuerRole || data.issuerName || data.issuedByRole || 'Staff',
+                        createdAt: data.createdAt,
+                        reportingTime: '--',
+                        inDate: '--',
+                        authorizedBy: data.authorizedBy || '--'
+                    });
                 });
                 
                 allData = [...outpasses, ...mediSlips];
@@ -1765,54 +1701,29 @@ if (item.type === 'outpass') {
 
         // Get campus info from outpass data
         function getCampusInfoFromOutpass(outpassData) {
-            // STRICT: Use authenticated user's campus, not data's campus (which might be wrong)
-            // Verify the data was created by staff from this campus
-            const createdByEmail = outpassData.createdBy;
-            
-            if (createdByEmail) {
-                const dataCampus = EMAIL_CAMPUS_MAPPING[createdByEmail];
-                if (dataCampus && dataCampus !== currentCampus) {
-                    // STRICT: Data belongs to different campus - reject or use current campus
-                    console.warn('⚠️ Data belongs to different campus:', { dataCampus, currentCampus, createdBy: createdByEmail });
-                    // Use current campus instead of data campus
-                }
-            }
-            
-            // STRICT: Always use authenticated principal's campus
+            // STRICT: Always use authenticated principal's campus 
             const campusId = currentCampus;
             const campusName = CAMPUS_DISPLAY_NAMES[campusId] || campusId.replace(/_/g, ' ');
             
-            // Get campus email from mapping (first staff email for this campus)
-            const campusEmail = campusStaffEmails && campusStaffEmails.length > 0 
-                ? campusStaffEmails[0] 
-                : currentUserEmail;
+            // Show original staff member's email who created the outpass
+            const staffEmail = outpassData.createdBy || currentUserEmail;
             
             return {
                 name: campusName,
-                email: campusEmail,
+                email: staffEmail,
                 campusId: campusId
             };
         }
 
         // Get campus info from medi slip data
         function getCampusInfoFromMediSlip(mediSlipData) {
-            const createdByEmail = mediSlipData.createdBy;
-            let campusId = null;
-            
-            if (createdByEmail && EMAIL_CAMPUS_MAPPING[createdByEmail]) {
-                campusId = EMAIL_CAMPUS_MAPPING[createdByEmail];
-            } else if (mediSlipData.campus && CAMPUS_DISPLAY_NAMES[mediSlipData.campus]) {
-                campusId = mediSlipData.campus;
-            } else {
-                campusId = currentCampus;
-            }
-            
+            const campusId = currentCampus;
             const campusName = CAMPUS_DISPLAY_NAMES[campusId] || campusId.replace(/_/g, ' ');
-            const campusEmail = createdByEmail || campusStaffEmails[0] || currentUserEmail;
+            const staffEmail = mediSlipData.createdBy || currentUserEmail;
             
             return {
                 name: campusName,
-                email: campusEmail,
+                email: staffEmail,
                 campusId: campusId
             };
         }
@@ -2377,7 +2288,7 @@ if (item.type === 'outpass') {
                 }
                 
                 // Get campus from current user
-                const campusId = EMAIL_CAMPUS_MAPPING[user.email];
+                const campusId = currentCampus;
                 if (!campusId) {
                     showUploadStatus('❌ Campus not found for this user', 'error');
                     return;

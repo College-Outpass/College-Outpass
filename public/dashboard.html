@@ -2292,86 +2292,36 @@
             'ECITY_ENGG_GIRLS_RESIDENTIAL': 'ECITY ENGG GIRLS RESIDENTIAL'
         };
 
-        // Email to Campus Mapping for Staff
-        const STAFF_EMAIL_CAMPUS_MAPPING = {
-            // ECITY_NEET_BOYS staff emails
-            "munuswami.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "anilbabu.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "veeraiah.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "chandrashekar.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "ravi.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "sai.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-
-            // ECITY_GIRLS_RESIDENTIAL staff emails (replacing staff.ecitygirls@srichaitanya.edu)
-            "aruna.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "rajeswari.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "manjula.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "roja.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "swathika.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "swathi.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "lavanya.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "annapoorna.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "sunitha.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-
-            // ECITY_ENGG_GIRLS_RESIDENTIAL staff emails
-            "anitha.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "nirmala.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "srilakshmi.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "vasantha.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "chandrakala.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-
-            // ECITY_SCHOOL staff emails
-            "sudhakar.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "anuf.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "santhosh.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "naresh.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "manjunath.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "huseenbee.ecityschool@srichaitanya.edu": "ECITY_SCHOOL"
-        };
-
-        // Function to get campus information from user email (STRICT - NO FALLBACK)
+        // Function to get campus information (DYNAMIC FROM TIDB SESSION)
         function getCampusInfoFromUserEmail(userEmail) {
-            const campusId = STAFF_EMAIL_CAMPUS_MAPPING[userEmail];
-
-            if (!campusId) {
-                // STRICT: If email not found in mapping, reject access
-                console.error('❌ Unauthorized email:', userEmail);
-                alert('❌ Access Denied: This email is not authorized. Please contact administrator.');
-                auth.signOut().then(() => {
-                    window.location.href = 'staff-login.html';
-                });
-                return null;
+            // Priority: Check if we have a valid TiDB session in localStorage
+            const storedEmail = localStorage.getItem('userEmail');
+            const storedCampus = localStorage.getItem('userCampus');
+            
+            if (storedEmail && storedEmail.toLowerCase() === userEmail.toLowerCase() && storedCampus) {
+                const displayName = CAMPUS_DISPLAY_NAMES[storedCampus] || storedCampus.replace(/_/g, ' ');
+                return {
+                    name: displayName,
+                    email: userEmail,
+                    campusId: storedCampus
+                };
             }
 
-            const displayName = CAMPUS_DISPLAY_NAMES[campusId] || campusId.replace(/_/g, ' ');
-            return {
-                name: displayName,
-                email: userEmail,
-                campusId: campusId
-            };
+            // Fallback: This should ideally not be hit in the new system
+            console.error('❌ Unauthorized or unknown email:', userEmail);
+            alert('❌ Access Denied: This email is not authorized or session expired. Please login again.');
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = 'staff-login.html';
+            return null;
         }
 
-        // Function to get campus information from localStorage (STRICT - NO FALLBACK)
         function getCampusInfoFromStorage() {
             const campusId = localStorage.getItem('userCampus');
             const userEmail = localStorage.getItem('userEmail');
 
             if (!campusId || !userEmail) {
-                // STRICT: If localStorage data not available, redirect to login
-                console.error('❌ Missing campus or email in localStorage');
                 window.location.href = 'staff-login.html';
-                return null;
-            }
-
-            // STRICT: Verify email matches campus mapping
-            const mappedCampusId = STAFF_EMAIL_CAMPUS_MAPPING[userEmail];
-            if (!mappedCampusId || mappedCampusId !== campusId) {
-                console.error('❌ Campus mismatch:', { email: userEmail, storedCampus: campusId, mappedCampus: mappedCampusId });
-                alert('❌ Access Denied: Campus mismatch detected. Please login again.');
-                auth.signOut().then(() => {
-                    localStorage.clear();
-                    window.location.href = 'staff-login.html';
-                });
                 return null;
             }
 
@@ -2623,18 +2573,16 @@
                     return { error: 'INVALID_ID' };
                 }
 
-                const user = auth.currentUser;
-                if (!user) {
+                const userEmail = localStorage.getItem('userEmail');
+                if (!userEmail) {
                     return { error: 'NOT_AUTHENTICATED' };
                 }
 
-                // Get campus from current user
-                const campusInfo = getCampusInfoFromUserEmail(user.email);
-                if (!campusInfo) {
+                // Get campus from session
+                const campusId = localStorage.getItem('userCampus');
+                if (!campusId) {
                     return { error: 'NO_CAMPUS' };
                 }
-
-                const campusId = campusInfo.campusId;
 
                 // First, check if there's any data for this campus
                 const campusDataCheck = await db.collection('students')

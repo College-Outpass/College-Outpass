@@ -1368,48 +1368,6 @@
         };
 
         // UPDATED: Email to Campus Mapping with named email addresses
-        const EMAIL_CAMPUS_MAPPING = {
-            // Principal Emails
-            "pucneetboysprincipal@srichaitanyacollege.net": "ECITY_NEET_BOYS",
-            "ecitypucprincipal2@srichaitanyacollege.net": "ECITY_GIRLS_RESIDENTIAL",
-            "ecitypucprincipal1@srichaitanyacollege.net": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "electroniccityprincipal@srichaitanyaschool.net": "ECITY_SCHOOL",
-
-            // ECITY_NEET_BOYS staff emails
-            "munuswami.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "anilbabu.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "veeraiah.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "chandrashekar.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "ravi.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-            "sai.ecityneetboys@srichaitanya.edu": "ECITY_NEET_BOYS",
-
-            // ECITY_GIRLS_RESIDENTIAL staff emails (replacing staff.ecitygirls@srichaitanya.edu)
-            "aruna.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "rajeswari.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "manjula.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "roja.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "swathika.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "swathi.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "lavanya.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "annapoorna.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-            "sunitha.ecitygirls@srichaitanya.edu": "ECITY_GIRLS_RESIDENTIAL",
-
-            // ECITY_ENGG_GIRLS_RESIDENTIAL staff emails
-            "anitha.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "nirmala.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "srilakshmi.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "vasantha.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-            "chandrakala.ecityengggirls@srichaitanya.edu": "ECITY_ENGG_GIRLS_RESIDENTIAL",
-
-            // ECITY_SCHOOL staff emails
-            "sudhakar.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "anuf.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "santhosh.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "naresh.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "manjunath.ecityschool@srichaitanya.edu": "ECITY_SCHOOL",
-            "huseenbee.ecityschool@srichaitanya.edu": "ECITY_SCHOOL"
-        };
-
         let allData = [];
         let filteredData = [];
         let selectedCampus = "ALL_CAMPUSES";
@@ -1544,8 +1502,8 @@
                 // Process outpasses - ALL DATA
                 outpassSnapshot.forEach((doc) => {
                     const data = doc.data();
-                    // Use email mapping to determine campus
-                    const campus = data.campus || getCampusFromEmail(data.createdBy) || 'UNKNOWN_CAMPUS';
+                    // Use campus field directly
+                    const campus = data.campus || 'UNKNOWN_CAMPUS';
 
                     // Extract reportingTime and inDate properly
                     const reportingTime = data.reportingTime || '--';
@@ -1635,33 +1593,9 @@
             });
         }
 
-        // Helper function to determine campus from email
-        function getCampusFromEmail(email) {
-            if (!email) return null;
-
-            // Convert email to lowercase for case-insensitive matching
-            const emailLower = email.toLowerCase();
-
-            // Direct mapping lookup
-            if (EMAIL_CAMPUS_MAPPING[emailLower]) {
-                return EMAIL_CAMPUS_MAPPING[emailLower];
-            }
-
-            // Pattern matching for staff emails
-            if (emailLower.includes('ecityneetboys') || emailLower.includes('reethoys')) {
-                return 'ECITY_NEET_BOYS';
-            }
-            if (emailLower.includes('ecitygirls')) {
-                return 'ECITY_GIRLS_RESIDENTIAL';
-            }
-            if (emailLower.includes('ecityengggirls')) {
-                return 'ECITY_ENGG_GIRLS_RESIDENTIAL';
-            }
-            if (emailLower.includes('ecityschool')) {
-                return 'ECITY_SCHOOL';
-            }
-
-            return null;
+        // Helper function to resolve campus name
+        function getCampusName(id) {
+            return CAMPUS_DISPLAY_NAMES[id] || id.replace(/_/g, ' ');
         }
 
         function updateStatistics() {
@@ -2045,27 +1979,11 @@
             const displayHour = hour % 12 || 12;
             return `${displayHour}:${minutes} ${ampm}`;
         }
-
-        // Get campus info from outpass data - FIXED: Use createdBy email to determine campus (works for old records too)
+        // Get campus info from outpass data
         function getCampusInfoFromOutpass(outpassData) {
-            // Get campus from createdBy email (which is always stored in outpass data)
-            const createdByEmail = outpassData.createdBy;
-            let campusId = null;
-
-            if (createdByEmail && EMAIL_CAMPUS_MAPPING[createdByEmail]) {
-                // Use email mapping to get correct campus
-                campusId = EMAIL_CAMPUS_MAPPING[createdByEmail];
-            } else if (outpassData.campus && CAMPUS_DISPLAY_NAMES[outpassData.campus]) {
-                // Fallback to stored campus if email mapping not found
-                campusId = outpassData.campus;
-            } else {
-                // Last resort fallback
-                campusId = 'ECITY_NEET_BOYS';
-            }
-
+            const campusId = outpassData.campus || 'ECITY_NEET_BOYS';
             const campusName = CAMPUS_DISPLAY_NAMES[campusId] || campusId.replace(/_/g, ' ');
-            // Use createdBy email as campus email (it's the staff email who created it)
-            const campusEmail = createdByEmail || 'staff.ecityneetboys@srichaitanya.edu';
+            const campusEmail = outpassData.createdBy || 'staff.ecityneetboys@srichaitanya.edu';
 
             return {
                 name: campusName,
@@ -2361,19 +2279,9 @@
 
         // Get campus info from medi slip data
         function getCampusInfoFromMediSlip(mediSlipData) {
-            const createdByEmail = mediSlipData.createdBy;
-            let campusId = null;
-
-            if (createdByEmail && EMAIL_CAMPUS_MAPPING[createdByEmail]) {
-                campusId = EMAIL_CAMPUS_MAPPING[createdByEmail];
-            } else if (mediSlipData.campus && CAMPUS_DISPLAY_NAMES[mediSlipData.campus]) {
-                campusId = mediSlipData.campus;
-            } else {
-                campusId = 'ECITY_NEET_BOYS';
-            }
-
+            const campusId = mediSlipData.campus || 'ECITY_NEET_BOYS';
             const campusName = CAMPUS_DISPLAY_NAMES[campusId] || campusId.replace(/_/g, ' ');
-            const campusEmail = createdByEmail || 'staff.ecityneetboys@srichaitanya.edu';
+            const campusEmail = mediSlipData.createdBy || 'staff.ecityneetboys@srichaitanya.edu';
 
             return {
                 name: campusName,
