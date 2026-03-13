@@ -73,6 +73,11 @@ app.get('/diag/db', async (req, res) => {
                 students: studentsCount.count 
             },
             recent_users: lastUsers,
+            pool: {
+                total: pool.pool.size,
+                idle: pool.pool.idleCount,
+                waiting: pool.pool.waitingCount
+            },
             time: new Date().toISOString()
         });
     } catch (err) {
