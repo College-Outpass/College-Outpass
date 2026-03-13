@@ -1,0 +1,13 @@
+[dotenv@17.3.1] injecting env (10) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+--- FIXING ADMIN CREDENTIALS ---
+Checking if user srinivasnaidu.m@srichaitanyaschool.net exists...
+User found. Updating password...
+Password updated successfully.
+
+--- VERIFICATION ---
+User in DB: { email: 'srinivasnaidu.m@srichaitanyaschool.net', role: 'admin' }
+
+Credential set to:
+Email: srinivasnaidu.m@srichaitanyaschool.net
+Password: admin123
+--- DONE ---
