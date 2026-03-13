@@ -75,30 +75,26 @@ app.get('/hello', (req, res) => {
 
 app.get('/diag/db', async (req, res) => {
     try {
-        const [[usersCount]] = await pool.query('SELECT COUNT(*) as count FROM users');
-        const [[staffCount]] = await pool.query('SELECT COUNT(*) as count FROM staff');
-        const [[adminsCount]] = await pool.query('SELECT COUNT(*) as count FROM admins');
-        const [[securityCount]] = await pool.query('SELECT COUNT(*) as count FROM security');
+        const [[totalCount]] = await pool.query('SELECT COUNT(*) as count FROM transfer_admins');
+        const [[staffCount]] = await pool.query("SELECT COUNT(*) as count FROM transfer_admins WHERE role = 'staff'");
+        const [[adminsCount]] = await pool.query("SELECT COUNT(*) as count FROM transfer_admins WHERE role = 'admin'");
+        const [[securityCount]] = await pool.query('SELECT COUNT(*) as count FROM security').catch(() => [{count: 0}]);
         const [[studentsCount]] = await pool.query('SELECT COUNT(*) as count FROM students').catch(() => [{count: 'ERROR/MISSING'}]);
         
         // Fetch last 5 users for verification
-        const [lastUsers] = await pool.query('SELECT uid, email, role, created_at FROM users ORDER BY created_at DESC LIMIT 5');
+        const [lastUsers] = await pool.query('SELECT uid, email, role, created_at FROM transfer_admins ORDER BY created_at DESC LIMIT 5');
 
         res.json({
             status: 'connected',
+            table: 'transfer_admins',
             counts: { 
-                users: usersCount.count, 
+                total: totalCount.count,
                 staff: staffCount.count, 
                 admins: adminsCount.count, 
                 security: securityCount.count,
                 students: studentsCount.count 
             },
             recent_users: lastUsers,
-            pool: {
-                total: pool.pool.size,
-                idle: pool.pool.idleCount,
-                waiting: pool.pool.waitingCount
-            },
             time: new Date().toISOString()
         });
     } catch (err) {
@@ -173,8 +169,8 @@ app.post('/api/auth/login', async (req, res) => {
         const { email, password } = req.body;
         console.log(`🔑 Login attempt: ${email}`);
 
-        // [SECURE MODE] Fetch user from database - NO MORE HARDCODED BYPASS
-        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email.toLowerCase()]);
+        // [SECURE MODE] Fetch user from transfer_admins table
+        const [users] = await pool.query('SELECT * FROM transfer_admins WHERE email = ?', [email.toLowerCase()]);
         
         if (users.length === 0) {
             return res.status(404).json({ code: 'auth/user-not-found' });
@@ -241,10 +237,8 @@ app.patch('/api/users/:uid/password', authenticateToken, async (req, res) => {
 
         const hash = await bcrypt.hash(password, 10);
         
-        // Update in all three tables to stay synced
-        await pool.query('UPDATE users SET password_hash = ? WHERE uid = ?', [hash, uid]);
-        await pool.query('UPDATE staff SET password_hash = ? WHERE uid = ?', [hash, uid]);
-        await pool.query('UPDATE admins SET password_hash = ? WHERE uid = ?', [hash, uid]);
+        // Update ONLY transfer_admins table
+        await pool.query('UPDATE transfer_admins SET password_hash = ? WHERE uid = ?', [hash, uid]);
 
         // Sync with Firebase Auth
         try {
@@ -268,8 +262,8 @@ app.post('/api/auth/verify_firebase_staff', authenticateToken, async (req, res) 
 
         console.log(`🔍 Verifying TiDB profile for: ${email}`);
 
-        // Fetch profile from TiDB
-        const [users] = await pool.query('SELECT uid, email, role, campus FROM users WHERE email = ?', [email]);
+        // Fetch profile from transfer_admins
+        const [users] = await pool.query('SELECT uid, email, role, campus FROM transfer_admins WHERE email = ?', [email]);
         
         if (users.length === 0) {
             console.error(`❌ Profile missing in TiDB for: ${email}`);
@@ -317,24 +311,11 @@ app.post('/api/users', authenticateToken, async (req, res) => {
         const password_hash = await bcrypt.hash(password, 10);
         const userRole = role || 'staff';
 
-        // 1. Insert into main users table (for login)
+        // 1. Insert into unified transfer_admins table
         await pool.query(
-            'INSERT INTO users (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?)',
+            'INSERT INTO transfer_admins (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?)',
             [uid, email.toLowerCase(), password_hash, name || null, campus, userRole]
         );
-
-        // 2. Insert into specialized tables
-        if (userRole === 'admin') {
-            await pool.query(
-                'INSERT INTO admins (uid, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)',
-                [uid, email.toLowerCase(), password_hash, name || null, 'admin']
-            );
-        } else {
-            await pool.query(
-                'INSERT INTO staff (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?)',
-                [uid, email.toLowerCase(), password_hash, name || null, campus, 'staff']
-            );
-        }
 
         // 3. Keep Firebase Auth synced
         try {
@@ -349,7 +330,7 @@ app.post('/api/users', authenticateToken, async (req, res) => {
             console.warn('⚠️ Firebase User creation failed (maybe already exists):', fbErr.message);
         }
 
-        console.log(`✅ User saved to TiDB tables (users + ${userRole})`);
+        console.log(`✅ User saved to TiDB (transfer_admins)`);
         res.json({ success: true, uid });
     } catch (err) {
         console.error('❌ User creation error:', err);
@@ -365,7 +346,7 @@ app.get('/api/users', authenticateToken, async (req, res) => {
     }
 
     try {
-        const [rows] = await pool.query('SELECT uid, email, name, campus, role, created_at FROM users ORDER BY created_at DESC');
+        const [rows] = await pool.query('SELECT uid, email, name, campus, role, created_at FROM transfer_admins ORDER BY created_at DESC');
         res.json(rows);
     } catch (err) {
         res.status(500).json({ error: 'Failed' });
@@ -379,10 +360,8 @@ app.delete('/api/users/:uid', authenticateToken, async (req, res) => {
 
     try {
         const uid = req.params.uid;
-        // Delete from all tables
-        await pool.query('DELETE FROM users WHERE uid = ?', [uid]);
-        await pool.query('DELETE FROM staff WHERE uid = ?', [uid]);
-        await pool.query('DELETE FROM admins WHERE uid = ?', [uid]);
+        // Delete ONLY from transfer_admins
+        await pool.query('DELETE FROM transfer_admins WHERE uid = ?', [uid]);
 
         // Delete from Firebase Auth
         try {
@@ -413,7 +392,7 @@ app.get('/api/admins/:uid', authenticateToken, async (req, res) => {
 
         // Standard check
         const [users] = await pool.query(
-            'SELECT role, email FROM users WHERE (uid = ? OR email = ?) AND role = "admin"',
+            'SELECT role, email FROM transfer_admins WHERE (uid = ? OR email = ?) AND role = "admin"',
             [uid, email]
         );
 
