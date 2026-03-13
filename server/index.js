@@ -34,12 +34,13 @@ app.get('/hello', (req, res) => {
 
 app.get('/diag/db', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT 1 as "connection_test"');
-        const [security] = await pool.query('SELECT COUNT(*) as count FROM security');
+        const [[users]] = await pool.query('SELECT COUNT(*) as count FROM users');
+        const [[staff]] = await pool.query('SELECT COUNT(*) as count FROM staff');
+        const [[admins]] = await pool.query('SELECT COUNT(*) as count FROM admins');
+        const [[security]] = await pool.query('SELECT COUNT(*) as count FROM security');
         res.json({
             status: 'connected',
-            test: rows[0].connection_test,
-            security_count: security[0].count,
+            counts: { users: users.count, staff: staff.count, admins: admins.count, security: security.count },
             time: new Date().toISOString()
         });
     } catch (err) {
@@ -194,33 +195,44 @@ app.post('/api/users', authenticateToken, async (req, res) => {
     console.log(`🔍 USER CREATION ATTEMPT: ${req.user.email} (Role: ${req.user.role})`);
 
     if (req.user.role !== 'admin' && req.user.email.toLowerCase() !== 'srinivasnaidu.m@srichaitanyaschool.net') {
-        console.warn(`❌ Unauthorized attempt to create user by: ${req.user.email}`);
         return res.status(403).json({ error: 'Unauthorized: Admin access required' });
     }
 
     try {
         const { email, password, name, campus, role } = req.body;
-        console.log(`👤 [TiDB CREATE] Data received for: ${email}`);
+        console.log(`👤 [TiDB CREATE] Data received for: ${email} (Role: ${role})`);
 
         if (!email || !password || !campus) {
-            return res.status(400).json({ error: 'Missing required fields: Email, Password, and Campus are all required.' });
+            return res.status(400).json({ error: 'Missing required fields' });
         }
 
         const uid = 'u_' + Date.now();
         const password_hash = await bcrypt.hash(password, 10);
+        const userRole = role || 'staff';
 
+        // 1. Insert into main users table (for login)
         await pool.query(
             'INSERT INTO users (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?)',
-            [uid, email.toLowerCase(), password_hash, name || null, campus, role || 'staff']
+            [uid, email.toLowerCase(), password_hash, name || null, campus, userRole]
         );
-        console.log(`✅ User saved to TiDB successfully.`);
 
+        // 2. Insert into specialized tables
+        if (userRole === 'admin') {
+            await pool.query(
+                'INSERT INTO admins (uid, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)',
+                [uid, email.toLowerCase(), password_hash, name || null, 'admin']
+            );
+        } else {
+            await pool.query(
+                'INSERT INTO staff (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?)',
+                [uid, email.toLowerCase(), password_hash, name || null, campus, 'staff']
+            );
+        }
+
+        console.log(`✅ User saved to TiDB tables (users + ${userRole})`);
         res.json({ success: true, uid });
     } catch (err) {
         console.error('❌ User creation error:', err);
-        if (err.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ error: 'This email is already registered.' });
-        }
         res.status(500).json({ error: 'Database Error: ' + err.message });
     }
 });
@@ -247,18 +259,10 @@ app.delete('/api/users/:uid', authenticateToken, async (req, res) => {
 
     try {
         const uid = req.params.uid;
-
-        // Delete from Firebase Auth
-        try {
-            await admin.auth().deleteUser(uid);
-            console.log(`✅ Firebase user deleted: ${uid}`);
-        } catch (fbErr) {
-            // If user doesn't exist in Firebase, we just log it and continue to delete from DB
-            console.warn(`⚠️ Could not delete ${uid} from Firebase: ${fbErr.message}`);
-        }
-
-        // Delete from TiDB
+        // Delete from all tables
         await pool.query('DELETE FROM users WHERE uid = ?', [uid]);
+        await pool.query('DELETE FROM staff WHERE uid = ?', [uid]);
+        await pool.query('DELETE FROM admins WHERE uid = ?', [uid]);
         res.json({ success: true });
     } catch (err) {
         console.error('❌ User deletion error:', err);

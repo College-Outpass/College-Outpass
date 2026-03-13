@@ -39,6 +39,31 @@ async function initDb() {
             )
         `);
 
+        // Separate Staff table (as requested)
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS staff (
+                uid VARCHAR(100) PRIMARY KEY,
+                email VARCHAR(255) UNIQUE,
+                password_hash VARCHAR(255),
+                name VARCHAR(255),
+                campus VARCHAR(255),
+                role VARCHAR(50) DEFAULT 'staff',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Separate Admins table (as requested)
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS admins (
+                uid VARCHAR(100) PRIMARY KEY,
+                email VARCHAR(255) UNIQUE,
+                password_hash VARCHAR(255),
+                name VARCHAR(255),
+                role VARCHAR(50) DEFAULT 'admin',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         // Outpasses table
         await connection.query(`
             CREATE TABLE IF NOT EXISTS outpasses (
@@ -124,8 +149,9 @@ async function initDb() {
             await connection.query("INSERT INTO users (uid, email, password_hash, role) VALUES (?, ?, ?, 'admin')", ['admin_uid_1', 'admin@college.com', adminHash]);
         }
 
-        // Specifically ensure the HOD admin exists (if firebase syncs later, this creates a placeholder)
+        // Specifically ensure the HOD admin exists in both users (for login) and admins table
         await connection.query("INSERT IGNORE INTO users (uid, email, role) VALUES (?, ?, 'admin')", ['hod_admin_placeholder', 'srinivasnaidu.m@srichaitanyaschool.net']);
+        await connection.query("INSERT IGNORE INTO admins (uid, email, role, name) VALUES (?, ?, 'admin', ?)", ['hod_admin_placeholder', 'srinivasnaidu.m@srichaitanyaschool.net', 'Head of Department']);
 
         // Insert default counters if not exist
         await connection.query("INSERT IGNORE INTO settings (setting_key, count_value) VALUES ('outpassCounter', 1)");
