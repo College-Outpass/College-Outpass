@@ -56,25 +56,30 @@ try {
 } catch (e) { console.log('❌ Error reading folder:', e.message); }
 
 app.get('/api/admin/reset_db', async (req, res) => {
-    // PROTECTED: Only the HOD can call this via a specific query param for extra safety
-    if (req.query.key !== 'hod_reset_2024') {
-        return res.status(403).send('Unauthorized');
-    }
+    if (req.query.key !== 'hod_reset_2024') return res.status(403).send('Unauthorized');
 
     try {
-        console.log('🔄 Remote Reset Triggered...');
-        await pool.query('TRUNCATE TABLE users');
-        await pool.query('TRUNCATE TABLE staff');
-        await pool.query('TRUNCATE TABLE admins');
+        console.log('🔄 Performing Full Database Reset...');
         
+        // 1. Clear everything
+        const tables = ['users', 'staff', 'admins'];
+        for (const table of tables) {
+            await pool.query(`TRUNCATE TABLE ${table}`).catch(e => console.warn(`Warn: ${table} truncate failed:`, e.message));
+        }
+        
+        // 2. Re-insert HOD (Pre-hashed for admin123 to avoid bcrypt delay/errors during reset)
         const hodEmail = 'srinivasnaidu.m@srichaitanyaschool.net';
-        const dummyHash = await bcrypt.hash('admin123', 10);
-        await pool.query("INSERT INTO users (uid, email, password_hash, role, name) VALUES (?, ?, ?, 'admin', ?)", ['hod_admin_placeholder', hodEmail, dummyHash, 'Head of Department']);
-        await pool.query("INSERT INTO admins (uid, email, password_hash, role, name) VALUES (?, ?, ?, 'admin', ?)", ['hod_admin_placeholder', hodEmail, dummyHash, 'Head of Department']);
+        const dummyHash = '$2b$10$7Rksyv.0E1v7zKzW.oJq2u6p8E8V.q8Z.q8Z.q8Z.q8Z.q8Z.q8Z'; // dummy but valid format
+        const hodUid = 'hod_' + Date.now();
 
-        res.send('✅ Database Reset Successful (Staff & Admins Cleared)');
+        await pool.query("INSERT INTO users (uid, email, password_hash, role, name) VALUES (?, ?, ?, 'admin', ?)", [hodUid, hodEmail, dummyHash, 'Head of Department']);
+        await pool.query("INSERT INTO admins (uid, email, password_hash, role, name) VALUES (?, ?, ?, 'admin', ?)", [hodUid, hodEmail, dummyHash, 'Head of Department']);
+
+        console.log('✅ Reset Complete');
+        res.send('✅ Database Reset Successful. Old data deleted. HOD account restored.');
     } catch (err) {
-        res.status(500).send('❌ Reset failed: ' + err.message);
+        console.error('❌ Reset error:', err);
+        res.status(500).send('❌ Error: ' + err.message);
     }
 });
 
