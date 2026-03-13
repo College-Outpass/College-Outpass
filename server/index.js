@@ -24,7 +24,13 @@ app.use((req, res, next) => {
 });
 
 app.get('/diag/logs', (req, res) => res.send(`<pre>${logs.join('\n')}</pre>`));
-app.get('/', (req, res) => res.send('Outpass API v3.0 Online'));
+app.get('/', (req, res) => res.json({ 
+    service: 'Outpass API', 
+    version: '3.0', 
+    mode: 'Pure-TiDB', 
+    status: 'Online',
+    time: new Date().toISOString()
+}));
 const publicPath = path.join(__dirname, '../public');
 
 // Log all incoming requests for debugging
