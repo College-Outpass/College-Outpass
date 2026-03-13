@@ -256,8 +256,10 @@ app.post('/api/auth/verify', authenticateToken, (req, res) => {
 app.post('/api/users', authenticateToken, async (req, res) => {
     // Only admins or the HOD can create users
     console.log(`🔍 USER CREATION ATTEMPT: ${req.user.email} (Role: ${req.user.role})`);
+    console.log(`📦 Request Body: ${JSON.stringify(req.body)}`);
 
     if (req.user.role !== 'admin' && req.user.email.toLowerCase() !== 'srinivasnaidu.m@srichaitanyaschool.net') {
+        console.warn(`❌ Unauthorized attempt: ${req.user.email} is not admin`);
         return res.status(403).json({ error: 'Unauthorized: Admin access required' });
     }
 
