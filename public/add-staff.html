@@ -252,6 +252,11 @@
         <div class="header">
             <h1>Staff Management</h1>
             <p>Create and manage access for department staff and campus administrators.</p>
+            <div id="status-bar" style="margin-top: 15px; padding: 10px; border-radius: 8px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px; font-weight: 500;">
+                <span id="status-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #94a3b8;"></span>
+                <span id="status-text">Checking system connection...</span>
+                <button onclick="checkConnection()" style="margin-left: 10px; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; background: white; cursor: pointer; font-size: 0.75rem;">Test Connection</button>
+            </div>
         </div>
 
         <div class="grid">
@@ -344,7 +349,30 @@
             }, 4000);
         }
 
+        async function checkConnection() {
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+            statusText.textContent = "Testing connection...";
+            statusDot.style.background = "#94a3b8";
+
+            try {
+                const res = await fetch(`${API_URL}/hello`, { signal: AbortSignal.timeout(5000) });
+                if (res.ok) {
+                    statusDot.style.background = "#22c55e";
+                    statusText.textContent = "System Connected (Render)";
+                    console.log("✅ API Connection OK");
+                } else {
+                    throw new Error("Status: " + res.status);
+                }
+            } catch (err) {
+                statusDot.style.background = "#ef4444";
+                statusText.textContent = "Connection Failed: " + err.message;
+                console.error("❌ API Connection Failed:", err);
+            }
+        }
+
         async function fetchUsers() {
+            checkConnection(); // Check connection whenever we fetch users
             try {
                 loader.style.display = 'flex';
                 // Use firebase-config.js logic to get token
@@ -395,6 +423,7 @@
             };
 
             console.log("🚀 Attempting to create staff:", data.email);
+            alert("⏳ Starting creation... please wait for the next popup.");
 
             try {
                 loader.style.display = 'flex';
@@ -410,9 +439,11 @@
                     token = adminAuth ? adminAuth.token : localStorage.getItem('tidb_token');
                 }
 
-                if (!token) {
-                    console.warn("⚠️ No authentication token found.");
-                }
+                console.log("📡 Sending data to:", `${API_URL}/users`);
+                
+                // Add a timeout to prevent hanging
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
                 const res = await fetch(`${API_URL}/users`, {
                     method: 'POST',
@@ -420,11 +451,18 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(data),
+                    signal: controller.signal
                 }).catch(err => {
+                    clearTimeout(timeoutId);
+                    if (err.name === 'AbortError') {
+                        throw new Error("Request timed out after 15 seconds. The database might be slow.");
+                    }
                     console.error("🌐 Network Error:", err);
-                    throw new Error("Cannot connect to server at " + API_URL + ". Is the server running?");
+                    throw new Error("Cannot reach server at " + API_URL + ". Is your internet active?");
                 });
+
+                clearTimeout(timeoutId);
 
                 let result;
                 try {
