@@ -6,6 +6,19 @@ const { pool, initDb } = require('./db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+// Firebase Admin Setup
+const admin = require('firebase-admin');
+const serviceAccountPath = path.join(__dirname, '../key.json');
+if (fs.existsSync(serviceAccountPath)) {
+    const serviceAccount = require(serviceAccountPath);
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+    });
+    console.log('🔥 Firebase Admin initialized');
+} else {
+    console.warn('⚠️ Firebase Admin Initialization failed: key.json not found');
+}
+
 console.log('🚀 Final Pure-Database Mode v3.0');
 const app = express();
 app.use(cors());
@@ -179,6 +192,14 @@ app.post('/api/auth/login', async (req, res) => {
             campus: user.campus 
         }, JWT_SECRET, { expiresIn: '24h' });
 
+        // Create Firebase Custom Token to allow frontend Firestore access
+        let firebaseToken = null;
+        try {
+            firebaseToken = await admin.auth().createCustomToken(user.uid);
+        } catch (fbErr) {
+            console.warn('⚠️ Could not create Firebase custom token (user missing in FB?)');
+        }
+
         res.json({ 
             user: { 
                 uid: user.uid, 
@@ -186,7 +207,8 @@ app.post('/api/auth/login', async (req, res) => {
                 role: user.role, 
                 campus: user.campus 
             }, 
-            token 
+            token,
+            firebaseToken
         });
     } catch (err) {
         console.error('❌ Login Error:', err);
@@ -212,6 +234,13 @@ app.patch('/api/users/:uid/password', authenticateToken, async (req, res) => {
         await pool.query('UPDATE users SET password_hash = ? WHERE uid = ?', [hash, uid]);
         await pool.query('UPDATE staff SET password_hash = ? WHERE uid = ?', [hash, uid]);
         await pool.query('UPDATE admins SET password_hash = ? WHERE uid = ?', [hash, uid]);
+
+        // Sync with Firebase Auth
+        try {
+            await admin.auth().updateUser(uid, { password: password });
+        } catch (fbErr) {
+            console.warn(`⚠️ Could not update password in Firebase Auth for ${uid}`);
+        }
 
         console.log(`✅ Password reset successful for UID: ${uid}`);
         res.json({ success: true });
@@ -296,6 +325,19 @@ app.post('/api/users', authenticateToken, async (req, res) => {
             );
         }
 
+        // 3. Keep Firebase Auth synced
+        try {
+            await admin.auth().createUser({
+                uid: uid,
+                email: email.toLowerCase(),
+                password: password,
+                displayName: name || null
+            });
+            console.log('🔥 User created in Firebase Auth');
+        } catch (fbErr) {
+            console.warn('⚠️ Firebase User creation failed (maybe already exists):', fbErr.message);
+        }
+
         console.log(`✅ User saved to TiDB tables (users + ${userRole})`);
         res.json({ success: true, uid });
     } catch (err) {
@@ -330,6 +372,13 @@ app.delete('/api/users/:uid', authenticateToken, async (req, res) => {
         await pool.query('DELETE FROM users WHERE uid = ?', [uid]);
         await pool.query('DELETE FROM staff WHERE uid = ?', [uid]);
         await pool.query('DELETE FROM admins WHERE uid = ?', [uid]);
+
+        // Delete from Firebase Auth
+        try {
+            await admin.auth().deleteUser(uid);
+            console.log(`🔥 Deleted user from Firebase Auth: ${uid}`);
+        } catch (e) { }
+
         res.json({ success: true });
     } catch (err) {
         console.error('❌ User deletion error:', err);

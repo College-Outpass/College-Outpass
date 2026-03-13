@@ -2779,7 +2779,7 @@
         // Function to save student data to Firestore
         async function saveStudentData(studentData) {
             try {
-                const user = auth.currentUser;
+                const user = auth.currentUser || (localStorage.getItem('userEmail') ? { email: localStorage.getItem('userEmail') } : null);
                 if (!user) {
                     return;
                 }
@@ -3573,7 +3573,7 @@
             hideMessages();
 
             try {
-                const user = auth.currentUser;
+                const user = auth.currentUser || (localStorage.getItem('userEmail') ? { email: localStorage.getItem('userEmail') } : null);
                 if (!user) {
                     throw new Error('User not authenticated');
                 }
@@ -3755,7 +3755,7 @@
             hideMessages();
 
             try {
-                const user = auth.currentUser;
+                const user = auth.currentUser || (localStorage.getItem('userEmail') ? { email: localStorage.getItem('userEmail') } : null);
                 if (!user) {
                     throw new Error('User not authenticated');
                 }
@@ -3852,7 +3852,7 @@
             hideMessages();
 
             try {
-                const user = auth.currentUser;
+                const user = auth.currentUser || (localStorage.getItem('userEmail') ? { email: localStorage.getItem('userEmail') } : null);
                 if (!user) {
                     throw new Error('User not authenticated');
                 }
@@ -4040,7 +4040,7 @@
             hideMessages();
 
             try {
-                const user = auth.currentUser;
+                const user = auth.currentUser || (localStorage.getItem('userEmail') ? { email: localStorage.getItem('userEmail') } : null);
                 if (!user) {
                     throw new Error('User not authenticated');
                 }
@@ -4272,7 +4272,7 @@
                     document.getElementById('pdfAuthorizedByName').textContent = outpassData.authorizedBy;
 
                     // Update campus information dynamically - Get fresh from current user to ensure correctness
-                    const currentUser = auth.currentUser;
+                    const currentUser = auth.currentUser || (localStorage.getItem('userEmail') ? { email: localStorage.getItem('userEmail') } : null);
                     if (currentUser) {
                         const freshCampusInfo = getCampusInfoFromUserEmail(currentUser.email);
                         if (freshCampusInfo) {
@@ -4471,7 +4471,7 @@
                     statusElement.className = 'medi-slip-status-box';
 
                     // Update campus information dynamically - Get fresh from current user to ensure correctness
-                    const currentUser = auth.currentUser;
+                    const currentUser = auth.currentUser || (localStorage.getItem('userEmail') ? { email: localStorage.getItem('userEmail') } : null);
                     if (currentUser) {
                         const freshCampusInfo = getCampusInfoFromUserEmail(currentUser.email);
                         if (freshCampusInfo) {
@@ -4667,7 +4667,7 @@ For queries, contact hostel office.`;
                 console.log('Encoded message length:', encodedMessage.length);
 
                 // Get campus ID and fetch WhatsApp group link for security (but don't open it yet)
-                const user = auth.currentUser;
+                const user = auth.currentUser || (localStorage.getItem('userEmail') ? { email: localStorage.getItem('userEmail') } : null);
                 const campusInfo = getCampusInfoFromUserEmail(user.email);
                 const campusId = campusInfo ? campusInfo.campusId : null;
 

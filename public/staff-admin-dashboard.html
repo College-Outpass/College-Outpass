@@ -2080,7 +2080,7 @@ if (item.type === 'outpass') {
                 uploadStatusMessage.style.display = 'none';
                 
                 try {
-                    const user = auth.currentUser;
+                    const user = auth.currentUser || (localStorage.getItem('userEmail') ? { email: localStorage.getItem('userEmail') } : null);
                     if (!user) {
                         throw new Error('User not authenticated');
                     }
@@ -2281,7 +2281,7 @@ if (item.type === 'outpass') {
             
             // Show confirmation box when delete button is clicked
             deleteStudentDataBtn.addEventListener('click', function() {
-                const user = auth.currentUser;
+                const user = auth.currentUser || (localStorage.getItem('userEmail') ? { email: localStorage.getItem('userEmail') } : null);
                 if (!user) {
                     showUploadStatus('❌ User not authenticated', 'error');
                     return;
@@ -2350,7 +2350,7 @@ if (item.type === 'outpass') {
                     return;
                 }
                 
-                const user = auth.currentUser;
+                const user = auth.currentUser || (localStorage.getItem('userEmail') ? { email: localStorage.getItem('userEmail') } : null);
                 if (!user || !currentCampusIdForDelete) {
                     showUploadStatus('❌ Error: Invalid session', 'error');
                     deleteConfirmationBox.style.display = 'none';

@@ -664,6 +664,16 @@
                     role: 'admin'
                 }));
 
+                // Authenticate with Firebase using Custom Token
+                if (loginResult.firebaseToken) {
+                    try {
+                        await auth.signInWithCustomToken(loginResult.firebaseToken);
+                        console.log('🔥 Signed in to Firebase Admin with Custom Token!');
+                    } catch (fbErr) {
+                        console.error('Firebase token login failed:', fbErr.message);
+                    }
+                }
+
                 // Success message
                 showMessage('✅ Login successful! Redirecting...', 'success');
 

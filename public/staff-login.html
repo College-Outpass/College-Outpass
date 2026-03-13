@@ -623,6 +623,16 @@
                 localStorage.setItem('lastDashboard', 'staff');
                 localStorage.setItem('isPrincipal', loginResult.user.role === 'admin' ? 'true' : 'false');
 
+                // Step 3: Authenticate with Firebase using Custom Token
+                if (loginResult.firebaseToken) {
+                    try {
+                        await auth.signInWithCustomToken(loginResult.firebaseToken);
+                        console.log('🔥 Signed in to Firebase with Custom Token!');
+                    } catch (fbErr) {
+                        console.error('Firebase token login failed:', fbErr.message);
+                    }
+                }
+
                 showMessage('✅ Login successful! Redirecting...', 'success');
 
                 setTimeout(() => {
@@ -687,6 +697,16 @@
                 localStorage.setItem('userEmail', loginResult.user.email);
                 localStorage.setItem('isPrincipal', 'true');
                 localStorage.setItem('lastDashboard', 'admin');
+
+                // Step 3: Authenticate with Firebase using Custom Token
+                if (loginResult.firebaseToken) {
+                    try {
+                        await auth.signInWithCustomToken(loginResult.firebaseToken);
+                        console.log('🔥 Signed in to Firebase Admin with Custom Token!');
+                    } catch (fbErr) {
+                        console.error('Firebase token login failed:', fbErr.message);
+                    }
+                }
 
                 showMessage('✅ Admin login successful!', 'success');
 
