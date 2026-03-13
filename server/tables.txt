@@ -1,0 +1,29 @@
+[
+  {
+    "Tables_in_test": "admins"
+  },
+  {
+    "Tables_in_test": "outpasses"
+  },
+  {
+    "Tables_in_test": "security"
+  },
+  {
+    "Tables_in_test": "settings"
+  },
+  {
+    "Tables_in_test": "sick_slips"
+  },
+  {
+    "Tables_in_test": "staff"
+  },
+  {
+    "Tables_in_test": "students"
+  },
+  {
+    "Tables_in_test": "transfer_admins"
+  },
+  {
+    "Tables_in_test": "users"
+  }
+]

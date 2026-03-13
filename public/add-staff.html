@@ -394,12 +394,18 @@
                 loader.style.display = 'flex';
                 let token = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
                 
+                console.log(`📡 Fetching staff from ${API_URL}/users...`);
                 const res = await fetch(`${API_URL}/users`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!res.ok) throw new Error('Refresh Login (Token Expired)');
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    console.error('❌ Fetch staff failed:', res.status, errData);
+                    throw new Error(errData.error || 'Refresh Login (Session Expired)');
+                }
                 const users = await res.json();
+                console.log(`✅ Loaded ${users.length} staff members`);
 
                 if (users.length === 0) {
                     noData.style.display = 'block';
@@ -449,6 +455,8 @@
             try {
                 loader.style.display = 'flex';
                 let token = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+                
+                console.log('📡 Sending creation request to:', `${API_URL}/users`);
 
                 const res = await fetch(`${API_URL}/users`, {
                     method: 'POST',
@@ -459,14 +467,20 @@
                     body: JSON.stringify(data)
                 });
 
-                const result = await res.json();
-                if (!res.ok) throw new Error(result.error || 'Creation failed');
+                const result = await res.json().catch(() => ({ error: 'Unknown server error' }));
+                
+                if (!res.ok) {
+                    console.error('❌ Creation failed:', res.status, result);
+                    throw new Error(result.error || result.details || 'Creation failed');
+                }
 
+                console.log('✅ Staff created successfully:', result);
                 showMessage('🎉 Staff Account Created Successfully!');
                 alert('✅ Staff Account Created Successfully!');
                 staffForm.reset();
                 fetchUsers();
             } catch (err) {
+                console.error('❌ Submission catch block:', err);
                 showMessage(err.message, true);
             } finally {
                 loader.style.display = 'none';

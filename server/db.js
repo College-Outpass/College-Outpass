@@ -39,6 +39,17 @@ async function initDb() {
             )
         `);
 
+        // Migration for transfer_admins column lengths (if it already existed with shorter lengths)
+        const [userCols] = await connection.query("SHOW COLUMNS FROM transfer_admins");
+        const userColMap = userCols.reduce((acc, col) => { acc[col.Field] = col.Type; return acc; }, {});
+        
+        if (userColMap['uid'] === 'varchar(50)') await connection.query("ALTER TABLE transfer_admins MODIFY COLUMN uid VARCHAR(100)");
+        if (userColMap['email'] === 'varchar(100)') await connection.query("ALTER TABLE transfer_admins MODIFY COLUMN email VARCHAR(255)");
+        if (userColMap['name'] === 'varchar(100)') await connection.query("ALTER TABLE transfer_admins MODIFY COLUMN name VARCHAR(255)");
+        if (userColMap['campus'] === 'varchar(100)') await connection.query("ALTER TABLE transfer_admins MODIFY COLUMN campus VARCHAR(255)");
+        if (userColMap['role'] === 'varchar(20)') await connection.query("ALTER TABLE transfer_admins MODIFY COLUMN role VARCHAR(50)");
+
+
         // Outpasses table
         await connection.query(`
             CREATE TABLE IF NOT EXISTS outpasses (

@@ -30,7 +30,7 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
     console.warn('⚠️ Firebase Admin Initialization failed: key.json or ENV not found');
 }
 
-console.log('🚀 Final Pure-Database Mode v3.0');
+console.log('🚀 Final Pure-Database Mode v3.1 - Fix Schema');
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -295,8 +295,8 @@ app.post('/api/users', authenticateToken, async (req, res) => {
     console.log(`📦 Request Body: ${JSON.stringify(req.body)}`);
 
     if (req.user.role !== 'admin' && req.user.email.toLowerCase() !== 'srinivasnaidu.m@srichaitanyaschool.net') {
-        console.warn(`❌ Unauthorized attempt: ${req.user.email} is not admin`);
-        return res.status(403).json({ error: 'Unauthorized: Admin access required' });
+        console.warn(`❌ Unauthorized attempt: ${req.user.email} (Role: ${req.user.role}) is not admin`);
+        return res.status(403).json({ error: 'Unauthorized: Admin access required. Contact HOD.' });
     }
 
     try {
@@ -330,20 +330,27 @@ app.post('/api/users', authenticateToken, async (req, res) => {
             console.warn('⚠️ Firebase User creation failed (maybe already exists):', fbErr.message);
         }
 
-        console.log(`✅ User saved to TiDB (transfer_admins)`);
-        res.json({ success: true, uid });
+        console.log(`✅ User saved to TiDB (transfer_admins): ${uid}`);
+        res.json({ success: true, uid, message: 'Staff account created successfully' });
     } catch (err) {
         console.error('❌ User creation error:', err);
-        res.status(500).json({ error: 'Database Error: ' + err.message });
+        res.status(500).json({ 
+            error: 'Creation Failed', 
+            details: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
 });
 
 app.get('/api/users', authenticateToken, async (req, res) => {
-    console.log(`🔍 FETCHING USERS LIST: requested by ${req.user.email}`);
-    if (req.user.role !== 'admin' && req.user.email !== 'srinivasnaidu.m@srichaitanyaschool.net') {
+    const normalizedEmail = (req.user.email || '').toLowerCase();
+    
+    if (req.user.role !== 'admin' && normalizedEmail !== 'srinivasnaidu.m@srichaitanyaschool.net') {
         console.warn(`❌ Unauthorized users list fetch attempt by: ${req.user.email}`);
-        return res.status(403).json({ error: 'Unauthorized' });
+        return res.status(403).json({ error: 'Unauthorized: Admin access required' });
     }
+
+    console.log(`✅ Fetching users for ${req.user.email}...`);
 
     try {
         const [rows] = await pool.query('SELECT uid, email, name, campus, role, created_at FROM transfer_admins ORDER BY created_at DESC');
