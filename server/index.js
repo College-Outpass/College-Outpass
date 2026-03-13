@@ -55,6 +55,29 @@ try {
     console.log('📂 Files in folder:', files.join(', '));
 } catch (e) { console.log('❌ Error reading folder:', e.message); }
 
+app.get('/api/admin/reset_db', async (req, res) => {
+    // PROTECTED: Only the HOD can call this via a specific query param for extra safety
+    if (req.query.key !== 'hod_reset_2024') {
+        return res.status(403).send('Unauthorized');
+    }
+
+    try {
+        console.log('🔄 Remote Reset Triggered...');
+        await pool.query('TRUNCATE TABLE users');
+        await pool.query('TRUNCATE TABLE staff');
+        await pool.query('TRUNCATE TABLE admins');
+        
+        const hodEmail = 'srinivasnaidu.m@srichaitanyaschool.net';
+        const dummyHash = await bcrypt.hash('admin123', 10);
+        await pool.query("INSERT INTO users (uid, email, password_hash, role, name) VALUES (?, ?, ?, 'admin', ?)", ['hod_admin_placeholder', hodEmail, dummyHash, 'Head of Department']);
+        await pool.query("INSERT INTO admins (uid, email, password_hash, role, name) VALUES (?, ?, ?, 'admin', ?)", ['hod_admin_placeholder', hodEmail, dummyHash, 'Head of Department']);
+
+        res.send('✅ Database Reset Successful (Staff & Admins Cleared)');
+    } catch (err) {
+        res.status(500).send('❌ Reset failed: ' + err.message);
+    }
+});
+
 app.use(express.static(publicPath));
 
 initDb();
