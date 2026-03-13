@@ -1,39 +1,30 @@
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
+const path = require('path');
 const { pool, initDb } = require('./db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const path = require('path');
-const admin = require('firebase-admin');
 
-// Initialize System - Firebase Admin removed for "Security Process" (Database Only)
-console.log('✅ System starting in Pure-Database Mode');
+console.log('🚀 Final Pure-Database Mode v3.0');
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '10mb' }));
 
-// Remote Logger for Debugging
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecret12345';
+
+// Logger
 const logs = [];
-const originalLog = console.log;
-const originalError = console.error;
-const originalWarn = console.warn;
-
-function captureLog(type, args) {
-    const msg = `[${type}] ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ')}`;
-    logs.push(`${new Date().toLocaleTimeString()} ${msg}`);
+app.use((req, res, next) => {
+    const msg = `[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`;
+    logs.push(msg);
     if (logs.length > 100) logs.shift();
-}
-
-console.log = (...args) => { captureLog('LOG', args); originalLog(...args); };
-console.error = (...args) => { captureLog('ERR', args); originalError(...args); };
-console.warn = (...args) => { captureLog('WRN', args); originalWarn(...args); };
-
-app.get('/diag/logs', (req, res) => {
-    res.send(`<pre>${logs.join('\n')}</pre>`);
+    console.log(msg);
+    next();
 });
 
-// Settings
+app.get('/diag/logs', (req, res) => res.send(`<pre>${logs.join('\n')}</pre>`));
+app.get('/', (req, res) => res.send('Outpass API v3.0 Online'));
 const publicPath = path.join(__dirname, '../public');
 
 // Log all incoming requests for debugging
@@ -96,7 +87,7 @@ app.use(express.static(publicPath));
 
 initDb();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecret12345';
+
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
