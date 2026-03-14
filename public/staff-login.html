@@ -769,19 +769,22 @@
             }
         });
         // Logout functionality for staff login page
-        document.getElementById('logoutBtn').addEventListener('click', function () {
-            // Set explicit logout flag
-            sessionStorage.setItem('explicitLogout', 'true');
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function () {
+                // Set explicit logout flag
+                sessionStorage.setItem('explicitLogout', 'true');
 
-            // Clear all stored data
-            localStorage.clear();
-            sessionStorage.clear();
+                // Clear all stored data
+                localStorage.clear();
+                sessionStorage.clear();
 
-            // Sign out from Firebase
-            auth.signOut().then(() => {
-                window.location.href = 'staff-login.html';
+                // Sign out from Firebase
+                auth.signOut().then(() => {
+                    window.location.href = 'staff-login.html';
+                });
             });
-        });
+        }
     </script>
 </body>
 

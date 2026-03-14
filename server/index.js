@@ -118,48 +118,51 @@ initDb();
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-    if (token == null) return res.sendStatus(401);
-
-    try {
-        const decoded = jwt.decode(token);
-        if (decoded && decoded.email) {
-            const email = decoded.email.toLowerCase();
-            // Accept Firebase tokens (iss contains securetoken.google.com)
-            const isFirebaseToken = decoded.iss && decoded.iss.includes('securetoken.google.com');
-            if (isFirebaseToken || decoded.email_verified || email === 'srinivasnaidu.m@srichaitanyaschool.net') {
-                req.user = { ...decoded, email };
-                console.log(`✅ Firebase/verified token accepted for: ${email}`);
-                return next();
-            }
-        }
-    } catch (e) {
-        console.warn('Token decode error:', e.message);
+    
+    if (!token) {
+        console.warn('⚠️ No token provided');
+        return res.sendStatus(401);
     }
 
-    // Fallback: verify with our custom JWT secret (admin portal logins)
+    const HOD_EMAIL = 'srinivasnaidu.m@srichaitanyaschool.net';
+
+    // 1. Try to verify with custom JWT secret
     jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) {
-            // Last resort decode — allow any token with an email
-            try {
-                const decoded = jwt.decode(token);
-                if (decoded && decoded.email) {
-                    const email = decoded.email.toLowerCase();
-                    const role = (email === 'srinivasnaidu.m@srichaitanyaschool.net') ? 'admin' : (decoded.role || 'staff');
-                    req.user = { ...decoded, email, role };
-                    console.log(`⚠️ Accepted via decode fallback: ${email} (Role: ${role})`);
+        if (!err) {
+            const email = (user.email || '').toLowerCase();
+            const role = (email === HOD_EMAIL) ? 'admin' : (user.role || 'staff');
+            req.user = { ...user, email, role };
+            console.log(`✅ Token verified via JWT: ${email} (${role})`);
+            return next();
+        }
+
+        // 2. Fallback: Check if it's a Firebase token or can be decoded
+        try {
+            const decoded = jwt.decode(token);
+            if (decoded && decoded.email) {
+                const email = decoded.email.toLowerCase();
+                const role = (email === HOD_EMAIL) ? 'admin' : (decoded.role || 'staff');
+                req.user = { ...decoded, email, role };
+                
+                // If it's a Firebase token (verified by issuer), allow it
+                const isFirebaseToken = decoded.iss && decoded.iss.includes('securetoken.google.com');
+                if (isFirebaseToken) {
+                    console.log(`✅ Firebase token accepted for: ${email} (${role})`);
                     return next();
                 }
-            } catch (e2) { }
-            return res.sendStatus(403);
+
+                // If it's just a decode-able token and it's the HOD, allow it (last resort)
+                if (email === HOD_EMAIL) {
+                    console.warn(`⚠️ HOD accepted via decode fallback (no verify): ${email}`);
+                    return next();
+                }
+            }
+        } catch (e) {
+            console.error('❌ Token fallback error:', e.message);
         }
-        
-        // Ensure HOD always has admin role even if token is old
-        if (user.email && user.email.toLowerCase() === 'srinivasnaidu.m@srichaitanyaschool.net') {
-            user.role = 'admin';
-        }
-        
-        req.user = user;
-        next();
+
+        console.error('❌ Authentication failed for token');
+        return res.sendStatus(403);
     });
 }
 
@@ -290,54 +293,80 @@ app.post('/api/auth/verify', authenticateToken, (req, res) => {
 
 // User Management (Admins only)
 app.post('/api/users', authenticateToken, async (req, res) => {
-    // Only admins or the HOD can create users
-    console.log(`🔍 USER CREATION ATTEMPT: ${req.user.email} (Role: ${req.user.role})`);
-    console.log(`📦 Request Body: ${JSON.stringify(req.body)}`);
+    const adminUser = req.user;
+    const adminEmail = (adminUser.email || '').toLowerCase();
+    const adminRole = adminUser.role;
 
-    if (req.user.role !== 'admin' && req.user.email.toLowerCase() !== 'srinivasnaidu.m@srichaitanyaschool.net') {
-        console.warn(`❌ Unauthorized attempt: ${req.user.email} (Role: ${req.user.role}) is not admin`);
-        return res.status(403).json({ error: 'Unauthorized: Admin access required. Contact HOD.' });
+    console.log(`👤 [USER CREATE] Attempt by: ${adminEmail} (Role: ${adminRole})`);
+
+    // Only admins or the HOD can create users
+    const isHOD = adminEmail === 'srinivasnaidu.m@srichaitanyaschool.net';
+    const isAdmin = adminRole === 'admin';
+
+    if (!isAdmin && !isHOD) {
+        console.warn(`❌ [USER CREATE] Unauthorized attempt by: ${adminEmail}`);
+        return res.status(403).json({ error: 'Unauthorized: Admin access required.' });
     }
 
     try {
         const { email, password, name, campus, role } = req.body;
-        console.log(`👤 [TiDB CREATE] Data received for: ${email} (Role: ${role})`);
+        console.log(`📦 [USER CREATE] Payload: email=${email}, name=${name}, campus=${campus}, role=${role}`);
 
         if (!email || !password || !campus) {
-            return res.status(400).json({ error: 'Missing required fields' });
+            console.warn(`⚠️ [USER CREATE] Missing fields: email=${!!email}, pwd=${!!password}, campus=${!!campus}`);
+            return res.status(400).json({ error: 'Missing required fields: email, password, and campus are required.' });
         }
 
-        const uid = 'u_' + Date.now();
-        const password_hash = await bcrypt.hash(password, 10);
+        const normalizedEmail = email.toLowerCase().trim();
         const userRole = role || 'staff';
+        const uid = 'u_' + Date.now();
 
-        // 1. Insert into unified transfer_admins table
+        // 1. Check if user already exists in TiDB
+        const [existing] = await pool.query('SELECT uid FROM transfer_admins WHERE email = ?', [normalizedEmail]);
+        if (existing.length > 0) {
+            console.warn(`⚠️ [USER CREATE] User already exists: ${normalizedEmail}`);
+            return res.status(409).json({ error: 'User already exists with this email address.' });
+        }
+
+        const password_hash = await bcrypt.hash(password, 10);
+
+        // 2. Insert into unified transfer_admins table
+        console.log(`📡 [USER CREATE] Inserting into TiDB: ${normalizedEmail}`);
         await pool.query(
             'INSERT INTO transfer_admins (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?)',
-            [uid, email.toLowerCase(), password_hash, name || null, campus, userRole]
+            [uid, normalizedEmail, password_hash, name || null, campus, userRole]
         );
+        console.log(`✅ [USER CREATE] TiDB insert successful for UID: ${uid}`);
 
-        // 3. Keep Firebase Auth synced
-        try {
-            await admin.auth().createUser({
-                uid: uid,
-                email: email.toLowerCase(),
-                password: password,
-                displayName: name || null
-            });
-            console.log('🔥 User created in Firebase Auth');
-        } catch (fbErr) {
-            console.warn('⚠️ Firebase User creation failed (maybe already exists):', fbErr.message);
+        // 3. Keep Firebase Auth synced (Optional Fallback)
+        if (admin.apps.length > 0) {
+            try {
+                console.log(`🔥 [USER CREATE] Syncing with Firebase Auth: ${normalizedEmail}`);
+                await admin.auth().createUser({
+                    uid: uid,
+                    email: normalizedEmail,
+                    password: password,
+                    displayName: name || null
+                });
+                console.log('✅ [USER CREATE] Firebase Auth sync successful');
+            } catch (fbErr) {
+                console.warn('⚠️ [USER CREATE] Firebase sync failed (user may exist in FB or quota hit):', fbErr.message);
+                // We don't fail the whole request if Firebase sync fails, as TiDB is primary
+            }
+        } else {
+            console.warn('⚠️ [USER CREATE] Skipping Firebase sync: Admin SDK not initialized');
         }
 
-        console.log(`✅ User saved to TiDB (transfer_admins): ${uid}`);
-        res.json({ success: true, uid, message: 'Staff account created successfully' });
+        res.json({ 
+            success: true, 
+            uid, 
+            message: 'Staff account created successfully in central database.' 
+        });
     } catch (err) {
-        console.error('❌ User creation error:', err);
+        console.error('❌ [USER CREATE] Critical Error:', err);
         res.status(500).json({ 
-            error: 'Creation Failed', 
-            details: err.message,
-            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+            error: 'Server Error during user creation', 
+            details: err.message 
         });
     }
 });
