@@ -7,7 +7,15 @@ echo COLLEGE OUTPASS - DEPLOYMENT TOOL v3.1
 echo ==============================================
 echo.
 
-:: 1. PREREQUISITE CHECK & GIT DETECTION
+:: 1. PREREQUISITE CHECK
+node --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] Node.js is not recognized. Please install Node.js.
+    pause
+    exit /b 1
+)
+
+:: 1.0. GIT DETECTION
 set "GIT_EXE=git"
 git --version >nul 2>&1
 if %errorlevel% neq 0 (
@@ -23,6 +31,25 @@ if %errorlevel% neq 0 (
         exit /b 1
     )
 )
+
+:: 1.1. FIREBASE DETECTION
+set "FIREBASE_CMD=firebase"
+where firebase >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [INFO] Firebase global command not found, checking local node_modules...
+    if exist "node_modules\.bin\firebase.cmd" (
+        set "FIREBASE_CMD=node_modules\.bin\firebase.cmd"
+    ) else (
+        echo [INFO] Firebase not found in node_modules, checking for npx...
+        where npx >nul 2>&1
+        if !errorlevel! equ 0 (
+            set "FIREBASE_CMD=npx firebase"
+        ) else (
+            echo [WARNING] Firebase CLI and npx not found.
+        )
+    )
+)
+echo [INFO] Using Firebase CLI: %FIREBASE_CMD%
 
 :: 2. SCAN FOR UPDATES
 echo [INFO] Scanning for project updates...
@@ -81,14 +108,20 @@ if %errorlevel% neq 0 (
 :: 4. FIREBASE DEPLOYMENT
 echo.
 echo [5/6] Deploying to Firebase Hosting...
-call firebase deploy --only hosting
+call %FIREBASE_CMD% deploy --only hosting
 if %errorlevel% neq 0 (
     echo.
     echo [ERROR] Firebase deploy failed! 
     echo Please make sure firebase-tools are installed and you are logged in.
-    echo Run: npm install -g firebase-tools ^& firebase login
+    echo Run: npm install (if firebase-tools is in package.json)
+    echo Or:  npm install -g firebase-tools ^& firebase login
+    set "cont=N"
     set /p cont="Continue to Render trigger anyway? (Y/N): "
-    if /i "!cont!" neq "Y" exit /b 1
+    if /i "!cont!" neq "Y" (
+        echo [INFO] Deployment aborted.
+        pause
+        exit /b 1
+    )
 )
 
 :: 5. TRIGGER RENDER DEPLOY HOOK
