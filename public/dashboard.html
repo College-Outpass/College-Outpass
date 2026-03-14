@@ -2711,6 +2711,7 @@
             // Enable fields and auto-fill form fields
             setStudentFieldsEnabled(true);
 
+            // Auto-fill form fields
             if (result.studentName) {
                 document.getElementById('studentName').value = result.studentName;
             }
@@ -2729,6 +2730,31 @@
                 originalWhatsappNumber = result.whatsappNumber;
             } else {
                 originalWhatsappNumber = null;
+            }
+
+            // AUTO-FILL PHOTOS IF THEY EXIST
+            if (result.studentPhoto) {
+                console.log('📸 Loading student photo from database...');
+                studentPhotoData = result.studentPhoto;
+                const previewImg = document.getElementById('previewStudentImage');
+                const previewContainer = document.getElementById('studentPhotoPreview');
+                const deleteBtn = document.getElementById('deleteStudentPhotoBtn');
+                
+                if (previewImg) previewImg.src = studentPhotoData;
+                if (previewContainer) previewContainer.style.display = 'block';
+                if (deleteBtn) deleteBtn.style.display = 'inline-block';
+            }
+
+            if (result.parentPhoto) {
+                console.log('📸 Loading parent photo from database...');
+                parentPhotoData = result.parentPhoto;
+                const previewImg = document.getElementById('previewParentImage');
+                const previewContainer = document.getElementById('parentPhotoPreview');
+                const deleteBtn = document.getElementById('deleteParentPhotoBtn');
+                
+                if (previewImg) previewImg.src = parentPhotoData;
+                if (previewContainer) previewContainer.style.display = 'block';
+                if (deleteBtn) deleteBtn.style.display = 'inline-block';
             }
 
             // Show success message
@@ -2850,14 +2876,16 @@
         document.getElementById('logoutBtn').addEventListener('click', async () => {
             try {
                 sessionStorage.setItem('explicitLogout', 'true');
-                await auth.signOut();
-                console.log('User logged out');
+                if (auth && typeof auth.signOut === 'function') {
+                    await auth.signOut();
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            } finally {
+                console.log('Clearing local session...');
                 localStorage.clear();
                 sessionStorage.clear();
                 window.location.href = 'staff-login.html';
-            } catch (error) {
-                console.error('Logout error:', error);
-                alert('Error logging out. Please try again.');
             }
         });
 
@@ -3208,43 +3236,33 @@
         });
 
         // ============================================================
-        // IMPROVED CAMERA FUNCTIONALITY - WORKS ON BOTH MOBILE & DESKTOP
         // ============================================================
-
-        // ============================================================
-        // IMPROVED: Camera detection that works in all modes
-        // ============================================================
-        // ============================================================
-        // SIMPLIFIED CAMERA FUNCTIONALITY - WORKS ON BOTH MOBILE & DESKTOP
-        // ============================================================
-
-        // ============================================================
-        // CAMERA FUNCTIONALITY - WORKS ON BOTH MOBILE & DESKTOP (NO ERROR MESSAGE)
+        // CAMERA FUNCTIONALITY - IMPROVED FOR WEBVIEW & BROWSER
         // ============================================================
 
         function openCamera(photoType) {
             currentPhotoType = photoType;
             isCameraActive = true; 
 
-            // Standard Browser check
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            
-            if (isAndroidWebView()) {
-                console.log('WebView mode - using native capture');
-                useFileInputFallback();
-                return;
-            }
-
-            // Always show modal first to provide feedback
+            // Prepare UI
             cameraTitle.textContent = `Take ${photoType.charAt(0).toUpperCase() + photoType.slice(1)} Photo`;
             cameraModal.style.display = 'flex';
             captureBtn.style.display = 'block';
             retakeBtn.style.display = 'none';
             cameraVideo.style.display = 'block';
             cameraCanvas.style.display = 'none';
-
+            
             // Reset video
             cameraVideo.srcObject = null;
+
+            if (isAndroidWebView()) {
+                console.log('WebView mode - allowing native fallback within modal');
+                // Give user a moment to see the modal feedback before triggering system camera
+                setTimeout(() => {
+                    useFileInputFallback();
+                }, 300);
+                return;
+            }
 
             startCamera().catch(err => {
                 console.warn('Camera stream failed, switching to native fallback:', err);
@@ -3254,7 +3272,9 @@
 
         function isAndroidWebView() {
             const ua = navigator.userAgent.toLowerCase();
-            return ua.indexOf('wv') > -1 || (ua.indexOf('android') > -1 && ua.indexOf('version') > -1);
+            return ua.indexOf('wv') > -1 || 
+                   (ua.indexOf('android') > -1 && ua.indexOf('version') > -1) ||
+                   (ua.indexOf('samsung') > -1 && ua.indexOf('chrome') === -1);
         }
 
         async function startCamera() {
@@ -3262,49 +3282,58 @@
                 cameraStream.getTracks().forEach(track => track.stop());
             }
 
-            cameraStream = await navigator.mediaDevices.getUserMedia({
-                video: { 
-                    facingMode: 'environment',
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }
-            });
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
 
-            if (cameraVideo) {
-                cameraVideo.srcObject = cameraStream;
-                await cameraVideo.play();
+                if (cameraVideo) {
+                    cameraVideo.srcObject = cameraStream;
+                    await cameraVideo.play();
+                }
+            } catch (err) {
+                console.error('getUserMedia error:', err);
+                throw err;
             }
         }
 
         function useFileInputFallback() {
-            // Close camera modal if open
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
-            }
-            cameraModal.style.display = 'none';
-            isCameraActive = false;
+            console.log('🚀 Triggering Native Camera Fallback');
+            
+            // Keep modal open but show feedback
+            cameraTitle.textContent = '📸 Opening System Camera...';
+            
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.capture = 'environment';
+            fileInput.style.display = 'none';
 
-            // Trigger native file picker which works on all mobile devices
-            const tempInput = document.createElement('input');
-            tempInput.type = 'file';
-            tempInput.accept = 'image/*';
-            tempInput.capture = 'environment';
-            tempInput.style.display = 'none';
-
-            tempInput.onchange = (e) => {
+            fileInput.onchange = (e) => {
                 if (e.target.files && e.target.files[0]) {
                     handlePhotoUpload(e, currentPhotoType);
                 }
-                if (document.body.contains(tempInput)) document.body.removeChild(tempInput);
+                // Always close modal after native camera returns
+                closeCamera();
             };
 
-            document.body.appendChild(tempInput);
-            tempInput.click();
+            document.body.appendChild(fileInput);
+            fileInput.click();
+            
+            // Cleanup input element
+            setTimeout(() => {
+                if (document.body.contains(fileInput)) {
+                    document.body.removeChild(fileInput);
+                }
+            }, 60000);
         }
 
-        // --- CAMERA CONTROLS ---
-        captureBtn.onclick = function() {
+        // --- CAMERA MODAL CONTROLS ---
+        captureBtn.addEventListener('click', function() {
             try {
                 const context = cameraCanvas.getContext('2d');
                 cameraCanvas.width = cameraVideo.videoWidth;
@@ -3319,47 +3348,52 @@
                 console.error('Capture fail:', e);
                 useFileInputFallback();
             }
-        };
+        });
 
-        retakeBtn.onclick = function() {
+        retakeBtn.addEventListener('click', function() {
             cameraVideo.style.display = 'block';
             cameraCanvas.style.display = 'none';
             captureBtn.style.display = 'block';
             retakeBtn.style.display = 'none';
-        };
+        });
 
-        closeCameraBtn.onclick = function() {
+        closeCameraBtn.addEventListener('click', function() {
+            closeCamera();
+        });
+
+        function closeCamera() {
+            // If we have a captured image on canvas, save it
             if (cameraCanvas.style.display === 'block') {
                 const photoData = cameraCanvas.toDataURL('image/jpeg', 0.8);
-                const sizeInKB = Math.round((photoData.length * 3) / 4 / 1024);
-                
                 if (currentPhotoType === 'student') {
                     studentPhotoData = photoData;
-                    previewStudentImage.src = studentPhotoData;
-                    studentPhotoPreview.style.display = 'block';
-                    deleteStudentPhotoBtn.style.display = 'inline-block';
+                    document.getElementById('previewStudentImage').src = photoData;
+                    document.getElementById('studentPhotoPreview').style.display = 'block';
+                    document.getElementById('deleteStudentPhotoBtn').style.display = 'inline-block';
                 } else if (currentPhotoType === 'parent') {
                     parentPhotoData = photoData;
-                    previewParentImage.src = parentPhotoData;
-                    parentPhotoPreview.style.display = 'block';
-                    deleteParentPhotoBtn.style.display = 'inline-block';
+                    document.getElementById('previewParentImage').src = photoData;
+                    document.getElementById('parentPhotoPreview').style.display = 'block';
+                    document.getElementById('deleteParentPhotoBtn').style.display = 'inline-block';
                 } else if (currentPhotoType === 'authorizedLetter') {
                     authorizedLetterPhotoData = photoData;
-                    previewAuthorizedLetterImage.src = authorizedLetterPhotoData;
-                    authorizedLetterPhotoPreview.style.display = 'block';
-                    deleteAuthorizedLetterPhotoBtn.style.display = 'inline-block';
+                    document.getElementById('previewAuthorizedLetterImage').src = photoData;
+                    document.getElementById('authorizedLetterPhotoPreview').style.display = 'block';
+                    document.getElementById('deleteAuthorizedLetterPhotoBtn').style.display = 'inline-block';
                 }
-                showSuccess('✅ Photo saved!');
-                setTimeout(() => hideMessages(), 2000);
             }
             
+            // Stop stream
             if (cameraStream) {
                 cameraStream.getTracks().forEach(track => track.stop());
                 cameraStream = null;
             }
+            
             cameraModal.style.display = 'none';
             isCameraActive = false;
-        };
+        }
+
+
 
 
 

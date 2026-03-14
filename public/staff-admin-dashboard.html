@@ -2499,15 +2499,15 @@ if (item.type === 'outpass') {
                     // Set explicit logout flag
                     sessionStorage.setItem('explicitLogout', 'true');
                     
-                    await auth.signOut();
-                    
-                    // Clear all stored data
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    
-                    window.location.href = 'staff-login.html';
+                    if (auth && typeof auth.signOut === 'function') {
+                        await auth.signOut();
+                    }
                 } catch (error) {
                     console.error('Logout error:', error);
+                } finally {
+                    console.log('Clearing local session...');
+                    localStorage.clear();
+                    sessionStorage.clear();
                     window.location.href = 'staff-login.html';
                 }
             });
