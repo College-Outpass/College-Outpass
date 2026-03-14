@@ -220,13 +220,24 @@
             for (let i = 0; i < staffUsers.length; i++) {
                 const user = staffUsers[i];
                 try {
-                    // Create user with email and password
+                    // 1. Create user with email and password
                     const userCredential = await auth.createUserWithEmailAndPassword(user.email, PASSWORD);
+                    const uid = userCredential.user.uid;
+
+                    // 2. Create Firestore Profile
+                    await db.collection('staff').doc(uid).set({
+                        uid: uid,
+                        email: user.email.toLowerCase(),
+                        name: user.name,
+                        role: 'staff',
+                        campus: (i <= 6) ? 'ECITY_SCHOOL' : 'ECITY_NEET_BOYS', // Default assignment based on list order
+                        created_at: firebase.firestore.FieldValue.serverTimestamp()
+                    });
                     
                     creationResults[i] = {
                         status: 'success',
                         message: 'User created successfully',
-                        uid: userCredential.user.uid
+                        uid: uid
                     };
                     
                     console.log(`✅ Created: ${user.email}`);
@@ -244,7 +255,7 @@
                 renderUserList();
                 
                 // Small delay to avoid rate limiting
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 300));
             }
             
             btn.textContent = 'Creation Complete';
