@@ -306,10 +306,10 @@ app.post('/api/auth/verify', authenticateToken, (req, res) => {
 
 // User Management (Admins only)
 app.post('/api/users', authenticateToken, async (req, res) => {
-    const adminUser = req.user;
-    if (adminUser.role !== 'admin') {
-        return res.status(403).json({ error: 'Unauthorized: Admin access required.' });
+    if (admin.apps.length === 0) {
+        return res.status(500).json({ error: 'System Error: Firebase Admin NOT initialized on server. Please check environment variables.' });
     }
+    const adminUser = req.user;
 
     try {
         const { email, password, name, campus, role } = req.body;
