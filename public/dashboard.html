@@ -350,6 +350,203 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* ==================== ENHANCED CAMERA MODAL ==================== */
+        .camera-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .camera-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .camera-preview {
+            width: 100%;
+            max-width: 400px;
+            height: 400px;
+            background: #000;
+            margin: 0 auto 15px;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ddd;
+        }
+
+        .camera-preview video,
+        .camera-preview canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center center;
+        }
+
+        .camera-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .capture-btn,
+        .retake-btn,
+        .close-camera-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .capture-btn { background: #28a745; color: white; }
+        .retake-btn { background: #ffc107; color: #000; }
+        .close-camera-btn { background: #dc3545; color: white; }
+
+        .capture-btn:hover { background: #218838; }
+        .retake-btn:hover { background: #e0a800; }
+        .close-camera-btn:hover { background: #c82333; }
+
+        /* ==================== PHOTO PREVIEW IMPROVEMENTS ==================== */
+        .photo-preview-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+
+        .photo-label {
+            font-weight: 700;
+            font-size: 14px;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .upload-options {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .upload-option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .camera-btn {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .camera-btn:hover {
+            background: #1a252f;
+            transform: translateY(-2px);
+        }
+
+        /* ==================== STUDENT ID STICKER STYLE ==================== */
+        .student-id-valid {
+            border-color: #28a745 !important;
+            background-color: #f8fff8 !important;
+        }
+
+        .student-id-invalid {
+            border-color: #dc3545 !important;
+            background-color: #fff8f8 !important;
+        }
+
+        .student-id-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        /* ==================== REPORTING STATUS STYLES ==================== */
+        .reporting-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .reporting-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .reporting-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .reporting-info {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #e1e8ed;
+        }
+
+        .reporting-label {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .reporting-value {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .reporting-time-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         /* ==================== PDF TEMPLATE STYLES ==================== */
         
         #pdfTemplate {
@@ -804,12 +1001,12 @@
             font-weight: bold;
         }
 
-        .sick-slip-status-section {
+        .medi-slip-status-section {
             margin: 15px 0;
             text-align: center;
         }
 
-        .sick-slip-status-box {
+        .medi-slip-status-box {
             display: inline-block;
             padding: 10px 20px;
             border-radius: 5px;
@@ -818,7 +1015,7 @@
             margin: 5px 0;
         }
 
-        .sick-slip-signatures {
+        .medi-slip-signatures {
             display: flex;
             justify-content: space-between;
             margin-top: 20px;
@@ -827,7 +1024,7 @@
             gap: 10px;
         }
 
-        .sick-slip-footer {
+        .medi-slip-footer {
             text-align: center;
             margin-top: 15px;
             padding-top: 8px;
@@ -836,6 +1033,74 @@
             font-size: 11px;
             font-family: Arial, sans-serif;
             font-weight: normal;
+        }
+
+        /* ==================== REPORTING STATUS STYLES ==================== */
+        
+        .reporting-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .reporting-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .reporting-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .reporting-info {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #e1e8ed;
+        }
+        
+        .reporting-label {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .reporting-value {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        
+        .reporting-time-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ==================== STUDENT ID VALIDATION STYLES ==================== */
+        
+        .student-id-valid {
+            border: 2px solid #28a745 !important;
+            background-color: #f8fff9 !important;
+        }
+        
+        .student-id-invalid {
+            border: 2px solid #dc3545 !important;
+            background-color: #fff8f8 !important;
+        }
+        
+        .student-id-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
         }
 
         /* ==================== DASHBOARD SELECTION STYLES ==================== */
@@ -874,6 +1139,90 @@
         
         .dashboard-option.active:hover {
             box-shadow: 0 15px 40px rgba(40, 167, 69, 0.5);
+        }
+
+        /* ==================== CAMERA MODAL STYLES ==================== */
+        
+        .camera-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .camera-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .camera-preview {
+            width: 100%;
+            max-width: 300px;
+            height: 300px;
+            background: #000;
+            margin: 0 auto 15px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .camera-preview video, .camera-preview canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .camera-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .capture-btn, .retake-btn, .close-camera-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .capture-btn {
+            background: #28a745;
+            color: white;
+        }
+        
+        .capture-btn:hover {
+            background: #218838;
+        }
+        
+        .retake-btn {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .retake-btn:hover {
+            background: #e0a800;
+        }
+        
+        .close-camera-btn {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .close-camera-btn:hover {
+            background: #5a6268;
         }
 
         /* ==================== MOBILE RESPONSIVE STYLES ==================== */
@@ -1112,7 +1461,8 @@
             
             <div class="dashboard-selection">
                 <button id="outpassOption" class="dashboard-option active">Outpass Request</button>
-                <button id="sickSlipOption" class="dashboard-option">Sick Slip Request</button>
+                <button id="mediSlipOption" class="dashboard-option">Medi Slip Request</button>
+                <button id="reportingStatusOption" class="dashboard-option">Reporting Status</button>
             </div>
             
             <!-- Outpass Form -->
@@ -1127,62 +1477,81 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="studentId">Student ID *</label>
-                            <input type="text" id="studentId" placeholder="Enter Student ID" required>
+                            <input type="text" id="studentId" placeholder="SCS1234567" required>
+                            <div class="student-id-hint">Enter Only 7 digits ID (e.g., 2345672)</div>
                         </div>
                         
                         <div class="form-group">
                             <label for="studentName">Student Name *</label>
-                            <input type="text" id="studentName" placeholder="Enter Student Name" required>
+                            <input type="text" id="studentName" placeholder="Enter Student ID First" required disabled style="background-color: #e9ecef;">
                         </div>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="category">Choose Category *</label>
-                            <select id="category" required>
-                                <option value="" disabled selected>Select Category</option>
-                                <option value="School">School</option>
-                                <option value="Senior">Senior</option>
-                                <option value="Junior">Junior</option>
-                            </select>
+                            <label for="category">Category *</label>
+                            <input type="text" id="category" placeholder="Will be auto-filled" required readonly disabled style="background-color: #e9ecef;">
                         </div>
                         
                         <div class="form-group">
                             <label for="section">Section *</label>
-                            <input type="text" id="section" placeholder="Enter Section (e.g., A, B, C)" required>
+                            <input type="text" id="section" placeholder="Enter Section" required disabled style="background-color: #e9ecef;">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="photo-upload-group">
-                            <label for="studentPhoto">📸 Upload Student Photo (Any Size)</label>
-                            <div class="photo-preview" id="photoPreview">
-                                <img id="previewImage" src="" alt="Student Photo Preview">
+                            <label for="studentPhoto">📸 Upload Student, Parent & Authorized Letter Photos (Any Size)</label>
+                            <div class="photo-preview-container">
+                                <div>
+                                    <div class="photo-label">Student Photo</div>
+                                    <div class="photo-preview" id="studentPhotoPreview">
+                                        <img id="previewStudentImage" src="" alt="Student Photo Preview">
+                                    </div>
+                                    <div class="upload-options">
+                                        <button type="button" class="camera-btn" onclick="openCamera('student')">📸 Camera</button>
+                                        <button type="button" class="upload-btn" onclick="document.getElementById('studentPhotoInput').click()">📁 Gallery</button>
+                                    </div>
+                                    <button type="button" class="delete-photo-btn" id="deleteStudentPhotoBtn">🗑️ Delete</button>
+                                    <input type="file" id="studentPhotoInput" accept="image/*" style="display: none;">
+                                </div>
+                                <div>
+                                    <div class="photo-label">Parent Photo</div>
+                                    <div class="photo-preview" id="parentPhotoPreview">
+                                        <img id="previewParentImage" src="" alt="Parent Photo Preview">
+                                    </div>
+                                    <div class="upload-options">
+                                        <button type="button" class="camera-btn" onclick="openCamera('parent')">📸 Camera</button>
+                                        <button type="button" class="upload-btn" onclick="document.getElementById('parentPhotoInput').click()">📁 Gallery</button>
+                                    </div>
+                                    <button type="button" class="delete-photo-btn" id="deleteParentPhotoBtn">🗑️ Delete</button>
+                                    <input type="file" id="parentPhotoInput" accept="image/*" style="display: none;">
+                                </div>
+                                <div>
+                                    <div class="photo-label">Authorized Letter</div>
+                                    <div class="photo-preview" id="authorizedLetterPhotoPreview">
+                                        <img id="previewAuthorizedLetterImage" src="" alt="Letter Photo Preview">
+                                    </div>
+                                    <div class="upload-options">
+                                        <button type="button" class="camera-btn" onclick="openCamera('authorizedLetter')">📸 Camera</button>
+                                        <button type="button" class="upload-btn" onclick="document.getElementById('authorizedLetterPhotoInput').click()">📁 Gallery</button>
+                                    </div>
+                                    <button type="button" class="delete-photo-btn" id="deleteAuthorizedLetterPhotoBtn">🗑️ Delete</button>
+                                    <input type="file" id="authorizedLetterPhotoInput" accept="image/*" style="display: none;">
+                                </div>
                             </div>
-                            <input type="file" id="studentPhoto" accept="image/*" style="display: none;">
-                            <div class="photo-buttons">
-                                <button type="button" class="upload-btn" onclick="document.getElementById('studentPhoto').click()">
-                                    Choose Photo
-                                </button>
-                                <button type="button" class="delete-photo-btn" id="deletePhotoBtn">
-                                    🗑️ Delete Photo
-                                </button>
-                            </div>
-                            <p style="margin-top: 10px; color: #666; font-size: 14px;">
-                                Upload any size photo - No limit!
-                            </p>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
                             <label for="fatherName">Father's Name *</label>
-                            <input type="text" id="fatherName" placeholder="Enter Father's Name" required>
+                            <input type="text" id="fatherName" placeholder="Enter Father's Name" required disabled style="background-color: #e9ecef;">
                         </div>
                         
                         <div class="form-group">
                             <label for="whatsappNumber">WhatsApp Number *</label>
-                            <input type="tel" id="whatsappNumber" placeholder="+91 XXXXXXXXXX" required>
+                            <input type="tel" id="whatsappNumber" placeholder="Enter WhatsApp Number" required disabled style="background-color: #e9ecef;">
                         </div>
                     </div>
                     
@@ -1199,40 +1568,41 @@
                         
                         <div class="form-group">
                             <label for="issuedBy">Outpass Issued By *</label>
-                            <select id="issuedBy" required>
-                                <option value="" disabled selected>Select Authority</option>
-                                <option value="Principal">Principal</option>
-                                <option value="Vice Principal">Vice Principal</option>
-                                <option value="Warden">Warden</option>
-                            </select>
+                            <input type="text" id="issuedBy" value="Warden" readonly style="background-color: #e9ecef;">
                         </div>
                     </div>
                     
                     <div class="form-row">
+                        <div class="form-group">
+                            <label for="authorizedBy">Authorized By *</label>
+                            <select id="authorizedBy" required>
+                                <option value="" disabled selected>Select Authority</option>
+                                <option value="Principal">Principal</option>
+                                <option value="Vice Principal">Vice Principal</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+                        
                         <div class="form-group">
                             <label for="status">Outpass Status *</label>
                             <select id="status" required>
                                 <option value="" disabled selected>Select Status</option>
-                                <option value="PENDING">PENDING</option>
                                 <option value="APPROVED">APPROVED</option>
+                                <option value="PENDING">PENDING</option>
                                 <option value="REJECTED">REJECTED</option>
                             </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="outDate">Out Date *</label>
-                            <input type="date" id="outDate" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="inDate">In Date *</label>
-                            <input type="date" id="inDate" required>
+                            <label for="outDate">Out Date *</label>
+                            <input type="date" id="outDate" required>
                         </div>
                         
                         <div class="form-group">
-                            <!-- Empty cell for alignment -->
+                            <label for="inDate">In Date *</label>
+                            <input type="date" id="inDate" required>
                         </div>
                     </div>
                     
@@ -1253,60 +1623,61 @@
                     </div>
                     
                     <p class="info-text">
-                        📱 WhatsApp opens first → 📄 PDF downloads after 5 seconds
+                        📱 WhatsApp opens first → 📄 PDF downloads after 3 seconds
                     </p>
                 </form>
             </div>
             
-            <!-- Sick Slip Form -->
-            <div id="sickSlipFormContainer" style="display: none;">
-                <h1 class="page-title">SICK SLIP</h1>
-                <p class="page-subtitle">Issue Student Sick Slip</p>
+            <!-- Medi Slip Form -->
+            <div id="mediSlipFormContainer" style="display: none;">
+                <h1 class="page-title">MEDI SLIP</h1>
+                <p class="page-subtitle">Issue Student Medi Slip</p>
                 
-                <div id="sickSlipSuccessMessage" class="success-message"></div>
-                <div id="sickSlipErrorMessage" class="error-message"></div>
+                <div id="mediSlipSuccessMessage" class="success-message"></div>
+                <div id="mediSlipErrorMessage" class="error-message"></div>
                 
-                <form id="sickSlipForm" class="form-container">
+                <form id="mediSlipForm" class="form-container">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="sickStudentId">Student ID *</label>
-                            <input type="text" id="sickStudentId" placeholder="Enter Student ID" required>
+                            <label for="mediStudentId">Student ID *</label>
+                            <input type="text" id="mediStudentId" placeholder="SCS1234567" required>
+                            <div class="student-id-hint">Enter Only 7 digits ID (e.g., 2345672)</div>
                         </div>
                         
                         <div class="form-group">
-                            <label for="sickStudentName">Student Name *</label>
-                            <input type="text" id="sickStudentName" placeholder="Enter Student Name" required>
+                            <label for="mediStudentName">Student Name *</label>
+                            <input type="text" id="mediStudentName" placeholder="Enter Student ID First" required disabled style="background-color: #e9ecef;">
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="sickDate">Issued Date *</label>
-                            <input type="date" id="sickDate" required>
+                            <label for="mediDate">Issued Date *</label>
+                            <input type="date" id="mediDate" required>
                         </div>
                         
                         <div class="form-group">
-                            <label for="sickStartTime">Start Time *</label>
-                            <input type="time" id="sickStartTime" required>
+                            <label for="mediStartTime">Start Time *</label>
+                            <input type="time" id="mediStartTime" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="sickEndTime">End Time *</label>
-                            <input type="time" id="sickEndTime" required>
+                            <label for="mediEndTime">End Time *</label>
+                            <input type="time" id="mediEndTime" required>
                         </div>
                         
                         <div class="form-group">
-                            <label for="sickTemperature">Temperature (°F) *</label>
-                            <input type="text" id="sickTemperature" placeholder="Enter temperature or 'None'" value="None" required>
+                            <label for="mediTemperature">Temperature (°F) *</label>
+                            <input type="text" id="mediTemperature" placeholder="None" value="None" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="sickStatus">Status *</label>
-                            <select id="sickStatus" required>
+                            <label for="mediStatus">Status *</label>
+                            <select id="mediStatus" required>
                                 <option value="" disabled selected>Select Status</option>
                                 <option value="APPROVED">APPROVED</option>
                                 <option value="REJECTED">REJECTED</option>
@@ -1314,34 +1685,115 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="sickIssuedBy">Issued By *</label>
-                            <select id="sickIssuedBy" required>
+                            <label for="mediIssuedBy">Issued By *</label>
+                            <input type="text" id="mediIssuedBy" value="Warden" readonly style="background-color: #e9ecef;">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="mediAuthorizedBy">Authorized By *</label>
+                            <select id="mediAuthorizedBy" required>
                                 <option value="" disabled selected>Select Authority</option>
                                 <option value="Principal">Principal</option>
                                 <option value="Vice Principal">Vice Principal</option>
-                                <option value="Warden">Warden</option>
+                                <option value="Admin">Admin</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="mediMedicineGiven">Medicine Given</label>
+                            <input type="text" id="mediMedicineGiven" placeholder="Enter medicine details (optional)">
                         </div>
                     </div>
                     
                     <div class="form-group">
-                        <label for="sickReason">Sick Reason *</label>
-                        <textarea id="sickReason" rows="4" placeholder="Enter the sick reason details" required></textarea>
+                        <label for="mediReason">Medical Reason *</label>
+                        <textarea id="mediReason" rows="4" placeholder="Enter the medical reason details" required></textarea>
                     </div>
                     
                     <div class="button-group">
-                        <button type="button" id="uploadSickSlipDataBtn" class="btn-primary">
-                            <span id="uploadSickSlipDataText">📤 Upload Data Only</span>
-                            <span id="uploadSickSlipDataLoader" class="loader" style="display: none;"></span>
+                        <button type="button" id="uploadMediSlipDataBtn" class="btn-primary">
+                            <span id="uploadMediSlipDataText">📤 Upload Data Only</span>
+                            <span id="uploadMediSlipDataLoader" class="loader" style="display: none;"></span>
                         </button>
                         
-                        <button type="button" id="generateSickSlipPdfBtn" class="btn-primary">
-                            <span id="generateSickSlipPdfText">📄 Generate PDF</span>
-                            <span id="generateSickSlipPdfLoader" class="loader" style="display: none;"></span>
+                        <button type="button" id="generateMediSlipPdfBtn" class="btn-primary" disabled>
+                            <span id="generateMediSlipPdfText">📄 Generate PDF</span>
+                            <span id="generateMediSlipPdfLoader" class="loader" style="display: none;"></span>
                         </button>
                         
-                        <button type="button" id="clearSickSlipFormBtn" class="btn-clear">
+                        <button type="button" id="clearMediSlipFormBtn" class="btn-clear">
                             🔄 Clear Form (Enter New Student)
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Reporting Status Form -->
+            <div id="reportingStatusFormContainer" style="display: none;">
+                <h1 class="page-title">REPORTING STATUS</h1>
+                <p class="page-subtitle">Record Student Return Time</p>
+                
+                <div id="reportingStatusSuccessMessage" class="success-message"></div>
+                <div id="reportingStatusErrorMessage" class="error-message"></div>
+                
+                <form id="reportingStatusForm" class="form-container">
+                    <div class="form-row">
+                       <div class="form-group">
+                            <label for="reportingStudentId">Student ID *</label>
+                            <input type="text" id="reportingStudentId" placeholder="SCS1234567" required>
+                            <div class="student-id-hint">Enter Only 7 digits ID (e.g., 2345672)</div>
+                            <button type="button" id="searchStudentBtn" class="upload-btn" style="margin-top: 10px;">
+                                🔍 Search Student
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="reporting-section">
+                        <div class="reporting-title">Student Information</div>
+                        <div class="reporting-grid">
+                            <div class="reporting-info">
+                                <div class="reporting-label">Student Name</div>
+                                <div class="reporting-value" id="reportingStudentName">-</div>
+                            </div>
+                            <div class="reporting-info">
+                                <div class="reporting-label">Section</div>
+                                <div class="reporting-value" id="reportingSection">-</div>
+                            </div>
+                            <div class="reporting-info">
+                                <div class="reporting-label">Out Date</div>
+                                <div class="reporting-value" id="reportingOutDate">-</div>
+                            </div>
+                            <div class="reporting-info">
+                                <div class="reporting-label">Exp. In Date</div>
+                                <div class="reporting-value" id="reportingInDateLabel">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reportingInDate">Actual In Date *</label>
+                            <input type="date" id="reportingInDate" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="reportingTime">Reporting Time *</label>
+                            <div class="reporting-time-input">
+                                <input type="time" id="reportingTime" required>
+                                <button type="button" id="setCurrentTimeBtn" class="upload-btn">Set Current Time</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="submit" id="saveReportingBtn" class="btn-primary">
+                            <span id="saveReportingText">Save Reporting Time</span>
+                            <span id="saveReportingLoader" class="loader" style="display: none;"></span>
+                        </button>
+                        
+                        <button type="button" id="clearReportingFormBtn" class="btn-clear">
+                            🔄 Clear Form
                         </button>
                     </div>
                 </form>
@@ -1535,12 +1987,27 @@
         </div>
     </div>
 
+    <!-- Camera Modal -->
+    <div id="cameraModal" class="camera-modal">
+        <div class="camera-container">
+            <h3 id="cameraTitle">Take Student Photo</h3>
+            <div class="camera-preview">
+                <video id="cameraVideo" autoplay playsinline></video>
+                <canvas id="cameraCanvas" style="display: none;"></canvas>
+            </div>
+            <div class="camera-controls">
+                <button id="captureBtn" class="capture-btn">📸 Capture Photo</button>
+                <button id="retakeBtn" class="retake-btn" style="display: none;">🔄 Retake</button>
+                <button id="closeCameraBtn" class="close-camera-btn">❌ Close Camera</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
     <script>
         // Firebase configuration
         const firebaseConfig = {
@@ -1555,935 +2022,478 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
-        const db = firebase.firestore();
 
-        // Show loading screen
-        document.body.style.display = 'none';
-
+        // State
+        let campusInfo = { name: 'Electronic City Campus', id: 'ECITY', email: '' };
         let studentPhotoData = null;
-        let lastSickSlipDocId = null;
-        let campusInfo = { name: '', email: '' };
+        let parentPhotoData = null;
+        let authorizedLetterPhotoData = null;
+        let currentPhotoType = null;
+        let cameraStream = null;
+        let lastMediSlipDocId = null;
 
-        // Campus ID to Display Name Mapping
-        const CAMPUS_DISPLAY_NAMES = {
-            'ECITY_SCHOOL': 'ECITY SCHOOL',
-            'ECITY_NEET_BOYS': 'ECITY NEET BOYS',
-            'ECITY_GIRLS_RESIDENTIAL': 'ECITY GIRLS RESIDENTIAL',
-            'ECITY_ENGG_GIRLS_RESIDENTIAL': 'ECITY ENGG GIRLS RESIDENTIAL'
+        // Campus Mapping
+        const CAMPUS_MAPPING = {
+            'ecityneetboys@srichaitanyaschool.net': 'ECITY_NEET_BOYS',
+            'staff.ecityneetboys@srichaitanya.edu': 'ECITY_NEET_BOYS',
+            'ecitygirl@srichaitanya.edu': 'ECITY_GIRLS_RESIDENTIAL',
+            'staff.ecitygirlsres@srichaitanya.edu': 'ECITY_GIRLS_RESIDENTIAL',
+            'ecityengg@srichaitanya.edu': 'ECITY_ENGG_GIRLS_RESIDENTIAL',
+            'staff.ecityengggirls@srichaitanya.edu': 'ECITY_ENGG_GIRLS_RESIDENTIAL',
+            'ecityschool@srichaitanya.edu': 'ECITY_SCHOOL',
+            'staff.ecityschool@srichaitanya.edu': 'ECITY_SCHOOL'
         };
 
-        // Function to get campus information from localStorage
-        function getCampusInfoFromStorage() {
-            const campusId = localStorage.getItem('userCampus');
-            const userEmail = localStorage.getItem('userEmail');
+        const CAMPUS_NAMES = {
+            'ECITY_NEET_BOYS': 'ECITY NEET BOYS',
+            'ECITY_GIRLS_RESIDENTIAL': 'ECITY GIRLS RESIDENTIAL',
+            'ECITY_ENGG_GIRLS_RESIDENTIAL': 'ECITY ENGG GIRLS RESIDENTIAL',
+            'ECITY_SCHOOL': 'ECITY SCHOOL'
+        };
+
+        // Elements
+        const cameraModal = document.getElementById('cameraModal');
+        const cameraVideo = document.getElementById('cameraVideo');
+        const cameraCanvas = document.getElementById('cameraCanvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const closeCameraBtn = document.getElementById('closeCameraBtn');
+
+        // Helper: API Fetch with Auth
+        async function apiFetch(url, options = {}) {
+            const user = auth.currentUser;
+            if (!user) throw new Error("Not authenticated");
+            const token = await user.getIdToken();
             
-            if (campusId && userEmail) {
-                const displayName = CAMPUS_DISPLAY_NAMES[campusId] || campusId.replace(/_/g, ' ');
-                return {
-                    name: displayName,
-                    email: userEmail
-                };
-            }
-            
-            // Fallback if localStorage data not available
-            return {
-                name: 'ECITY NEET BOYS',
-                email: 'staff.ecityneetboys@srichaitanya.edu'
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                ...options.headers
             };
-        }
 
-        // Function to generate sequential outpass number from Firestore
-        async function generateOutpassNumber() {
-            try {
-                const counterRef = db.collection('settings').doc('outpassCounter');
-                
-                const newNumber = await db.runTransaction(async (transaction) => {
-                    const counterDoc = await transaction.get(counterRef);
-                    
-                    let currentCount = 1;
-                    if (counterDoc.exists) {
-                        currentCount = counterDoc.data().count || 1;
-                    }
-                    
-                    const nextCount = currentCount + 1;
-                    transaction.set(counterRef, { count: nextCount });
-                    
-                    return currentCount;
-                });
-                
-                const paddedNumber = newNumber.toString().padStart(4, '0');
-                return `OUTPASS-${paddedNumber}`;
-                
-            } catch (error) {
-                console.error('Error generating outpass number:', error);
-                const timestamp = Date.now().toString().slice(-4);
-                return `OUTPASS-${timestamp}`;
+            const response = await fetch(url, { ...options, headers });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || "API Error");
             }
+            return response.json();
         }
 
-        // Function to generate sequential sick slip number from Firestore
-        async function generateSickSlipNumber() {
-            try {
-                const counterRef = db.collection('settings').doc('sickSlipCounter');
-                
-                const newNumber = await db.runTransaction(async (transaction) => {
-                    const counterDoc = await transaction.get(counterRef);
-                    
-                    let currentCount = 1;
-                    if (counterDoc.exists) {
-                        currentCount = counterDoc.data().count || 1;
-                    }
-                    
-                    const nextCount = currentCount + 1;
-                    transaction.set(counterRef, { count: nextCount });
-                    
-                    return currentCount;
-                });
-                
-                const paddedNumber = newNumber.toString().padStart(4, '0');
-                return `MEDSLIP-${paddedNumber}`;
-                
-            } catch (error) {
-                console.error('Error generating sick slip number:', error);
-                const timestamp = Date.now().toString().slice(-4);
-                return `MEDSLIP-${timestamp}`;
-            }
-        }
-
-        // Check authentication
+        // Initialize App
         auth.onAuthStateChanged((user) => {
             if (!user) {
-                console.log('No user logged in, redirecting to staff login...');
                 window.location.href = 'staff-login.html';
                 return;
             }
             
-            console.log('User logged in:', user.email);
             document.getElementById('userEmail').textContent = user.email;
+            const campusId = CAMPUS_MAPPING[user.email.toLowerCase()] || 'ECITY_NEET_BOYS';
+            campusInfo = { 
+                name: CAMPUS_NAMES[campusId] || campusId.replace(/_/g, ' '), 
+                id: campusId, 
+                email: user.email 
+            };
             
-            // Get campus information from localStorage
-            campusInfo = getCampusInfoFromStorage();
-            console.log('Campus Info:', campusInfo);
-            
-            if (document.body.style.display === 'none') {
-                document.body.style.display = 'block';
-            }
-            
-            // Set default dates
-            const today = new Date();
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            
-            document.getElementById('outDate').valueAsDate = today;
-            document.getElementById('inDate').valueAsDate = tomorrow;
-            document.getElementById('sickDate').valueAsDate = today;
-            
-            // Set default time to current time and +1 hour for end time
-            const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            
-            document.getElementById('sickStartTime').value = `${hours}:${minutes}`;
-            
-            const endTime = new Date(now.getTime() + 60 * 60 * 1000);
-            const endHours = endTime.getHours().toString().padStart(2, '0');
-            const endMinutes = endTime.getMinutes().toString().padStart(2, '0');
-            document.getElementById('sickEndTime').value = `${endHours}:${endMinutes}`;
+            // Default dates
+            const today = new Date().toISOString().split('T')[0];
+            const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+            const now = new Date().toTimeString().slice(0, 5);
+            const later = new Date(Date.now() + 3600000).toTimeString().slice(0, 5);
+
+            ['outDate', 'mediDate', 'reportingInDate'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = today; });
+            if(document.getElementById('inDate')) document.getElementById('inDate').value = tomorrow;
+            if(document.getElementById('mediStartTime')) document.getElementById('mediStartTime').value = now;
+            if(document.getElementById('mediEndTime')) document.getElementById('mediEndTime').value = later;
+            if(document.getElementById('reportingTime')) document.getElementById('reportingTime').value = now;
         });
 
-        // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
+        // Logout
+        document.getElementById('logoutBtn').onclick = async () => {
+            await auth.signOut();
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = 'staff-login.html';
+        };
+
+        // Tab Switching
+        const tabOptions = ['outpassOption', 'mediSlipOption', 'reportingStatusOption'];
+        const containers = ['outpassFormContainer', 'mediSlipFormContainer', 'reportingStatusFormContainer'];
+        tabOptions.forEach((opt, idx) => {
+            document.getElementById(opt).onclick = () => {
+                tabOptions.forEach(o => document.getElementById(o).classList.remove('active'));
+                containers.forEach(c => document.getElementById(c).style.display = 'none');
+                document.getElementById(opt).classList.add('active');
+                document.getElementById(containers[idx]).style.display = 'block';
+                hideMessages();
+            };
+        });
+
+        // --- CAMERA LOGIC (Simplifed for Mobile/Web) ---
+        function openCamera(type) {
+            currentPhotoType = type;
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                // Mobile: Use native camera capture
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.capture = 'environment';
+                input.onchange = (e) => handlePhotoUpload(e, type);
+                input.click();
+            } else {
+                // Desktop: Use Modal
+                document.getElementById('cameraTitle').textContent = `Capture ${type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, ' $1')}`;
+                cameraModal.style.display = 'flex';
+                startCamera();
+            }
+        }
+
+        async function startCamera() {
             try {
-                sessionStorage.setItem('explicitLogout', 'true');
-                await auth.signOut();
-                console.log('User logged out');
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.href = 'staff-login.html';
-            } catch (error) {
-                console.error('Logout error:', error);
-                alert('Error logging out. Please try again.');
-            }
-        });
-
-        // Dashboard selection functionality
-        document.getElementById('outpassOption').addEventListener('click', function() {
-            document.getElementById('outpassFormContainer').style.display = 'block';
-            document.getElementById('sickSlipFormContainer').style.display = 'none';
-            document.getElementById('outpassOption').classList.add('active');
-            document.getElementById('sickSlipOption').classList.remove('active');
-            hideMessages();
-        });
-
-        document.getElementById('sickSlipOption').addEventListener('click', function() {
-            document.getElementById('outpassFormContainer').style.display = 'none';
-            document.getElementById('sickSlipFormContainer').style.display = 'block';
-            document.getElementById('sickSlipOption').classList.add('active');
-            document.getElementById('outpassOption').classList.remove('active');
-            hideMessages();
-            document.getElementById('generateSickSlipPdfBtn').disabled = true;
-        });
-
-        // Get form elements
-        const form = document.getElementById('outpassForm');
-        const generateBtn = document.getElementById('generateBtn');
-        const generateText = document.getElementById('generateText');
-        const generateLoader = document.getElementById('generateLoader');
-        const successMessage = document.getElementById('successMessage');
-        const errorMessage = document.getElementById('errorMessage');
-        const studentPhotoInput = document.getElementById('studentPhoto');
-        const photoPreview = document.getElementById('photoPreview');
-        const previewImage = document.getElementById('previewImage');
-        const deletePhotoBtn = document.getElementById('deletePhotoBtn');
-        const clearFormBtn = document.getElementById('clearFormBtn');
-
-        // Sick slip form elements
-        const sickSlipForm = document.getElementById('sickSlipForm');
-        const sickSlipSuccessMessage = document.getElementById('sickSlipSuccessMessage');
-        const sickSlipErrorMessage = document.getElementById('sickSlipErrorMessage');
-        const clearSickSlipFormBtn = document.getElementById('clearSickSlipFormBtn');
-        const uploadSickSlipDataBtn = document.getElementById('uploadSickSlipDataBtn');
-        const uploadSickSlipDataText = document.getElementById('uploadSickSlipDataText');
-        const uploadSickSlipDataLoader = document.getElementById('uploadSickSlipDataLoader');
-        const generateSickSlipPdfBtn = document.getElementById('generateSickSlipPdfBtn');
-        const generateSickSlipPdfText = document.getElementById('generateSickSlipPdfText');
-        const generateSickSlipPdfLoader = document.getElementById('generateSickSlipPdfLoader');
-
-        // Initialize: Disable Generate PDF button
-        generateSickSlipPdfBtn.disabled = true;
-
-        // Clear form functionality
-        clearFormBtn.addEventListener('click', function() {
-            form.reset();
-            studentPhotoData = null;
-            photoPreview.style.display = 'none';
-            previewImage.src = '';
-            deletePhotoBtn.style.display = 'none';
-            hideMessages();
-            showSuccess('✅ Form cleared! Ready to enter new student details.');
-            setTimeout(() => hideMessages(), 2000);
-            
-            const today = new Date();
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            
-            document.getElementById('outDate').valueAsDate = today;
-            document.getElementById('inDate').valueAsDate = tomorrow;
-            
-            document.getElementById('studentId').focus();
-        });
-
-        // Clear sick slip form functionality
-        clearSickSlipFormBtn.addEventListener('click', function() {
-            sickSlipForm.reset();
-            hideMessages();
-            showSickSlipSuccess('✅ Form cleared! Ready to enter new sick slip details.');
-            setTimeout(() => hideMessages(), 2000);
-            
-            const today = new Date();
-            document.getElementById('sickDate').valueAsDate = today;
-            
-            const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            document.getElementById('sickStartTime').value = `${hours}:${minutes}`;
-            
-            const endTime = new Date(now.getTime() + 60 * 60 * 1000);
-            const endHours = endTime.getHours().toString().padStart(2, '0');
-            const endMinutes = endTime.getMinutes().toString().padStart(2, '0');
-            document.getElementById('sickEndTime').value = `${endHours}:${endMinutes}`;
-            
-            lastSickSlipDocId = null;
-            generateSickSlipPdfBtn.disabled = true;
-            
-            document.getElementById('sickStudentId').focus();
-        });
-
-        // Student photo upload functionality (FOR OUTPASS ONLY)
-        studentPhotoInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                if (!file.type.startsWith('image/')) {
-                    showError('Please select a valid image file');
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        
-                        let width = img.width;
-                        let height = img.height;
-                        const maxSize = 800;
-                        
-                        if (width > height) {
-                            if (width > maxSize) {
-                                height = (height * maxSize) / width;
-                                width = maxSize;
-                            }
-                        } else {
-                            if (height > maxSize) {
-                                width = (width * maxSize) / height;
-                                height = maxSize;
-                            }
-                        }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        
-                        ctx.drawImage(img, 0, 0, width, height);
-                        studentPhotoData = canvas.toDataURL('image/jpeg', 0.7);
-                        
-                        previewImage.src = studentPhotoData;
-                        photoPreview.style.display = 'block';
-                        deletePhotoBtn.style.display = 'inline-block';
-                        
-                        const sizeInKB = Math.round((studentPhotoData.length * 3) / 4 / 1024);
-                        showSuccess(`✅ Photo compressed to ${sizeInKB}KB & uploaded!`);
-                        setTimeout(() => hideMessages(), 2000);
-                    };
-                    img.src = e.target.result;
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                cameraVideo.srcObject = cameraStream;
+                cameraVideo.onloadedmetadata = () => {
+                    cameraVideo.play();
+                    cameraVideo.style.display = 'block';
+                    cameraCanvas.style.display = 'none';
+                    captureBtn.style.display = 'inline-block';
+                    retakeBtn.style.display = 'none';
                 };
-                reader.readAsDataURL(file);
+            } catch (err) {
+                alert("Camera error: " + err.message);
+                closeCamera();
             }
+        }
+
+        captureBtn.onclick = () => {
+            cameraCanvas.width = cameraVideo.videoWidth;
+            cameraCanvas.height = cameraVideo.videoHeight;
+            cameraCanvas.getContext('2d').drawImage(cameraVideo, 0, 0);
+            cameraVideo.style.display = 'none';
+            cameraCanvas.style.display = 'block';
+            captureBtn.style.display = 'none';
+            retakeBtn.style.display = 'inline-block';
+        };
+
+        retakeBtn.onclick = () => {
+            cameraVideo.style.display = 'block';
+            cameraCanvas.style.display = 'none';
+            captureBtn.style.display = 'inline-block';
+            retakeBtn.style.display = 'none';
+        };
+
+        function closeCamera(save = false) {
+            if (save && cameraCanvas.style.display === 'block') {
+                processCapturedPhoto(cameraCanvas.toDataURL('image/jpeg', 0.7));
+            }
+            if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+            cameraModal.style.display = 'none';
+        }
+        
+        closeCameraBtn.onclick = () => closeCamera(true);
+
+        function processCapturedPhoto(dataUrl) {
+            const previewId = `${currentPhotoType}PhotoPreview`;
+            const imageId = `preview${currentPhotoType.charAt(0).toUpperCase() + currentPhotoType.slice(1)}Image`;
+            
+            if (currentPhotoType === 'student') studentPhotoData = dataUrl;
+            else if (currentPhotoType === 'parent') parentPhotoData = dataUrl;
+            else if (currentPhotoType === 'authorizedLetter') authorizedLetterPhotoData = dataUrl;
+
+            document.getElementById(imageId).src = dataUrl;
+            document.getElementById(previewId).style.display = 'block';
+        }
+
+        function handlePhotoUpload(e, type) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const scale = Math.min(1, 800 / Math.max(img.width, img.height));
+                    canvas.width = img.width * scale;
+                    canvas.height = img.height * scale;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    currentPhotoType = type;
+                    processCapturedPhoto(canvas.toDataURL('image/jpeg', 0.7));
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Attach listeners to hidden inputs
+        ['studentPhotoInput', 'parentPhotoInput', 'authorizedLetterPhotoInput'].forEach(id => {
+            document.getElementById(id).onchange = (e) => handlePhotoUpload(e, id.replace('PhotoInput', ''));
         });
 
-        // Delete photo functionality (FOR OUTPASS ONLY)
-        deletePhotoBtn.addEventListener('click', function() {
-            studentPhotoData = null;
-            studentPhotoInput.value = '';
-            photoPreview.style.display = 'none';
-            previewImage.src = '';
-            deletePhotoBtn.style.display = 'none';
-            showSuccess('📸 Photo removed successfully! You can upload a new one.');
-            setTimeout(() => hideMessages(), 2000);
+        // Delete handlers
+        ['Student', 'Parent', 'AuthorizedLetter'].forEach(type => {
+            document.getElementById(`delete${type}PhotoBtn`).onclick = () => {
+                if(type === 'Student') studentPhotoData = null;
+                else if(type === 'Parent') parentPhotoData = null;
+                else authorizedLetterPhotoData = null;
+                document.getElementById(`${type.charAt(0).toLowerCase() + type.slice(1)}PhotoPreview`).style.display = 'none';
+            };
         });
 
-        // Form submission - SEND WHATSAPP FIRST, THEN PDF
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            if (!validateForm()) {
-                return;
-            }
-            
-            generateText.style.display = 'none';
-            generateLoader.style.display = 'inline-block';
-            generateBtn.disabled = true;
-            hideMessages();
-            
+        // --- STUDENT ID FETCH ---
+        async function fetchStudent(id, target) {
+            id = id.toUpperCase();
+            if(!id.startsWith('SCS')) id = 'SCS' + id.replace(/SCS/g, '');
+            if(id.length < 8) return;
+
             try {
-                const user = auth.currentUser;
-                if (!user) {
-                    throw new Error('User not authenticated');
+                const res = await apiFetch(`/api/students/${id}`);
+                if (res.exists) {
+                    const s = res.data;
+                    if (target === 'outpass') {
+                        document.getElementById('studentName').value = s.studentName || '';
+                        document.getElementById('category').value = s.category || '';
+                        document.getElementById('section').value = s.section || '';
+                        document.getElementById('fatherName').value = s.fatherName || '';
+                        document.getElementById('whatsappNumber').value = s.whatsappNumber || '';
+                        ['studentName', 'category', 'section', 'fatherName', 'whatsappNumber'].forEach(fid => {
+                            document.getElementById(fid).disabled = false;
+                            document.getElementById(fid).style.backgroundColor = 'white';
+                        });
+                    } else {
+                        document.getElementById('mediStudentName').value = s.studentName || '';
+                        document.getElementById('mediStudentName').disabled = false;
+                        document.getElementById('mediStudentName').style.backgroundColor = 'white';
+                    }
                 }
-                
-                const passNumber = await generateOutpassNumber();
-                
-                const outpassData = {
-                    studentId: document.getElementById('studentId').value.trim(),
-                    studentName: document.getElementById('studentName').value.trim(),
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('studentId').oninput = (e) => fetchStudent(e.target.value.trim(), 'outpass');
+        document.getElementById('mediStudentId').oninput = (e) => fetchStudent(e.target.value.trim(), 'medi');
+
+        // --- SUBMISSIONS ---
+        async function getNextCount(type) {
+            const res = await apiFetch('/api/settings/increment', {
+                method: 'POST',
+                body: JSON.stringify({ collection: 'settings', doc: type })
+            });
+            return res.currentCount.toString().padStart(4, '0');
+        }
+
+        document.getElementById('outpassForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            document.getElementById('generateText').style.display = 'none';
+            document.getElementById('generateLoader').style.display = 'inline-block';
+
+            try {
+                const count = await getNextCount('outpassCounter');
+                const data = {
+                    passNumber: `OUT-${count}`,
+                    studentId: document.getElementById('studentId').value.toUpperCase(),
+                    studentName: document.getElementById('studentName').value,
                     category: document.getElementById('category').value,
-                    section: document.getElementById('section').value.trim(),
-                    fatherName: document.getElementById('fatherName').value.trim(),
-                    whatsappNumber: document.getElementById('whatsappNumber').value.trim(),
+                    section: document.getElementById('section').value,
+                    fatherName: document.getElementById('fatherName').value,
+                    whatsappNumber: document.getElementById('whatsappNumber').value,
                     requestedBy: document.getElementById('requestedBy').value,
                     issuedBy: document.getElementById('issuedBy').value,
+                    authorizedBy: document.getElementById('authorizedBy').value,
                     status: document.getElementById('status').value,
                     outDate: document.getElementById('outDate').value,
                     inDate: document.getElementById('inDate').value,
-                    reason: document.getElementById('reason').value.trim(),
-                    passNumber: passNumber,
-                    issuedDate: new Date().toLocaleDateString('en-IN'),
-                    issuedTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
+                    reason: document.getElementById('reason').value,
                     studentPhoto: studentPhotoData,
-                    createdBy: user.email,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
-                
-                // Save to Firestore
-                await db.collection('outpasses').add(outpassData);
-                
-                // STEP 1: Send WhatsApp message FIRST
-                console.log('Opening WhatsApp...');
-                sendWhatsAppMessage(outpassData);
-                showSuccess('✅ Outpass saved! WhatsApp opened. Please send the message first.');
-                
-                // STEP 2: Wait 5 seconds, then generate and download PDF
-                setTimeout(async () => {
-                    console.log('Starting PDF generation...');
-                    showSuccess('⏳ Generating PDF... Please wait...');
-                    
-                    await generatePDF(outpassData);
-                    
-                    showSuccess('✅ Complete! WhatsApp sent & PDF downloaded. Ready for next student.');
-                    
-                    generateText.style.display = 'inline';
-                    generateLoader.style.display = 'none';
-                    generateBtn.disabled = false;
-                }, 3000);
-                
-            } catch (error) {
-                console.error('Error generating outpass:', error);
-                showError('Failed to generate outpass: ' + error.message);
-                
-                generateText.style.display = 'inline';
-                generateLoader.style.display = 'none';
-                generateBtn.disabled = false;
-            }
-        });
-
-        // Sick slip - Upload Data Only button
-        uploadSickSlipDataBtn.addEventListener('click', async () => {
-            if (!validateSickSlipForm()) {
-                return;
-            }
-            
-            uploadSickSlipDataText.style.display = 'none';
-            uploadSickSlipDataLoader.style.display = 'inline-block';
-            uploadSickSlipDataBtn.disabled = true;
-            hideMessages();
-            
-            try {
-                const user = auth.currentUser;
-                if (!user) {
-                    throw new Error('User not authenticated');
-                }
-                
-                const studentId = document.getElementById('sickStudentId').value.trim();
-                const studentName = document.getElementById('sickStudentName').value.trim();
-                const date = document.getElementById('sickDate').value;
-                const startTime = document.getElementById('sickStartTime').value;
-                const endTime = document.getElementById('sickEndTime').value;
-                const reason = document.getElementById('sickReason').value.trim();
-                const status = document.getElementById('sickStatus').value;
-                const issuedBy = document.getElementById('sickIssuedBy').value;
-                const temperature = document.getElementById('sickTemperature').value.trim();
-                
-                // Check if duplicate exists
-                const allRecordsQuery = await db.collection('sickSlips')
-                    .where('studentId', '==', studentId)
-                    .where('date', '==', date)
-                    .get();
-                
-                let duplicateDoc = null;
-                allRecordsQuery.forEach(doc => {
-                    const data = doc.data();
-                    if (data.studentName === studentName &&
-                        data.startTime === startTime &&
-                        data.endTime === endTime &&
-                        data.temperature === temperature &&
-                        data.reason === reason &&
-                        data.status === status &&
-                        data.issuedBy === issuedBy) {
-                        duplicateDoc = doc;
-                    }
-                });
-                
-                if (duplicateDoc) {
-                    lastSickSlipDocId = duplicateDoc.id;
-                    generateSickSlipPdfBtn.disabled = false;
-                    showSickSlipSuccess('✅ Exact matching record already exists! Using existing data from database. You can now generate PDF.');
-                    uploadSickSlipDataText.style.display = 'inline';
-                    uploadSickSlipDataLoader.style.display = 'none';
-                    uploadSickSlipDataBtn.disabled = false;
-                    return;
-                }
-                
-                const sickSlipNumber = await generateSickSlipNumber();
-                
-                const sickSlipData = {
-                    studentId: studentId,
-                    studentName: studentName,
-                    date: date,
-                    startTime: startTime,
-                    endTime: endTime,
-                    temperature: temperature,
-                    reason: reason,
-                    status: status,
-                    issuedBy: issuedBy,
-                    sickSlipNumber: sickSlipNumber,
+                    parentPhoto: parentPhotoData,
+                    authorizedLetter: authorizedLetterPhotoData,
+                    campus: campusInfo.name,
+                    createdBy: campusInfo.email,
                     issuedDate: new Date().toLocaleDateString('en-IN'),
-                    issuedTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
-                    createdBy: user.email,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    issuedTime: new Date().toLocaleTimeString('en-IN')
                 };
 
-                const docRef = await db.collection('sickSlips').add(sickSlipData);
-                lastSickSlipDocId = docRef.id;
-                generateSickSlipPdfBtn.disabled = false;
-                showSickSlipSuccess('✅ Sick Slip data uploaded successfully to database! You can now generate PDF.');
-                uploadSickSlipDataText.style.display = 'inline';
-                uploadSickSlipDataLoader.style.display = 'none';
-                uploadSickSlipDataBtn.disabled = false;
+                await apiFetch('/api/outpasses', { method: 'POST', body: JSON.stringify(data) });
                 
-            } catch (error) {
-                console.error('Error uploading sick slip data:', error);
-                showSickSlipError('Failed to upload sick slip data: ' + error.message);
-                uploadSickSlipDataText.style.display = 'inline';
-                uploadSickSlipDataLoader.style.display = 'none';
-                uploadSickSlipDataBtn.disabled = false;
+                // WhatsApp
+                const phone = "91" + data.whatsappNumber.replace(/\D/g, '').slice(-10);
+                const text = `🎓 *Sri Chaitanya Outpass*\nStudent: *${data.studentName}*\nNo: *${data.passNumber}*\nOut: *${data.outDate}*\nIn: *${data.inDate}*\nReason: *${data.reason}*`;
+                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+                
+                showSuccess("✅ Saved! Opening WhatsApp...");
+                setTimeout(() => {
+                    generateOutpassPDF(data);
+                    showSuccess("✅ Done! WhatsApp opened & PDF downloaded.");
+                    btn.disabled = false;
+                    document.getElementById('generateText').style.display = 'inline';
+                    document.getElementById('generateLoader').style.display = 'none';
+                }, 3000);
+            } catch (err) {
+                showError(err.message);
+                btn.disabled = false;
             }
-        });       
+        };
 
-        // Sick slip - Generate PDF button
-        generateSickSlipPdfBtn.addEventListener('click', async () => {
-            generateSickSlipPdfText.style.display = 'none';
-            generateSickSlipPdfLoader.style.display = 'inline-block';
-            generateSickSlipPdfBtn.disabled = true;
-            hideMessages();
+        document.getElementById('uploadMediSlipDataBtn').onclick = async () => {
+            const btn = document.getElementById('uploadMediSlipDataBtn');
+            btn.disabled = true;
+            try {
+                const count = await getNextCount('mediCounter');
+                const data = {
+                    mediSlipNumber: `MED-${count}`,
+                    studentId: document.getElementById('mediStudentId').value.toUpperCase(),
+                    studentName: document.getElementById('mediStudentName').value,
+                    date: document.getElementById('mediDate').value,
+                    startTime: document.getElementById('mediStartTime').value,
+                    endTime: document.getElementById('mediEndTime').value,
+                    temperature: document.getElementById('mediTemperature').value,
+                    status: document.getElementById('mediStatus').value,
+                    issuedBy: document.getElementById('mediIssuedBy').value,
+                    authorizedBy: document.getElementById('mediAuthorizedBy').value,
+                    medicineGiven: document.getElementById('mediMedicineGiven').value,
+                    reason: document.getElementById('mediReason').value,
+                    campus: campusInfo.name,
+                    createdBy: campusInfo.email,
+                    issuedDate: new Date().toLocaleDateString('en-IN'),
+                    issuedTime: new Date().toLocaleTimeString('en-IN')
+                };
+
+                const res = await apiFetch('/api/mediSlips', { method: 'POST', body: JSON.stringify(data) });
+                lastMediSlipDocId = res.id;
+                document.getElementById('generateMediSlipPdfBtn').disabled = false;
+                showSickSlipSuccess("✅ Medi Slip Uploaded!");
+            } catch (err) {
+                showSickSlipError(err.message);
+            } finally { btn.disabled = false; }
+        };
+
+        document.getElementById('generateMediSlipPdfBtn').onclick = async () => {
+            if (!lastMediSlipDocId) return;
+            try {
+                const res = await apiFetch(`/api/mediSlips/${lastMediSlipDocId}`);
+                if (res.exists) generateMediSlipPDF(res.data);
+            } catch (err) { showSickSlipError(err.message); }
+        };
+
+        // --- REPORTING STATUS ---
+        document.getElementById('searchStudentBtn').onclick = async () => {
+            let id = document.getElementById('reportingStudentId').value.trim().toUpperCase();
+            if(!id.startsWith('SCS')) id = 'SCS' + id.replace(/SCS/g, '');
             
             try {
-                const user = auth.currentUser;
-                if (!user) {
-                    throw new Error('User not authenticated');
-                }
+                const list = await apiFetch('/api/outpasses');
+                const latest = list.filter(o => o.studentId === id).sort((a,b) => b.timestamp - a.timestamp)[0];
                 
-                if (!lastSickSlipDocId) {
-                    throw new Error('No data uploaded yet. Please upload data first.');
-                }
-                
-                const docRef = db.collection('sickSlips').doc(lastSickSlipDocId);
-                const doc = await docRef.get();
-                
-                if (!doc.exists) {
-                    throw new Error('Document not found in database. Please upload data again.');
-                }
-                
-                const sickSlipData = doc.data();
-                showSickSlipSuccess('⏳ Generating PDF from database... Please wait...');
-                await generateSickSlipPDF(sickSlipData);
-                showSickSlipSuccess('✅ Complete! Sick Slip PDF downloaded from database data.');
-                generateSickSlipPdfText.style.display = 'inline';
-                generateSickSlipPdfLoader.style.display = 'none';
-                generateSickSlipPdfBtn.disabled = false;
-                
-            } catch (error) {
-                console.error('Error generating sick slip from database:', error);
-                showSickSlipError('Failed to generate sick slip from database: ' + error.message);
-                generateSickSlipPdfText.style.display = 'inline';
-                generateSickSlipPdfLoader.style.display = 'none';
-                generateSickSlipPdfBtn.disabled = false;
-            }
-        });
-
-        // Form validation
-        function validateForm() {
-            const fields = [
-                'studentId', 'studentName', 'category', 'section', 
-                'fatherName', 'whatsappNumber', 'requestedBy', 'issuedBy', 
-                'status', 'outDate', 'inDate', 'reason'
-            ];
-            
-            for (let field of fields) {
-                const element = document.getElementById(field);
-                if (!element.value.trim()) {
-                    const label = element.previousElementSibling;
-                    showError(`Please fill in ${label ? label.textContent : field}`);
-                    element.focus();
-                    return false;
-                }
-            }
-            
-            const outDate = new Date(document.getElementById('outDate').value);
-            const inDate = new Date(document.getElementById('inDate').value);
-            
-            if (inDate <= outDate) {
-                showError('In Date must be after Out Date');
-                document.getElementById('inDate').focus();
-                return false;
-            }
-            
-            const whatsappNumber = document.getElementById('whatsappNumber').value.trim();
-            const cleanNumber = whatsappNumber.replace(/\D/g, '');
-            
-            if (cleanNumber.length < 10) {
-                showError('Please enter a valid 10-digit WhatsApp number');
-                document.getElementById('whatsappNumber').focus();
-                return false;
-            }
-            
-            return true;
-        }
-
-        // Sick slip form validation
-        function validateSickSlipForm() {
-            const fields = [
-                'sickStudentId', 'sickStudentName', 'sickDate', 'sickStartTime', 
-                'sickEndTime', 'sickTemperature', 'sickReason', 'sickStatus', 'sickIssuedBy'
-            ];
-            
-            for (let field of fields) {
-                const element = document.getElementById(field);
-                if (!element.value.trim()) {
-                    const label = element.previousElementSibling;
-                    showSickSlipError(`Please fill in ${label ? label.textContent : field}`);
-                    element.focus();
-                    return false;
-                }
-            }
-            
-            const startTime = document.getElementById('sickStartTime').value;
-            const endTime = document.getElementById('sickEndTime').value;
-            
-            if (startTime >= endTime) {
-                showSickSlipError('End Time must be after Start Time');
-                document.getElementById('sickEndTime').focus();
-                return false;
-            }
-            
-            return true;
-        }
-
-        // Helper function to format dates for PDF
-        function formatDateForPDF(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-        }
-
-        // Helper function to format time for PDF
-        function formatTimeForPDF(timeString) {
-            const [hours, minutes] = timeString.split(':');
-            const hour = parseInt(hours);
-            const ampm = hour >= 12 ? 'PM' : 'AM';
-            const displayHour = hour % 12 || 12;
-            return `${displayHour}:${minutes} ${ampm}`;
-        }
-
-        // PDF GENERATION for Outpass
-        function generatePDF(outpassData) {
-            return new Promise((resolve, reject) => {
-                try {
-                    console.log('Updating PDF template with data...');
-                    
-                    document.getElementById('pdfPassNumber').textContent = outpassData.passNumber;
-                    document.getElementById('pdfDate').textContent = outpassData.issuedDate;
-                    document.getElementById('pdfTime').textContent = outpassData.issuedTime;
-                    document.getElementById('pdfStudentId').textContent = outpassData.studentId;
-                    document.getElementById('pdfStudentName').textContent = outpassData.studentName;
-                    document.getElementById('pdfCategory').textContent = outpassData.category;
-                    document.getElementById('pdfSection').textContent = outpassData.section;
-                    document.getElementById('pdfFatherName').textContent = outpassData.fatherName;
-                    document.getElementById('pdfWhatsApp').textContent = outpassData.whatsappNumber;
-                    document.getElementById('pdfRequestedBy').textContent = outpassData.requestedBy;
-                    document.getElementById('pdfReason').textContent = outpassData.reason;
-                    document.getElementById('pdfStatus').textContent = outpassData.status;
-                    document.getElementById('pdfOutDate').textContent = formatDateForPDF(outpassData.outDate);
-                    document.getElementById('pdfInDate').textContent = formatDateForPDF(outpassData.inDate);
-                    
-                    // Update Issued By name dynamically
-                    document.getElementById('pdfIssuedByName').textContent = outpassData.issuedBy;
-                    
-                    // Update campus information dynamically
-                    document.getElementById('pdfCampusName').textContent = campusInfo.name;
-                    document.getElementById('pdfCampusEmail').textContent = campusInfo.email;
-                    
-                    const statusElement = document.getElementById('pdfStatus');
-                    statusElement.className = '';
-                    statusElement.classList.add(`status-${outpassData.status.toLowerCase()}`);
-
-                    const pdfStudentPhotoImg = document.getElementById('pdfStudentPhotoImg');
-                    if (outpassData.studentPhoto) {
-                        pdfStudentPhotoImg.src = outpassData.studentPhoto;
-                        document.getElementById('pdfStudentPhoto').style.display = 'block';
-                    } else {
-                        document.getElementById('pdfStudentPhoto').style.display = 'none';
-                    }
-
-                    const pdfTemplate = document.getElementById('pdfTemplate');
-                    pdfTemplate.style.display = 'block';
-                    pdfTemplate.style.position = 'absolute';
-                    pdfTemplate.style.left = '0';
-                    pdfTemplate.style.top = '0';
-                    pdfTemplate.style.zIndex = '-1';
-
-                    console.log('Capturing template with html2canvas...');
-
-                    setTimeout(() => {
-                        html2canvas(pdfTemplate, {
-                            scale: 2,
-                            useCORS: true,
-                            allowTaint: false,
-                            logging: true,
-                            backgroundColor: '#ffffff'
-                        }).then(canvas => {
-                            console.log('Canvas captured, creating PDF...');
-                            
-                            pdfTemplate.style.display = 'none';
-
-                            const { jsPDF } = window.jspdf;
-                            const pdf = new jsPDF({
-                                orientation: 'portrait',
-                                unit: 'mm',
-                                format: 'a4'
-                            });
-                            
-                            const imgData = canvas.toDataURL('image/png', 1.0);
-                            const pdfWidth = pdf.internal.pageSize.getWidth();
-                            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                            
-                            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
-                            
-                            const filename = `Outpass_${outpassData.studentName}_${outpassData.passNumber}.pdf`;
-                            
-                            console.log('Saving PDF:', filename);
-                            pdf.save(filename);
-                            
-                            console.log('PDF download triggered successfully');
-                            resolve();
-                            
-                        }).catch(error => {
-                            console.error('html2canvas error:', error);
-                            pdfTemplate.style.display = 'none';
-                            reject(new Error('Failed to generate PDF: ' + error.message));
-                        });
-                    }, 500);
-                    
-                } catch (error) {
-                    console.error('Error in generatePDF:', error);
-                    reject(new Error('PDF generation failed: ' + error.message));
-                }
-            });
-        }
-
-        // PDF GENERATION for Sick Slip - WITH LOGO IMAGE, NO STUDENT PHOTO
-        function generateSickSlipPDF(sickSlipData) {
-            return new Promise((resolve, reject) => {
-                try {
-                    console.log('Updating Sick Slip PDF template with data...');
-                    
-                    document.getElementById('sickSlipNumber').textContent = sickSlipData.sickSlipNumber;
-                    document.getElementById('sickSlipStudentId').textContent = sickSlipData.studentId;
-                    document.getElementById('sickSlipStudentName').textContent = sickSlipData.studentName;
-                    document.getElementById('sickSlipDate').textContent = formatDateForPDF(sickSlipData.date);
-                    document.getElementById('sickSlipTemperature').textContent = (sickSlipData.temperature || 'None') + '°F';
-                    document.getElementById('sickSlipStartTime').textContent = formatTimeForPDF(sickSlipData.startTime);
-                    document.getElementById('sickSlipEndTime').textContent = formatTimeForPDF(sickSlipData.endTime);
-                    document.getElementById('sickSlipReason').textContent = sickSlipData.reason;
-                    
-                    // Update Issued By name dynamically
-                    document.getElementById('sickSlipIssuedByDisplay').textContent = sickSlipData.issuedBy;
-                    
-                    const statusElement = document.getElementById('sickSlipStatus');
-                    statusElement.textContent = sickSlipData.status;
-                    statusElement.className = 'sick-slip-status-box';
-                    
-                    // Update campus information dynamically
-                    document.getElementById('sickSlipCampusName').textContent = campusInfo.name;
-                    document.getElementById('sickSlipCampusEmail').textContent = campusInfo.email;
-                    
-                    if (sickSlipData.status === 'APPROVED') {
-                        statusElement.classList.add('status-approved');
-                    } else {
-                        statusElement.classList.add('status-rejected');
-                    }
-
-                    const pdfTemplate = document.getElementById('sickSlipPdfTemplate');
-                    pdfTemplate.style.display = 'block';
-                    pdfTemplate.style.position = 'absolute';
-                    pdfTemplate.style.left = '0';
-                    pdfTemplate.style.top = '0';
-                    pdfTemplate.style.zIndex = '-1';
-
-                    console.log('Capturing sick slip template with html2canvas...');
-
-                    setTimeout(() => {
-                        html2canvas(pdfTemplate, {
-                            scale: 2,
-                            useCORS: true,
-                            allowTaint: true,
-                            logging: false,
-                            backgroundColor: '#ffffff',
-                            imageTimeout: 15000,
-                            removeContainer: false
-                        }).then(canvas => {
-                            console.log('Sick slip canvas captured, creating PDF...');
-                            
-                            pdfTemplate.style.display = 'none';
-
-                            const { jsPDF } = window.jspdf;
-                            const pdf = new jsPDF({
-                                orientation: 'portrait',
-                                unit: 'mm',
-                                format: 'a4'
-                            });
-                            
-                            const imgData = canvas.toDataURL('image/png', 1.0);
-                            const pdfWidth = pdf.internal.pageSize.getWidth();
-                            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                            
-                            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
-                            
-                            const filename = `MedicalSlip_${sickSlipData.studentName}_${sickSlipData.sickSlipNumber}.pdf`;
-                            
-                            console.log('Saving Sick Slip PDF:', filename);
-                            pdf.save(filename);
-                            
-                            console.log('Sick Slip PDF download triggered successfully');
-                            resolve();
-                            
-                        }).catch(error => {
-                            console.error('html2canvas error for sick slip:', error);
-                            pdfTemplate.style.display = 'none';
-                            reject(new Error('Failed to generate sick slip PDF: ' + error.message));
-                        });
-                    }, 1500);
-                    
-                } catch (error) {
-                    console.error('Error in generateSickSlipPDF:', error);
-                    reject(new Error('Sick slip PDF generation failed: ' + error.message));
-                }
-            });
-        }
-
-        // WHATSAPP MESSAGE FUNCTION
-        function sendWhatsAppMessage(outpassData) {
-            try {
-                let phone = outpassData.whatsappNumber.replace(/\D/g, '');
-                
-                if (phone.length === 10) {
-                    phone = '91' + phone;
-                }
-                
-                console.log('Sending WhatsApp to:', phone);
-                
-                const message = `🎓 *SRI CHAITANYA EDUCATIONAL INSTITUTIONS*
-Electronic City Campus - Hostel Outpass
-
-━━━━━━━━━━━━━━━━━━━━━━
-
-📋 *OUTPASS DETAILS*
-
-🔢 Outpass No: *${outpassData.passNumber}*
-📅 Date: *${outpassData.issuedDate}*
-⏰ Time: *${outpassData.issuedTime}*
-📊 Status: *${outpassData.status}*
-
-━━━━━━━━━━━━━━━━━━━━━━
-
-📅 *OUTPASS DATES*
-
-➡️ Out Date: *${formatDateForPDF(outpassData.outDate)}*
-⬅️ In Date: *${formatDateForPDF(outpassData.inDate)}*
-
-━━━━━━━━━━━━━━━━━━━━━━
-
-👨‍🎓 *STUDENT INFORMATION*
-
-🆔 Student ID: *${outpassData.studentId}*
-📝 Name: *${outpassData.studentName}*
-📚 Category: *${outpassData.category}*
-🏫 Section: *${outpassData.section}*
-
-━━━━━━━━━━━━━━━━━━━━━━
-
-👨‍👩‍👧 *PARENT INFORMATION*
-
-👨 Father's Name: *${outpassData.fatherName}*
-📱 Contact: *${outpassData.whatsappNumber}*
-✍️ Requested By: *${outpassData.requestedBy}*
-
-━━━━━━━━━━━━━━━━━━━━━━
-
-📝 *REASON FOR OUTPASS*
-${outpassData.reason}
-
-━━━━━━━━━━━━━━━━━━━━━━
-
-✅ *Issued By:* ${outpassData.issuedBy}
-
-⚠️ *IMPORTANT INSTRUCTIONS:*
-- Show this message at hostel gate
-- Carry your ID card
-- PDF will be sent separately
-- Valid for today only
-- Return as per hostel timings
-
-🏫 *Sri Chaitanya Educational Institutions*
-📍 Electronic City, Bangalore
-
-For queries, contact hostel office.`;
-
-                const encodedMessage = encodeURIComponent(message)
-                    .replace(/'/g, "%27")
-                    .replace(/"/g, "%22")
-                    .replace(/\*/g, "%2A");
-
-                const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
-                
-                console.log('WhatsApp URL created successfully');
-
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                
-                if (isMobile) {
-                    window.location.href = whatsappUrl;
+                if (latest) {
+                    document.getElementById('reportingStudentName').textContent = latest.studentName;
+                    document.getElementById('reportingSection').textContent = latest.section;
+                    document.getElementById('reportingOutDate').textContent = latest.outDate;
+                    document.getElementById('reportingInDateLabel').textContent = latest.inDate;
+                    document.getElementById('reportingInDate').value = latest.inDate;
+                    document.getElementById('reportingStatusForm').dataset.docId = latest.id;
                 } else {
-                    const newWindow = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-                    
-                    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-                        const link = document.createElement('a');
-                        link.href = whatsappUrl;
-                        link.target = '_blank';
-                        link.rel = 'noopener noreferrer';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    }
+                    alert("No record found.");
                 }
-                
-            } catch (error) {
-                console.error('Error in WhatsApp function:', error);
-                showError('Failed to open WhatsApp. Please check the phone number and try again.');
-            }
+            } catch (e) { alert("Search Error"); }
+        };
+
+        document.getElementById('setCurrentTimeBtn').onclick = () => {
+            document.getElementById('reportingTime').value = new Date().toTimeString().slice(0, 5);
+        };
+
+        document.getElementById('reportingStatusForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const docId = e.target.dataset.docId;
+            if(!docId) return alert("Search first!");
+            try {
+                await apiFetch(`/api/outpasses/${docId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        reportingTime: document.getElementById('reportingTime').value,
+                        inDate: document.getElementById('reportingInDate').value,
+                        status: 'REPORTED'
+                    })
+                });
+                alert("Status Updated!");
+                e.target.reset();
+                ['reportingStudentName', 'reportingSection', 'reportingOutDate', 'reportingInDateLabel'].forEach(fid => document.getElementById(fid).textContent = '-');
+            } catch (e) { alert("Update Error"); }
+        };
+
+        // --- PDF GENERATORS (Optimized) ---
+        function generateOutpassPDF(data) {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const t = document.getElementById('pdfTemplate');
+            
+            document.getElementById('pdfPassNumber').textContent = data.passNumber;
+            document.getElementById('pdfDate').textContent = data.issuedDate;
+            document.getElementById('pdfTime').textContent = data.issuedTime;
+            document.getElementById('pdfStudentId').textContent = data.studentId;
+            document.getElementById('pdfStudentName').textContent = data.studentName;
+            document.getElementById('pdfCategory').textContent = data.category;
+            document.getElementById('pdfSection').textContent = data.section;
+            document.getElementById('pdfFatherName').textContent = data.fatherName;
+            document.getElementById('pdfWhatsApp').textContent = data.whatsappNumber;
+            document.getElementById('pdfRequestedBy').textContent = data.requestedBy;
+            document.getElementById('pdfOutDate').textContent = data.outDate;
+            document.getElementById('pdfInDate').textContent = data.inDate;
+            document.getElementById('pdfStatus').textContent = data.status;
+            document.getElementById('pdfReason').textContent = data.reason;
+            document.getElementById('pdfIssuedByName').textContent = data.issuedBy;
+            document.getElementById('pdfCampusName').textContent = data.campus;
+            document.getElementById('pdfCampusEmail').textContent = data.createdBy;
+            if (data.studentPhoto) document.getElementById('pdfStudentPhotoImg').src = data.studentPhoto;
+
+            t.style.display = 'block';
+            html2canvas(t).then(canvas => {
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
+                pdf.save(`${data.passNumber}_${data.studentName}.pdf`);
+                t.style.display = 'none';
+            });
         }
 
-        // Message functions
-        function showSuccess(message) {
-            successMessage.textContent = message;
-            successMessage.style.display = 'block';
-            errorMessage.style.display = 'none';
+        function generateMediSlipPDF(data) {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const t = document.getElementById('sickSlipPdfTemplate');
+            
+            document.getElementById('sickSlipNumber').textContent = data.mediSlipNumber;
+            document.getElementById('sickSlipStudentId').textContent = data.studentId;
+            document.getElementById('sickSlipStudentName').textContent = data.studentName;
+            document.getElementById('sickSlipDate').textContent = data.date;
+            document.getElementById('sickSlipStartTime').textContent = data.startTime;
+            document.getElementById('sickSlipEndTime').textContent = data.endTime;
+            document.getElementById('sickSlipTemperature').textContent = data.temperature;
+            document.getElementById('sickSlipReason').textContent = data.reason;
+            document.getElementById('sickSlipStatus').textContent = data.status;
+            document.getElementById('sickSlipIssuedByDisplay').textContent = data.issuedBy;
+            document.getElementById('sickSlipCampusName').textContent = data.campus;
+            document.getElementById('sickSlipCampusEmail').textContent = data.createdBy;
+
+            t.style.display = 'block';
+            html2canvas(t).then(canvas => {
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
+                pdf.save(`${data.mediSlipNumber}_${data.studentName}.pdf`);
+                t.style.display = 'none';
+            });
         }
 
-        function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.style.display = 'block';
-            successMessage.style.display = 'none';
-        }
+        // Helpers
+        function showSuccess(m) { const e = document.getElementById('successMessage'); e.textContent = m; e.style.display = 'block'; setTimeout(()=>e.style.display='none', 5000); }
+        function showError(m) { const e = document.getElementById('errorMessage'); e.textContent = m; e.style.display = 'block'; }
+        function showSickSlipSuccess(m) { const e = document.getElementById('mediSlipSuccessMessage'); e.textContent = m; e.style.display = 'block'; setTimeout(()=>e.style.display='none', 5000); }
+        function showSickSlipError(m) { const e = document.getElementById('mediSlipErrorMessage'); e.textContent = m; e.style.display = 'block'; }
+        function hideMessages() { ['successMessage', 'errorMessage', 'mediSlipSuccessMessage', 'mediSlipErrorMessage'].forEach(id => { const e = document.getElementById(id); if(e) e.style.display = 'none'; }); }
 
-        function showSickSlipSuccess(message) {
-            sickSlipSuccessMessage.textContent = message;
-            sickSlipSuccessMessage.style.display = 'block';
-            sickSlipErrorMessage.style.display = 'none';
+        // Auto-format phone
+        if (document.getElementById('whatsappNumber')) {
+            document.getElementById('whatsappNumber').addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+            });
         }
-
-        function showSickSlipError(message) {
-            sickSlipErrorMessage.textContent = message;
-            sickSlipErrorMessage.style.display = 'block';
-            sickSlipSuccessMessage.style.display = 'none';
-        }
-
-        function hideMessages() {
-            successMessage.style.display = 'none';
-            errorMessage.style.display = 'none';
-            sickSlipSuccessMessage.style.display = 'none';
-            sickSlipErrorMessage.style.display = 'none';
-        }
-
-        // Auto-format phone number
-        document.getElementById('whatsappNumber').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 10) {
-                value = value.slice(0, 12);
-            }
-            e.target.value = value;
-        });
     </script>
 </body>
 </html>

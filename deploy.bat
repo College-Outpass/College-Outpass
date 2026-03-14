@@ -34,7 +34,7 @@ echo [1/6] Indexing files...
 git add .
 
 echo.
-set "commitMsg=Update: Security and Staff Management Full Sync"
+set "commitMsg=Update: System Stability Fixes"
 set /p userInput="[2/6] Enter update summary (or press ENTER for default): "
 if not "%userInput%"=="" set "commitMsg=%userInput%"
 
@@ -46,9 +46,8 @@ echo.
 echo [4/6] Pushing to GitHub...
 git push origin main
 if %errorlevel% neq 0 (
-    echo [WARNING] Normal push failed.
-    set /p force="Force push? (Y/N): "
-    if /i "%force%"=="Y" git push origin main --force
+    echo [WARNING] Normal push failed. Attempting force push...
+    git push origin main --force
 )
 
 :: 4. FIREBASE DEPLOYMENT
