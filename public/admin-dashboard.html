@@ -1454,23 +1454,24 @@
             document.getElementById('clearDateBtn').addEventListener('click', clearDateFilters);
             document.getElementById('downloadExcelBtn').addEventListener('click', downloadExcel);
 
-            // SINGLE logout event listener
-            document.getElementById('logoutBtn').addEventListener('click', async () => {
-                try {
-                    // Set explicit logout flag
-                    sessionStorage.setItem('explicitLogout', 'true');
-                    
-                    if (auth && typeof auth.signOut === 'function') {
-                        await auth.signOut();
-                    }
-                } catch (error) {
-                    console.error('Logout error:', error);
-                } finally {
-                    console.log('Clearing local session...');
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    window.location.href = 'admin-login.html';
-                }
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                // Set explicit logout flag
+                sessionStorage.setItem('adminExplicitLogout', 'true');
+
+                // Clear session data
+                sessionStorage.removeItem('adminAuth');
+                localStorage.removeItem('adminAuth');
+
+                // Sign out from Firebase
+                auth.signOut()
+                    .then(() => {
+                        console.log('✅ Signed out successfully');
+                        window.location.href = 'admin-login.html';
+                    })
+                    .catch((error) => {
+                        console.error('Sign out error:', error);
+                        window.location.href = 'admin-login.html';
+                    });
             });
         }
 

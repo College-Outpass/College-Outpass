@@ -30,7 +30,7 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
     console.warn('⚠️ Firebase Admin Initialization failed: key.json or ENV not found');
 }
 
-console.log('🚀 Final Pure-Database Mode v3.1 - Fix Schema');
+console.log('🚀 Final Pure-Database Mode v3.0');
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -75,34 +75,28 @@ app.get('/hello', (req, res) => {
 
 app.get('/diag/db', async (req, res) => {
     try {
-        const stats = {
-            time: new Date().toISOString(),
-            firebase: {
-                initialized: admin.apps.length > 0,
-                project: admin.apps.length > 0 ? admin.app().options.projectId : 'N/A'
+        const [[totalCount]] = await pool.query('SELECT COUNT(*) as count FROM transfer_admins');
+        const [[staffCount]] = await pool.query("SELECT COUNT(*) as count FROM transfer_admins WHERE role = 'staff'");
+        const [[adminsCount]] = await pool.query("SELECT COUNT(*) as count FROM transfer_admins WHERE role = 'admin'");
+        const [[securityCount]] = await pool.query('SELECT COUNT(*) as count FROM security').catch(() => [{count: 0}]);
+        const [[studentsCount]] = await pool.query('SELECT COUNT(*) as count FROM students').catch(() => [{count: 'ERROR/MISSING'}]);
+        
+        // Fetch last 5 users for verification
+        const [lastUsers] = await pool.query('SELECT uid, email, role, created_at FROM transfer_admins ORDER BY created_at DESC LIMIT 5');
+
+        res.json({
+            status: 'connected',
+            table: 'transfer_admins',
+            counts: { 
+                total: totalCount.count,
+                staff: staffCount.count, 
+                admins: adminsCount.count, 
+                security: securityCount.count,
+                students: studentsCount.count 
             },
-            tidb: {
-                status: 'connected'
-            }
-        };
-
-        // TiDB Counts
-        try {
-            const [[total]] = await pool.query('SELECT COUNT(*) as count FROM transfer_admins');
-            stats.tidb.total_users = total.count;
-        } catch (e) { stats.tidb.error = e.message; }
-
-        // Firebase Firestore Counts
-        if (admin.apps.length > 0) {
-            try {
-                const adminSnap = await admin.firestore().collection('admins').get();
-                const staffSnap = await admin.firestore().collection('staff').get();
-                stats.firebase.admins_count = adminSnap.size;
-                stats.firebase.staff_count = staffSnap.size;
-            } catch (e) { stats.firebase.firestore_error = e.message; }
-        }
-
-        res.json(stats);
+            recent_users: lastUsers,
+            time: new Date().toISOString()
+        });
     } catch (err) {
         res.status(500).json({ status: 'error', message: err.message });
     }
@@ -121,121 +115,111 @@ initDb();
 
 
 
-async function authenticateToken(req, res, next) {
+function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-    
-    if (!token) {
-        console.warn('⚠️ No token provided');
-        return res.sendStatus(401);
-    }
-
-    const HOD_EMAIL = 'srinivasnaidu.m@srichaitanyaschool.net';
+    if (token == null) return res.sendStatus(401);
 
     try {
-        // [PURE FIREBASE MODE] Verify using Firebase Admin SDK
-        if (admin.apps.length > 0) {
-            const decodedToken = await admin.auth().verifyIdToken(token);
-            const email = (decodedToken.email || '').toLowerCase();
-            
-            // Check if HOD or has admin role in Firestore
-            let role = 'staff';
-            if (email === HOD_EMAIL) {
-                role = 'admin';
-            } else {
-                // Check Firestore for role if not HOD
-                const staffDoc = await admin.firestore().collection('staff').doc(decodedToken.uid).get();
-                if (staffDoc.exists) {
-                    role = staffDoc.data().role || 'staff';
-                } else {
-                    const adminDoc = await admin.firestore().collection('admins').doc(decodedToken.uid).get();
-                    if (adminDoc.exists) role = 'admin';
-                }
-            }
-
-            req.user = { 
-                ...decodedToken, 
-                email, 
-                role,
-                uid: decodedToken.uid 
-            };
-            
-            console.log(`✅ Firebase Token verified: ${email} (${role})`);
-            return next();
-        } else {
-            console.warn('⚠️ Firebase Admin not initialized, using legacy fallback');
-            // Try legacy decode for HOD ONLY
-            const decoded = jwt.decode(token);
-            if (decoded && decoded.email && decoded.email.toLowerCase() === HOD_EMAIL) {
-                req.user = { ...decoded, email: HOD_EMAIL, role: 'admin' };
+        const decoded = jwt.decode(token);
+        if (decoded && decoded.email) {
+            const email = decoded.email.toLowerCase();
+            // Accept Firebase tokens (iss contains securetoken.google.com)
+            const isFirebaseToken = decoded.iss && decoded.iss.includes('securetoken.google.com');
+            if (isFirebaseToken || decoded.email_verified || email === 'srinivasnaidu.m@srichaitanyaschool.net') {
+                req.user = { ...decoded, email };
+                console.log(`✅ Firebase/verified token accepted for: ${email}`);
                 return next();
             }
         }
-    } catch (error) {
-        console.error('❌ Firebase Auth Error:', error.message);
-        
-        // Final fallback for HOD with any valid-looking token
-        try {
-            const decoded = jwt.decode(token);
-            if (decoded && decoded.email && decoded.email.toLowerCase() === HOD_EMAIL) {
-                console.warn('👑 HOD Emergency Bypass');
-                req.user = { ...decoded, email: HOD_EMAIL, role: 'admin' };
-                return next();
-            }
-        } catch(e) {}
+    } catch (e) {
+        console.warn('Token decode error:', e.message);
     }
 
-    console.error('❌ Authentication failed for token');
-    return res.sendStatus(403);
+    // Fallback: verify with our custom JWT secret (admin portal logins)
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            // Last resort decode — allow any token with an email
+            try {
+                const decoded = jwt.decode(token);
+                if (decoded && decoded.email) {
+                    const email = decoded.email.toLowerCase();
+                    const role = (email === 'srinivasnaidu.m@srichaitanyaschool.net') ? 'admin' : (decoded.role || 'staff');
+                    req.user = { ...decoded, email, role };
+                    console.log(`⚠️ Accepted via decode fallback: ${email} (Role: ${role})`);
+                    return next();
+                }
+            } catch (e2) { }
+            return res.sendStatus(403);
+        }
+        
+        // Ensure HOD always has admin role even if token is old
+        if (user.email && user.email.toLowerCase() === 'srinivasnaidu.m@srichaitanyaschool.net') {
+            user.role = 'admin';
+        }
+        
+        req.user = user;
+        next();
+    });
 }
 
 
-// Legacy Login Endpoint - Re-enabled as a bridge to Firebase
 app.post('/api/auth/login', async (req, res) => {
-    const { email, password } = req.body;
-    console.warn(`⚠️ Legacy /api/auth/login hit by ${email}. Proxying to Firebase...`);
-
     try {
-        // We use the Firebase Auth REST API to verify credentials on the server
-        const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "AIzaSyBFHwulhuw9NlGQi0DWzy9mU47RSO5TUkw";
-        const firebaseRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email,
-                password,
-                returnSecureToken: true
-            })
-        });
+        const { email, password } = req.body;
+        console.log(`🔑 Login attempt: ${email}`);
 
-        const data = await firebaseRes.json();
-
-        if (!firebaseRes.ok) {
-            console.error('❌ Firebase Auth proxy failed:', data.error);
-            return res.status(401).json({ 
-                error: 'Authentication failed', 
-                details: data.error.message 
-            });
+        // [SECURE MODE] Fetch user from transfer_admins table
+        const [users] = await pool.query('SELECT * FROM transfer_admins WHERE email = ?', [email.toLowerCase()]);
+        
+        if (users.length === 0) {
+            return res.status(404).json({ code: 'auth/user-not-found' });
         }
 
-        // Successfully authenticated via Firebase
-        console.log(`✅ Legacy login successful for ${email}`);
-        
-        // Return a response that looks like the old one
-        res.json({
-            token: data.idToken,
-            refresh_token: data.refreshToken,
-            user: {
-                uid: data.localId,
-                email: data.email,
-                name: data.displayName || data.email.split('@')[0],
-                role: 'staff' // Default role for legacy bridge
-            }
-        });
+        const user = users[0];
 
-    } catch (error) {
-        console.error('❌ Legacy login error:', error);
-        res.status(500).json({ error: 'Internal server error during authentication bridge' });
+        // CHECK CAMPUS (Only for staff roles, or if campus is specified)
+        if (req.body.campus && user.campus && user.campus !== req.body.campus && user.role !== 'admin') {
+            return res.status(401).json({ code: 'auth/wrong-campus', error: `This account belongs to ${user.campus}` });
+        }
+
+        if (!user.password_hash) {
+            return res.status(401).json({ code: 'auth/no-password-set' });
+        }
+
+        const pwdMatch = await bcrypt.compare(password, user.password_hash);
+        if (!pwdMatch) {
+            return res.status(401).json({ code: 'auth/wrong-password' });
+        }
+
+        const token = jwt.sign({ 
+            uid: user.uid, 
+            email: user.email, 
+            role: user.role, 
+            campus: user.campus 
+        }, JWT_SECRET, { expiresIn: '24h' });
+
+        // Create Firebase Custom Token to allow frontend Firestore access
+        let firebaseToken = null;
+        try {
+            firebaseToken = await admin.auth().createCustomToken(user.uid);
+        } catch (fbErr) {
+            console.warn('⚠️ Could not create Firebase custom token (user missing in FB?)');
+        }
+
+        res.json({ 
+            user: { 
+                uid: user.uid, 
+                email: user.email, 
+                role: user.role, 
+                campus: user.campus 
+            }, 
+            token,
+            firebaseToken
+        });
+    } catch (err) {
+        console.error('❌ Login Error:', err);
+        res.status(500).json({ error: 'Internal error' });
     }
 });
 
@@ -306,86 +290,89 @@ app.post('/api/auth/verify', authenticateToken, (req, res) => {
 
 // User Management (Admins only)
 app.post('/api/users', authenticateToken, async (req, res) => {
-    if (admin.apps.length === 0) {
-        return res.status(500).json({ error: 'System Error: Firebase Admin NOT initialized on server. Please check environment variables.' });
+    // Only admins or the HOD can create users
+    console.log(`🔍 USER CREATION ATTEMPT: ${req.user.email} (Role: ${req.user.role})`);
+    console.log(`📦 Request Body: ${JSON.stringify(req.body)}`);
+
+    if (req.user.role !== 'admin' && req.user.email.toLowerCase() !== 'srinivasnaidu.m@srichaitanyaschool.net') {
+        console.warn(`❌ Unauthorized attempt: ${req.user.email} is not admin`);
+        return res.status(403).json({ error: 'Unauthorized: Admin access required' });
     }
-    const adminUser = req.user;
 
     try {
         const { email, password, name, campus, role } = req.body;
-        console.log(`👤 [USER CREATE FIREBASE] ${email} (${role}) at ${campus}`);
+        console.log(`👤 [TiDB CREATE] Data received for: ${email} (Role: ${role})`);
 
         if (!email || !password || !campus) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        const normalizedEmail = email.toLowerCase().trim();
+        const uid = 'u_' + Date.now();
+        const password_hash = await bcrypt.hash(password, 10);
         const userRole = role || 'staff';
 
-        // 1. Create in Firebase Auth
-        const userRecord = await admin.auth().createUser({
-            email: normalizedEmail,
-            password: password,
-            displayName: name || null
-        });
+        // 1. Insert into unified transfer_admins table
+        await pool.query(
+            'INSERT INTO transfer_admins (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?)',
+            [uid, email.toLowerCase(), password_hash, name || null, campus, userRole]
+        );
 
-        // 2. Save Profile in Firestore
-        const collectionName = userRole === 'admin' ? 'admins' : 'staff';
-        await admin.firestore().collection(collectionName).doc(userRecord.uid).set({
-            uid: userRecord.uid,
-            email: normalizedEmail,
-            name: name || null,
-            campus: campus,
-            role: userRole,
-            created_at: new Date().toISOString()
-        });
+        // 3. Keep Firebase Auth synced
+        try {
+            await admin.auth().createUser({
+                uid: uid,
+                email: email.toLowerCase(),
+                password: password,
+                displayName: name || null
+            });
+            console.log('🔥 User created in Firebase Auth');
+        } catch (fbErr) {
+            console.warn('⚠️ Firebase User creation failed (maybe already exists):', fbErr.message);
+        }
 
-        console.log(`✅ [USER CREATE] Firebase success for UID: ${userRecord.uid}`);
-        res.json({ success: true, uid: userRecord.uid });
-
+        console.log(`✅ User saved to TiDB (transfer_admins)`);
+        res.json({ success: true, uid });
     } catch (err) {
-        console.error('❌ [USER CREATE] Error:', err);
-        res.status(500).json({ error: 'Firebase creation failed', details: err.message });
+        console.error('❌ User creation error:', err);
+        res.status(500).json({ error: 'Database Error: ' + err.message });
     }
 });
 
 app.get('/api/users', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'admin') {
+    console.log(`🔍 FETCHING USERS LIST: requested by ${req.user.email}`);
+    if (req.user.role !== 'admin' && req.user.email !== 'srinivasnaidu.m@srichaitanyaschool.net') {
+        console.warn(`❌ Unauthorized users list fetch attempt by: ${req.user.email}`);
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
     try {
-        console.log('📡 Fetching users from Firestore...');
-        const staffSnapshot = await admin.firestore().collection('staff').get();
-        const adminsSnapshot = await admin.firestore().collection('admins').get();
-
-        const staff = staffSnapshot.docs.map(doc => doc.data());
-        const admins = adminsSnapshot.docs.map(doc => doc.data());
-
-        res.json([...admins, ...staff]);
+        const [rows] = await pool.query('SELECT uid, email, name, campus, role, created_at FROM transfer_admins ORDER BY created_at DESC');
+        res.json(rows);
     } catch (err) {
-        console.error('❌ Fetch error:', err);
         res.status(500).json({ error: 'Failed' });
     }
 });
 
 app.delete('/api/users/:uid', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+    if (req.user.role !== 'admin' && req.user.email !== 'srinivasnaidu.m@srichaitanyaschool.net') {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
 
     try {
         const uid = req.params.uid;
-        console.log(`🗑️ Deleting user: ${uid}`);
+        // Delete ONLY from transfer_admins
+        await pool.query('DELETE FROM transfer_admins WHERE uid = ?', [uid]);
 
-        // Delete from Auth
-        await admin.auth().deleteUser(uid).catch(e => console.warn('Auth deletion fail:', e.message));
-        
-        // Delete from Firestore (try both collections)
-        await admin.firestore().collection('staff').doc(uid).delete();
-        await admin.firestore().collection('admins').doc(uid).delete();
+        // Delete from Firebase Auth
+        try {
+            await admin.auth().deleteUser(uid);
+            console.log(`🔥 Deleted user from Firebase Auth: ${uid}`);
+        } catch (e) { }
 
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('❌ User deletion error:', err);
+        res.status(500).json({ error: 'Failed: ' + err.message });
     }
 });
 
@@ -394,18 +381,28 @@ app.get('/api/admins/:uid', authenticateToken, async (req, res) => {
         const uid = req.params.uid;
         const email = req.user.email ? req.user.email.toLowerCase() : '';
 
-        // PRINCIPAL BYPASS
+        // PRINCIPAL BYPASS: If email matches the HOD email, they ARE an admin.
         if (email === 'srinivasnaidu.m@srichaitanyaschool.net') {
-            return res.json({ exists: true, data: { role: 'admin', email: email } });
+            console.log('👑 HOD detected in Admin Verification!');
+            return res.json({
+                exists: true,
+                data: { role: 'admin', email: email, name: 'Head of Department' }
+            });
         }
 
-        const adminDoc = await admin.firestore().collection('admins').doc(uid).get();
-        if (adminDoc.exists) {
-            res.json({ exists: true, data: adminDoc.data() });
+        // Standard check
+        const [users] = await pool.query(
+            'SELECT role, email FROM transfer_admins WHERE (uid = ? OR email = ?) AND role = "admin"',
+            [uid, email]
+        );
+
+        if (users.length > 0) {
+            res.json({ exists: true, data: { ...users[0] } });
         } else {
             res.json({ exists: false });
         }
     } catch (err) {
+        console.error('Admin check error:', err);
         res.status(500).json({ error: 'Failed' });
     }
 });

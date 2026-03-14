@@ -2,70 +2,89 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper functions
+    // Helper function to check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    function isAdmin() {
-      return isAuthenticated() && (
-        request.auth.token.email.toLower() == 'srinivasnaidu.m@srichaitanyaschool.net' ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-      );
-    }
-
+    // Helper function to check if user is principal
     function isPrincipal() {
-      let email = request.auth.token.email.toLower();
-      return isAdmin() || 
-             email == 'pucneetboysprincipal@srichaitanyacollege.net' ||
+      let email = request.auth.token.email;
+      return email == 'pucneetboysprincipal@srichaitanyacollege.net' ||
              email == 'ecitypucprincipal2@srichaitanyacollege.net' ||
              email == 'ecitypucprincipal1@srichaitanyacollege.net' ||
              email == 'electroniccityprincipal@srichaitanyaschool.net';
     }
     
-    // Core Collections
-    match /outpasses/{id} {
-      allow read, write: if isAuthenticated();
-      allow delete: if isPrincipal();
-    }
-    
-    match /mediSlips/{id} {
-      allow read, write: if isAuthenticated();
-      allow delete: if isPrincipal();
-    }
-
-    match /sickSlips/{id} {
-      allow read, write: if isAuthenticated();
-      allow delete: if isPrincipal();
-    }
-
-    match /students/{id} {
+    // Students collection - for student data upload and auto-fill
+    match /students/{studentId} {
+      // Allow read if user is authenticated (campus filtering done in app code)
       allow read: if isAuthenticated();
-      allow write: if isPrincipal();
-    }
-
-    // Profiles
-    match /staff/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAdmin();
-    }
-
-    match /admins/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAdmin();
+      
+      // Allow write (create/update) if user is principal
+      // Campus validation is done in the application code
+      allow create: if isAuthenticated() && isPrincipal();
+      
+      allow update: if isAuthenticated() && isPrincipal();
+      
+      allow delete: if isAuthenticated() && isPrincipal();
     }
     
-    match /settings/{id} {
-      allow read, write: if isAuthenticated();
+    // Outpasses collection
+    match /outpasses/{outpassId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated() && isPrincipal();
     }
-
-    match /security/{id} {
-      allow read, write: if isAuthenticated();
+    
+    // MediSlips collection
+    match /mediSlips/{mediSlipId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated() && isPrincipal();
     }
-
-    // Default: Deny other access
+    
+    // SickSlips collection (if exists)
+    match /sickSlips/{sickSlipId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated() && isPrincipal();
+    }
+    
+    // Settings collection (for counters)
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // Staff users collection
+    match /staffUsers/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isPrincipal();
+    }
+    
+    // Security collection
+    match /security/{securityId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isPrincipal();
+    }
+    
+    // Admins collection - for HOD admin access
+    match /admins/{adminId} {
+      // Allow users to read their own admin document to verify admin status
+      allow read: if isAuthenticated() && request.auth.uid == adminId;
+      // Allow authenticated users to read all admin docs (for verification)
+      allow read: if isAuthenticated();
+      // Only allow creation/update by authenticated users (admin creation should be done via admin tools)
+      allow write: if isAuthenticated();
+    }
+    
+    // Default: deny all other access
     match /{document=**} {
-      allow read, write: if isAdmin();
+      allow read, write: if false;
     }
   }
 }

@@ -595,34 +595,43 @@
             hideMessages();
 
             try {
-                // 1. Sign in with Firebase
-                console.log('🔥 Firebase Staff Login:', email);
-                const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                const user = userCredential.user;
-                const idToken = await user.getIdToken();
+                const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    ? 'http://localhost:5000/api'
+                    : 'https://college-outpass-api.onrender.com/api';
 
-                // 2. Fetch staff profile from Firestore
-                const staffDoc = await db.collection('staff').doc(user.uid).get();
-                
-                if (!staffDoc.exists) {
-                    // Try fallback: check for user role in any other collection if needed
-                    // For now, assume if they are in auth they might be staff
-                    console.warn('Staff profile not found in Firestore. Proceeding with campus from form.');
-                } else {
-                    const staffData = staffDoc.data();
-                    if (campus && staffData.campus && staffData.campus !== campus) {
-                        await auth.signOut();
-                        throw new Error(`This account belongs to ${staffData.campus.replace(/_/g, ' ')}`);
-                    }
+                // [TiDB MODE] Step 1: Login directly with Database
+                console.log('Authenticating with Database...');
+                const loginResponse = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, campus })
+                });
+
+                const loginResult = await loginResponse.json();
+
+                if (!loginResponse.ok) {
+                    throw new Error(loginResult.error || loginResult.code || 'Login failed');
                 }
 
-                // SUCCESS
+                console.log('✅ Database Login successful!');
+
+                // Step 2: Set local storage with verified data
                 localStorage.clear();
-                localStorage.setItem('tidb_token', idToken);
-                localStorage.setItem('userCampus', campus);
-                localStorage.setItem('userEmail', email);
+                localStorage.setItem('tidb_token', loginResult.token);
+                localStorage.setItem('userCampus', loginResult.user.campus);
+                localStorage.setItem('userEmail', loginResult.user.email);
                 localStorage.setItem('lastDashboard', 'staff');
-                localStorage.setItem('isPrincipal', 'false');
+                localStorage.setItem('isPrincipal', loginResult.user.role === 'admin' ? 'true' : 'false');
+
+                // Step 3: Authenticate with Firebase using Custom Token
+                if (loginResult.firebaseToken) {
+                    try {
+                        await auth.signInWithCustomToken(loginResult.firebaseToken);
+                        console.log('🔥 Signed in to Firebase with Custom Token!');
+                    } catch (fbErr) {
+                        console.error('Firebase token login failed:', fbErr.message);
+                    }
+                }
 
                 showMessage('✅ Login successful! Redirecting...', 'success');
 
@@ -631,11 +640,8 @@
                 }, 1000);
 
             } catch (error) {
-                console.error('Staff Login error:', error);
-                let msg = error.message;
-                if (error.code === 'auth/wrong-password') msg = 'Incorrect password.';
-                if (error.code === 'auth/user-not-found') msg = 'Staff account not found.';
-                showMessage('❌ ' + msg, 'error');
+                console.error('Login error:', error);
+                showMessage('❌ ' + error.message, 'error');
                 loginText.style.display = 'inline';
                 loginLoader.style.display = 'none';
                 document.getElementById('loginBtn').disabled = false;
@@ -662,30 +668,45 @@
             hideMessages();
 
             try {
-                // 1. Sign in with Firebase
-                console.log('🔥 Firebase Principal Login:', email);
-                const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                const user = userCredential.user;
-                const idToken = await user.getIdToken();
+                const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    ? 'http://localhost:5000/api'
+                    : 'https://college-outpass-api.onrender.com/api';
 
-                // 2. Verify admin status in Firestore
-                const adminDoc = await db.collection('admins').doc(user.uid).get();
-                
-                // Allow HOD email bypass even if doc missing
-                const isHOD = email === "srinivasnaidu.m@srichaitanyaschool.net";
+                // [TiDB MODE] Step 1: Login directly with Database (Admin)
+                console.log('Authenticating Admin with Database...');
+                const loginResponse = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, campus })
+                });
 
-                if (!adminDoc.exists && !isHOD) {
-                    await auth.signOut();
+                const loginResult = await loginResponse.json();
+
+                if (!loginResponse.ok) {
+                    throw new Error(loginResult.error || loginResult.code || 'Admin login failed');
+                }
+
+                if (loginResult.user.role !== 'admin') {
                     throw new Error('This account does not have Admin access');
                 }
 
                 // TiDB LOGIN SUCCESS
                 localStorage.clear();
-                localStorage.setItem('tidb_token', idToken);
-                localStorage.setItem('userCampus', campus);
-                localStorage.setItem('userEmail', email);
+                localStorage.setItem('tidb_token', loginResult.token);
+                localStorage.setItem('userCampus', loginResult.user.campus);
+                localStorage.setItem('userEmail', loginResult.user.email);
                 localStorage.setItem('isPrincipal', 'true');
                 localStorage.setItem('lastDashboard', 'admin');
+
+                // Step 3: Authenticate with Firebase using Custom Token
+                if (loginResult.firebaseToken) {
+                    try {
+                        await auth.signInWithCustomToken(loginResult.firebaseToken);
+                        console.log('🔥 Signed in to Firebase Admin with Custom Token!');
+                    } catch (fbErr) {
+                        console.error('Firebase token login failed:', fbErr.message);
+                    }
+                }
 
                 showMessage('✅ Admin login successful!', 'success');
 
@@ -695,9 +716,7 @@
 
             } catch (error) {
                 console.error('Admin login error:', error);
-                let msg = error.message;
-                if (error.code === 'auth/wrong-password') msg = 'Incorrect password.';
-                showMessage('❌ ' + msg, 'error');
+                showMessage('❌ ' + error.message, 'error');
                 adminBtn.innerHTML = '<span>🔐</span><span>Principal Admin Portal</span>';
                 adminBtn.disabled = false;
                 isLoggingIn = false;
@@ -726,7 +745,7 @@
     </script>
     <script>
         // Version check - update this version number when you deploy
-        const CURRENT_VERSION = '3.0';
+        const CURRENT_VERSION = '2.5';
         const STORAGE_KEY = 'app_version';
 
         // Check if user has old cached version
@@ -750,22 +769,19 @@
             }
         });
         // Logout functionality for staff login page
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', function () {
-                // Set explicit logout flag
-                sessionStorage.setItem('explicitLogout', 'true');
+        document.getElementById('logoutBtn').addEventListener('click', function () {
+            // Set explicit logout flag
+            sessionStorage.setItem('explicitLogout', 'true');
 
-                // Clear all stored data
-                localStorage.clear();
-                sessionStorage.clear();
+            // Clear all stored data
+            localStorage.clear();
+            sessionStorage.clear();
 
-                // Sign out from Firebase
-                auth.signOut().then(() => {
-                    window.location.href = 'staff-login.html';
-                });
+            // Sign out from Firebase
+            auth.signOut().then(() => {
+                window.location.href = 'staff-login.html';
             });
-        }
+        });
     </script>
 </body>
 

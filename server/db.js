@@ -26,12 +26,12 @@ async function initDb() {
             )
         `);
 
-        // Unified table for all system users (Staff & Admins)
+        // Users block for auth (Staff & Admins)
         await connection.query(`
-            CREATE TABLE IF NOT EXISTS transfer_admins (
+            CREATE TABLE IF NOT EXISTS users (
                 uid VARCHAR(100) PRIMARY KEY,
-                email VARCHAR(255) UNIQUE NOT NULL,
-                password_hash VARCHAR(255) NOT NULL,
+                email VARCHAR(255) UNIQUE,
+                password_hash VARCHAR(255),
                 name VARCHAR(255),
                 campus VARCHAR(255),
                 role VARCHAR(50) DEFAULT 'staff',
@@ -39,16 +39,30 @@ async function initDb() {
             )
         `);
 
-        // Migration for transfer_admins column lengths (if it already existed with shorter lengths)
-        const [userCols] = await connection.query("SHOW COLUMNS FROM transfer_admins");
-        const userColMap = userCols.reduce((acc, col) => { acc[col.Field] = col.Type; return acc; }, {});
-        
-        if (userColMap['uid'] === 'varchar(50)') await connection.query("ALTER TABLE transfer_admins MODIFY COLUMN uid VARCHAR(100)");
-        if (userColMap['email'] === 'varchar(100)') await connection.query("ALTER TABLE transfer_admins MODIFY COLUMN email VARCHAR(255)");
-        if (userColMap['name'] === 'varchar(100)') await connection.query("ALTER TABLE transfer_admins MODIFY COLUMN name VARCHAR(255)");
-        if (userColMap['campus'] === 'varchar(100)') await connection.query("ALTER TABLE transfer_admins MODIFY COLUMN campus VARCHAR(255)");
-        if (userColMap['role'] === 'varchar(20)') await connection.query("ALTER TABLE transfer_admins MODIFY COLUMN role VARCHAR(50)");
+        // Separate Staff table (as requested)
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS staff (
+                uid VARCHAR(100) PRIMARY KEY,
+                email VARCHAR(255) UNIQUE,
+                password_hash VARCHAR(255),
+                name VARCHAR(255),
+                campus VARCHAR(255),
+                role VARCHAR(50) DEFAULT 'staff',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
 
+        // Separate Admins table (as requested)
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS admins (
+                uid VARCHAR(100) PRIMARY KEY,
+                email VARCHAR(255) UNIQUE,
+                password_hash VARCHAR(255),
+                name VARCHAR(255),
+                role VARCHAR(50) DEFAULT 'admin',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
 
         // Outpasses table
         await connection.query(`
@@ -128,21 +142,16 @@ async function initDb() {
         `);
 
         // Insert default admin if not exists
-        const [existingAdmins] = await connection.query("SELECT * FROM transfer_admins WHERE email = 'admin@college.com' OR email = 'srinivasnaidu.m@srichaitanyaschool.net'");
-        if (existingAdmins.length === 0) {
+        const [users] = await connection.query("SELECT * FROM users WHERE email = 'admin@college.com' OR email = 'srinivasnaidu.m@srichaitanyaschool.net'");
+        if (users.length === 0) {
             const bcrypt = require('bcrypt');
             const adminHash = await bcrypt.hash('admin123', 10);
-            await connection.query("INSERT INTO transfer_admins (uid, email, password_hash, role, name) VALUES (?, ?, ?, 'admin', ?)", ['admin_uid_1', 'admin@college.com', adminHash, 'System Admin']);
+            await connection.query("INSERT INTO users (uid, email, password_hash, role) VALUES (?, ?, ?, 'admin')", ['admin_uid_1', 'admin@college.com', adminHash]);
         }
 
-        // Specifically ensure the HOD admin exists (with default password admin123 if not set)
-        const [hodExists] = await connection.query("SELECT * FROM transfer_admins WHERE email = ?", ['srinivasnaidu.m@srichaitanyaschool.net']);
-        if (hodExists.length === 0) {
-            const bcrypt = require('bcrypt');
-            const hodHash = await bcrypt.hash('admin123', 10);
-            await connection.query("INSERT INTO transfer_admins (uid, email, password_hash, role, name) VALUES (?, ?, ?, 'admin', ?)", 
-                ['hod_admin_placeholder', 'srinivasnaidu.m@srichaitanyaschool.net', hodHash, 'admin', 'Head of Department']);
-        }
+        // Specifically ensure the HOD admin exists in both users (for login) and admins table
+        await connection.query("INSERT IGNORE INTO users (uid, email, role) VALUES (?, ?, 'admin')", ['hod_admin_placeholder', 'srinivasnaidu.m@srichaitanyaschool.net']);
+        await connection.query("INSERT IGNORE INTO admins (uid, email, role, name) VALUES (?, ?, 'admin', ?)", ['hod_admin_placeholder', 'srinivasnaidu.m@srichaitanyaschool.net', 'Head of Department']);
 
         // Insert default counters if not exist
         await connection.query("INSERT IGNORE INTO settings (setting_key, count_value) VALUES ('outpassCounter', 1)");
