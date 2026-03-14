@@ -75,28 +75,34 @@ app.get('/hello', (req, res) => {
 
 app.get('/diag/db', async (req, res) => {
     try {
-        const [[totalCount]] = await pool.query('SELECT COUNT(*) as count FROM transfer_admins');
-        const [[staffCount]] = await pool.query("SELECT COUNT(*) as count FROM transfer_admins WHERE role = 'staff'");
-        const [[adminsCount]] = await pool.query("SELECT COUNT(*) as count FROM transfer_admins WHERE role = 'admin'");
-        const [[securityCount]] = await pool.query('SELECT COUNT(*) as count FROM security').catch(() => [{count: 0}]);
-        const [[studentsCount]] = await pool.query('SELECT COUNT(*) as count FROM students').catch(() => [{count: 'ERROR/MISSING'}]);
-        
-        // Fetch last 5 users for verification
-        const [lastUsers] = await pool.query('SELECT uid, email, role, created_at FROM transfer_admins ORDER BY created_at DESC LIMIT 5');
-
-        res.json({
-            status: 'connected',
-            table: 'transfer_admins',
-            counts: { 
-                total: totalCount.count,
-                staff: staffCount.count, 
-                admins: adminsCount.count, 
-                security: securityCount.count,
-                students: studentsCount.count 
+        const stats = {
+            time: new Date().toISOString(),
+            firebase: {
+                initialized: admin.apps.length > 0,
+                project: admin.apps.length > 0 ? admin.app().options.projectId : 'N/A'
             },
-            recent_users: lastUsers,
-            time: new Date().toISOString()
-        });
+            tidb: {
+                status: 'connected'
+            }
+        };
+
+        // TiDB Counts
+        try {
+            const [[total]] = await pool.query('SELECT COUNT(*) as count FROM transfer_admins');
+            stats.tidb.total_users = total.count;
+        } catch (e) { stats.tidb.error = e.message; }
+
+        // Firebase Firestore Counts
+        if (admin.apps.length > 0) {
+            try {
+                const adminSnap = await admin.firestore().collection('admins').get();
+                const staffSnap = await admin.firestore().collection('staff').get();
+                stats.firebase.admins_count = adminSnap.size;
+                stats.firebase.staff_count = staffSnap.size;
+            } catch (e) { stats.firebase.firestore_error = e.message; }
+        }
+
+        res.json(stats);
     } catch (err) {
         res.status(500).json({ status: 'error', message: err.message });
     }
