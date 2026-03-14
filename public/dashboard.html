@@ -2584,48 +2584,62 @@
                     return { error: 'NO_CAMPUS' };
                 }
 
-                // First, check if there's any data for this campus
-                const campusDataCheck = await db.collection('students')
-                    .where('campus', '==', campusId)
-                    .limit(1)
-                    .get();
-
-                if (campusDataCheck.empty) {
-                    return {
-                        error: 'NO_CAMPUS_DATA',
-                        message: 'No student data available for your campus. Please ask admin to update the student data of your campus and try again.'
-                    };
-                }
-
-                // Query by document ID (studentId is the document ID)
                 const normalizedStudentId = studentId.toUpperCase();
+
+                // 1. Try Firebase Firestore FIRST
+                console.log('🔍 Checking Firestore for student:', normalizedStudentId);
                 const studentDoc = await db.collection('students').doc(normalizedStudentId).get();
 
                 if (studentDoc.exists) {
                     const studentData = studentDoc.data();
+                    console.log('✅ Student found in Firestore');
 
                     // Check if student belongs to this campus
                     if (studentData.campus === campusId) {
                         return studentData;
                     } else {
-                        // Student exists but belongs to different campus - prevent cross-campus access
                         return {
                             error: 'MISSING_ID',
-                            message: 'This Student ID belongs to a different campus. You can only access students from your own campus (' + (CAMPUS_DISPLAY_NAMES[campusId] || campusId) + ').'
+                            message: 'This Student ID belongs to a different campus (' + (studentData.campus || 'Unknown') + '). You can only access students from your own campus.'
                         };
                     }
                 }
 
-                // Student ID not found in database
+                // 2. Fallback to TiDB API if not in Firestore (Migration Period)
+                console.log('📡 Firestore empty or missing ID, falling back to TiDB API...');
+                try {
+                    const response = await fetch(`${API_URL}/students/${normalizedStudentId}`);
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.exists && result.data) {
+                            console.log('✅ Student found in TiDB API');
+                            const studentData = result.data;
+                            // Check campus for TiDB data too
+                            if (studentData.campus === campusId || !studentData.campus) {
+                                return studentData;
+                            } else {
+                                return {
+                                    error: 'MISSING_ID',
+                                    message: 'This Student ID belongs to ' + (studentData.campus || 'another campus') + '.'
+                                };
+                            }
+                        }
+                    }
+                } catch (apiErr) {
+                    console.warn('⚠️ TiDB API fallback failed:', apiErr);
+                }
+
+                // Student ID not found anywhere
                 return {
                     error: 'MISSING_ID',
-                    message: 'This Student ID is missing in your campus data. Please contact admin to update the student data.'
+                    message: 'Student ID ' + normalizedStudentId + ' not found. Please contact Admin.'
                 };
             } catch (error) {
                 console.error('Error fetching student data:', error);
-                return { error: 'FETCH_ERROR', message: 'Error fetching student data. Please try again.' };
+                return { error: 'FETCH_ERROR', message: 'Connection Error. Please try again.' };
             }
         }
+
 
         // Variable to store original WhatsApp number when data is loaded
         let originalWhatsappNumber = null;
@@ -3210,354 +3224,144 @@
 
         function openCamera(photoType) {
             currentPhotoType = photoType;
-            isCameraActive = true; // Set flag to prevent auth redirects
+            isCameraActive = true; 
 
-            // Smart detection: Android WebView or Browser?
+            // Standard Browser check
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            
             if (isAndroidWebView()) {
-                console.log('Android WebView detected - using native camera');
-
-                // Create temporary file input with camera capture
-                const tempInput = document.createElement('input');
-                tempInput.type = 'file';
-                tempInput.accept = 'image/*';
-                tempInput.capture = 'environment';
-                tempInput.style.display = 'none';
-
-                tempInput.addEventListener('change', function (e) {
-                    if (e.target.files && e.target.files[0]) {
-                        handlePhotoUpload(e, photoType);
-                    }
-                    isCameraActive = false; // Reset flag
-                    if (document.body.contains(tempInput)) {
-                        document.body.removeChild(tempInput);
-                    }
-                });
-
-                document.body.appendChild(tempInput);
-                tempInput.click();
-
-            } else {
-                // Browser - use original camera modal
-                console.log('Browser detected - using camera modal');
-                cameraTitle.textContent = `Take ${photoType.charAt(0).toUpperCase() + photoType.slice(1)} Photo`;
-                cameraModal.style.display = 'flex';
-                captureBtn.style.display = 'block';
-                retakeBtn.style.display = 'none';
-                cameraVideo.style.display = 'block';
-                cameraCanvas.style.display = 'none';
-
-                // Reset video element
-                cameraVideo.srcObject = null;
-
-                // Start camera with proper error handling
-                startCamera().catch(error => {
-                    console.log('Camera start error handled:', error);
-                    isCameraActive = false; // Reset flag on error
-                    // Don't show error to user, just fall back silently
-                });
+                console.log('WebView mode - using native capture');
+                useFileInputFallback();
+                return;
             }
+
+            // Always show modal first to provide feedback
+            cameraTitle.textContent = `Take ${photoType.charAt(0).toUpperCase() + photoType.slice(1)} Photo`;
+            cameraModal.style.display = 'flex';
+            captureBtn.style.display = 'block';
+            retakeBtn.style.display = 'none';
+            cameraVideo.style.display = 'block';
+            cameraCanvas.style.display = 'none';
+
+            // Reset video
+            cameraVideo.srcObject = null;
+
+            startCamera().catch(err => {
+                console.warn('Camera stream failed, switching to native fallback:', err);
+                useFileInputFallback();
+            });
         }
 
-        // ============================================================
-        // Detect if running in Android WebView
-        // ============================================================
         function isAndroidWebView() {
             const ua = navigator.userAgent.toLowerCase();
-            return ua.indexOf('wv') > -1 ||
-                (ua.indexOf('android') > -1 && ua.indexOf('version') > -1);
+            return ua.indexOf('wv') > -1 || (ua.indexOf('android') > -1 && ua.indexOf('version') > -1);
         }
 
-        // ============================================================
-        // Start camera stream (SUPPRESS INITIAL ERRORS)
-        // ============================================================
         async function startCamera() {
-            try {
-                // Stop any existing stream
-                if (cameraStream) {
-                    cameraStream.getTracks().forEach(track => track.stop());
-                    cameraStream = null;
-                }
-
-                // Get camera access with proper permission handling
-                try {
-                    cameraStream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            facingMode: 'environment', // Use back camera by default
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 }
-                        }
-                    });
-
-                    // Wait for video to be ready before setting srcObject
-                    if (cameraStream) {
-                        cameraVideo.srcObject = cameraStream;
-
-                        // Wait for video to be ready (loadedmetadata event)
-                        await new Promise((resolve, reject) => {
-                            const timeout = setTimeout(() => {
-                                reject(new Error('Camera timeout'));
-                            }, 10000); // 10 second timeout
-
-                            cameraVideo.onloadedmetadata = () => {
-                                clearTimeout(timeout);
-                                resolve();
-                            };
-
-                            cameraVideo.onerror = () => {
-                                clearTimeout(timeout);
-                                reject(new Error('Video error'));
-                            };
-                        });
-
-                        // Ensure video is playing
-                        try {
-                            await cameraVideo.play();
-                        } catch (playError) {
-                            console.log('Auto-play prevented, but video is ready');
-                        }
-
-                        console.log('Camera started successfully');
-                    }
-                } catch (permissionError) {
-                    console.log('Camera permission error:', permissionError.name);
-
-                    // Handle specific permission errors
-                    if (permissionError.name === 'NotAllowedError' || permissionError.name === 'PermissionDeniedError') {
-                        // User denied permission - show friendly message
-                        alert('Camera permission denied. Please allow camera access in your browser settings and try again.');
-                        closeCameraSilently();
-                        return;
-                    } else if (permissionError.name === 'NotFoundError' || permissionError.name === 'DevicesNotFoundError') {
-                        // No camera found
-                        alert('No camera found. Please use gallery upload instead.');
-                        closeCameraSilently();
-                        return;
-                    } else {
-                        // Other errors - fall back to file input
-                        console.log('Falling back to file input');
-                        useFileInputFallback();
-                    }
-                }
-
-            } catch (error) {
-                // Catch any other unexpected errors
-                console.log('Camera error:', error);
-                useFileInputFallback();
-            }
-        }
-
-        // ============================================================
-        // Silent fallback to file input
-        // ============================================================
-        function useFileInputFallback() {
-            // Close camera modal silently
             if (cameraStream) {
                 cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
             }
-            cameraVideo.srcObject = null;
-            cameraModal.style.display = 'none';
-            isCameraActive = false; // Reset flag when falling back to file input
 
-            // Use file input instead
-            const tempInput = document.createElement('input');
-            tempInput.type = 'file';
-            tempInput.accept = 'image/*';
-            tempInput.style.display = 'none';
-
-            tempInput.addEventListener('change', function (e) {
-                if (e.target.files && e.target.files[0]) {
-                    handlePhotoUpload(e, currentPhotoType);
-                }
-                if (document.body.contains(tempInput)) {
-                    document.body.removeChild(tempInput);
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { 
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
                 }
             });
 
-            document.body.appendChild(tempInput);
-            setTimeout(() => {
-                tempInput.click();
-            }, 100);
-        }
-
-        // ============================================================
-        // Capture photo with error handling (SUPPRESS ERRORS)
-        // ============================================================
-        captureBtn.addEventListener('click', function () {
-            try {
-                const context = cameraCanvas.getContext('2d');
-                cameraCanvas.width = cameraVideo.videoWidth;
-                cameraCanvas.height = cameraVideo.videoHeight;
-
-                context.drawImage(cameraVideo, 0, 0, cameraCanvas.width, cameraCanvas.height);
-
-                cameraVideo.style.display = 'none';
-                cameraCanvas.style.display = 'block';
-
-                captureBtn.style.display = 'none';
-                retakeBtn.style.display = 'block';
-            } catch (error) {
-                // SILENTLY handle capture errors
-                console.log('Capture error handled silently');
-                // Fall back to file input
-                useFileInputFallback();
-            }
-        });
-
-        // ============================================================
-        // Close camera with silent error handling
-        // ============================================================
-        closeCameraBtn.addEventListener('click', function () {
-            closeCameraSilently();
-        });
-
-        // ============================================================
-        // Silent close camera function
-        // ============================================================
-        function closeCameraSilently() {
-            try {
-                // If we have a captured image, save it
-                if (cameraCanvas.style.display === 'block') {
-                    const photoData = cameraCanvas.toDataURL('image/jpeg', 0.7);
-                    savePhotoFromCamera(photoData);
-                }
-
-                // Stop camera stream silently
-                if (cameraStream) {
-                    cameraStream.getTracks().forEach(track => track.stop());
-                    cameraStream = null;
-                }
-
-                // Reset video element
-                cameraVideo.srcObject = null;
-
-                // Hide modal
-                cameraModal.style.display = 'none';
-                isCameraActive = false; // Reset flag when camera is closed
-            } catch (error) {
-                // SILENTLY handle any errors during close
-                console.log('Close camera error handled silently');
-                cameraModal.style.display = 'none';
-                isCameraActive = false; // Reset flag even on error
+            if (cameraVideo) {
+                cameraVideo.srcObject = cameraStream;
+                await cameraVideo.play();
             }
         }
 
-        // ============================================================
-        // Retake photo
-        // ============================================================
-        retakeBtn.addEventListener('click', function () {
-            cameraVideo.style.display = 'block';
-            cameraCanvas.style.display = 'none';
-            captureBtn.style.display = 'block';
-            retakeBtn.style.display = 'none';
-        });
-
-        // ============================================================
-        // Save photo captured from camera
-        // ============================================================
-        function savePhotoFromCamera(photoData) {
-            if (currentPhotoType === 'student') {
-                studentPhotoData = photoData;
-                previewStudentImage.src = studentPhotoData;
-                studentPhotoPreview.style.display = 'block';
-                deleteStudentPhotoBtn.style.display = 'inline-block';
-            } else if (currentPhotoType === 'parent') {
-                parentPhotoData = photoData;
-                previewParentImage.src = parentPhotoData;
-                parentPhotoPreview.style.display = 'block';
-                deleteParentPhotoBtn.style.display = 'inline-block';
-            } else if (currentPhotoType === 'authorizedLetter') {
-                authorizedLetterPhotoData = photoData;
-                previewAuthorizedLetterImage.src = authorizedLetterPhotoData;
-                authorizedLetterPhotoPreview.style.display = 'block';
-                deleteAuthorizedLetterPhotoBtn.style.display = 'inline-block';
-            }
-
-            const sizeInKB = Math.round((photoData.length * 3) / 4 / 1024);
-            const typeName = currentPhotoType === 'authorizedLetter' ? 'Authorized Letter' : currentPhotoType.charAt(0).toUpperCase() + currentPhotoType.slice(1);
-            showSuccess(`✅ ${typeName} photo captured & saved (${sizeInKB}KB)!`);
-            setTimeout(() => hideMessages(), 2000);
-        }
-
-        // ============================================================
-        // CAMERA EVENT LISTENERS
-        // ============================================================
-
-        // Close camera with better error handling
-        closeCameraBtn.addEventListener('click', function () {
-            closeCamera();
-        });
-
-        // Capture photo with error handling
-        captureBtn.addEventListener('click', function () {
-            try {
-                const context = cameraCanvas.getContext('2d');
-                cameraCanvas.width = cameraVideo.videoWidth;
-                cameraCanvas.height = cameraVideo.videoHeight;
-
-                context.drawImage(cameraVideo, 0, 0, cameraCanvas.width, cameraCanvas.height);
-
-                cameraVideo.style.display = 'none';
-                cameraCanvas.style.display = 'block';
-
-                captureBtn.style.display = 'none';
-                retakeBtn.style.display = 'block';
-            } catch (error) {
-                console.error('Error capturing photo:', error);
-                showError('Failed to capture photo. Please try again.');
-            }
-        });
-
-        // Retake photo
-        retakeBtn.addEventListener('click', function () {
-            cameraVideo.style.display = 'block';
-            cameraCanvas.style.display = 'none';
-            captureBtn.style.display = 'block';
-            retakeBtn.style.display = 'none';
-        });
-
-        // Function to close camera and save if image is captured
-        function closeCamera() {
-            // If we have a captured image, save it
-            if (cameraCanvas.style.display === 'block') {
-                const photoData = cameraCanvas.toDataURL('image/jpeg', 0.7);
-                savePhotoFromCamera(photoData);
-            }
-
-            // Stop camera stream
+        function useFileInputFallback() {
+            // Close camera modal if open
             if (cameraStream) {
                 cameraStream.getTracks().forEach(track => track.stop());
                 cameraStream = null;
             }
-
-            // Hide modal
             cameraModal.style.display = 'none';
+            isCameraActive = false;
+
+            // Trigger native file picker which works on all mobile devices
+            const tempInput = document.createElement('input');
+            tempInput.type = 'file';
+            tempInput.accept = 'image/*';
+            tempInput.capture = 'environment';
+            tempInput.style.display = 'none';
+
+            tempInput.onchange = (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    handlePhotoUpload(e, currentPhotoType);
+                }
+                if (document.body.contains(tempInput)) document.body.removeChild(tempInput);
+            };
+
+            document.body.appendChild(tempInput);
+            tempInput.click();
         }
 
-        // Save photo captured from camera (duplicate function - keeping for compatibility)
-        function savePhotoFromCamera(photoData) {
-            if (currentPhotoType === 'student') {
-                studentPhotoData = photoData;
-                previewStudentImage.src = studentPhotoData;
-                studentPhotoPreview.style.display = 'block';
-                deleteStudentPhotoBtn.style.display = 'inline-block';
-            } else if (currentPhotoType === 'parent') {
-                parentPhotoData = photoData;
-                previewParentImage.src = parentPhotoData;
-                parentPhotoPreview.style.display = 'block';
-                deleteParentPhotoBtn.style.display = 'inline-block';
-            } else if (currentPhotoType === 'authorizedLetter') {
-                authorizedLetterPhotoData = photoData;
-                previewAuthorizedLetterImage.src = authorizedLetterPhotoData;
-                authorizedLetterPhotoPreview.style.display = 'block';
-                deleteAuthorizedLetterPhotoBtn.style.display = 'inline-block';
+        // --- CAMERA CONTROLS ---
+        captureBtn.onclick = function() {
+            try {
+                const context = cameraCanvas.getContext('2d');
+                cameraCanvas.width = cameraVideo.videoWidth;
+                cameraCanvas.height = cameraVideo.videoHeight;
+                context.drawImage(cameraVideo, 0, 0, cameraCanvas.width, cameraCanvas.height);
+
+                cameraVideo.style.display = 'none';
+                cameraCanvas.style.display = 'block';
+                captureBtn.style.display = 'none';
+                retakeBtn.style.display = 'block';
+            } catch (e) {
+                console.error('Capture fail:', e);
+                useFileInputFallback();
             }
+        };
 
-            const sizeInKB = Math.round((photoData.length * 3) / 4 / 1024);
-            const typeName = currentPhotoType === 'authorizedLetter' ? 'Authorized Letter' : currentPhotoType.charAt(0).toUpperCase() + currentPhotoType.slice(1);
-            showSuccess(`✅ ${typeName} photo captured & saved (${sizeInKB}KB)!`);
-            setTimeout(() => hideMessages(), 2000);
-        }
+        retakeBtn.onclick = function() {
+            cameraVideo.style.display = 'block';
+            cameraCanvas.style.display = 'none';
+            captureBtn.style.display = 'block';
+            retakeBtn.style.display = 'none';
+        };
+
+        closeCameraBtn.onclick = function() {
+            if (cameraCanvas.style.display === 'block') {
+                const photoData = cameraCanvas.toDataURL('image/jpeg', 0.8);
+                const sizeInKB = Math.round((photoData.length * 3) / 4 / 1024);
+                
+                if (currentPhotoType === 'student') {
+                    studentPhotoData = photoData;
+                    previewStudentImage.src = studentPhotoData;
+                    studentPhotoPreview.style.display = 'block';
+                    deleteStudentPhotoBtn.style.display = 'inline-block';
+                } else if (currentPhotoType === 'parent') {
+                    parentPhotoData = photoData;
+                    previewParentImage.src = parentPhotoData;
+                    parentPhotoPreview.style.display = 'block';
+                    deleteParentPhotoBtn.style.display = 'inline-block';
+                } else if (currentPhotoType === 'authorizedLetter') {
+                    authorizedLetterPhotoData = photoData;
+                    previewAuthorizedLetterImage.src = authorizedLetterPhotoData;
+                    authorizedLetterPhotoPreview.style.display = 'block';
+                    deleteAuthorizedLetterPhotoBtn.style.display = 'inline-block';
+                }
+                showSuccess('✅ Photo saved!');
+                setTimeout(() => hideMessages(), 2000);
+            }
+            
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            cameraModal.style.display = 'none';
+            isCameraActive = false;
+        };
+
+
 
         // Form submission - SEND WHATSAPP FIRST, THEN PDF
         form.addEventListener('submit', async (e) => {
@@ -4951,6 +4755,16 @@ For queries, contact hostel office.`;
             }
             e.target.value = value;
         });
+    </script>
+    <script>
+        // Version check - force refresh to ensure latest fixes are loaded
+        const CURRENT_VERSION = '3.2';
+        const SAVED_VERSION = localStorage.getItem('app_version');
+        if (SAVED_VERSION !== CURRENT_VERSION) {
+            console.log('🔄 Version update detected (v' + CURRENT_VERSION + '), clearing cache...');
+            localStorage.setItem('app_version', CURRENT_VERSION);
+            window.location.reload(true);
+        }
     </script>
 </body>
 
