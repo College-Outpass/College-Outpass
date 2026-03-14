@@ -184,9 +184,53 @@ async function authenticateToken(req, res, next) {
 }
 
 
+// Legacy Login Endpoint - Re-enabled as a bridge to Firebase
 app.post('/api/auth/login', async (req, res) => {
-    console.warn('⚠️ Legacy /api/auth/login hit. Frontend should use Firebase SDK.');
-    res.status(410).json({ error: 'Endpoint disabled. Please use direct Firebase authentication.' });
+    const { email, password } = req.body;
+    console.warn(`⚠️ Legacy /api/auth/login hit by ${email}. Proxying to Firebase...`);
+
+    try {
+        // We use the Firebase Auth REST API to verify credentials on the server
+        const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "AIzaSyBFHwulhuw9NlGQi0DWzy9mU47RSO5TUkw";
+        const firebaseRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email,
+                password,
+                returnSecureToken: true
+            })
+        });
+
+        const data = await firebaseRes.json();
+
+        if (!firebaseRes.ok) {
+            console.error('❌ Firebase Auth proxy failed:', data.error);
+            return res.status(401).json({ 
+                error: 'Authentication failed', 
+                details: data.error.message 
+            });
+        }
+
+        // Successfully authenticated via Firebase
+        console.log(`✅ Legacy login successful for ${email}`);
+        
+        // Return a response that looks like the old one
+        res.json({
+            token: data.idToken,
+            refresh_token: data.refreshToken,
+            user: {
+                uid: data.localId,
+                email: data.email,
+                name: data.displayName || data.email.split('@')[0],
+                role: 'staff' // Default role for legacy bridge
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Legacy login error:', error);
+        res.status(500).json({ error: 'Internal server error during authentication bridge' });
+    }
 });
 
 app.patch('/api/users/:uid/password', authenticateToken, async (req, res) => {
