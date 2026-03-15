@@ -2121,11 +2121,12 @@
                             }
 
                             // Save PDF using blob download (silent - no preview)
-                            const filename = `${outpassData.passNumber}_${outpassData.studentName}.pdf`;
+                            // Correct filename pattern: OUTPASS_StudentName_PassID.pdf
+                            const filename = `OUTPASS_${outpassData.studentName}_${outpassData.passNumber}.pdf`;
 
-                            console.log('Saving PDF:', filename);
+                            console.log('Saving PDF using blob:', filename);
 
-                            // Use blob method for silent download (doesn't open in new tab)
+                            // Use blob method for silent download
                             const pdfBlob = pdf.output('blob');
                             const url = URL.createObjectURL(pdfBlob);
 
@@ -2138,10 +2139,12 @@
                             // Add to body, click, and remove
                             document.body.appendChild(downloadLink);
                             downloadLink.click();
-                            document.body.removeChild(downloadLink);
-
-                            // Clean up URL
-                            setTimeout(() => URL.revokeObjectURL(url), 100);
+                            
+                            // Cleanup
+                            setTimeout(() => {
+                                document.body.removeChild(downloadLink);
+                                URL.revokeObjectURL(url);
+                            }, 500);
 
                             console.log('PDF download triggered successfully (silent)');
                             resolve();
@@ -2235,10 +2238,25 @@
 
                             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
 
-                            const filename = `${mediSlipData.mediSlipNumber}_${mediSlipData.studentName}.pdf`;
+                            const filename = `MEDISLIP_${mediSlipData.studentName}_${mediSlipData.mediSlipNumber}.pdf`;
 
-                            console.log('Saving Medi Slip PDF:', filename);
-                            pdf.save(filename);
+                            console.log('Saving Medi Slip PDF using blob:', filename);
+                            
+                            // Use blob method for silent download
+                            const pdfBlob = pdf.output('blob');
+                            const url = URL.createObjectURL(pdfBlob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = filename;
+                            link.style.display = 'none';
+                            document.body.appendChild(link);
+                            link.click();
+                            
+                            // Delayed cleanup for reliability
+                            setTimeout(() => {
+                                document.body.removeChild(link);
+                                URL.revokeObjectURL(url);
+                            }, 500);
 
                             console.log('Medi Slip PDF download triggered successfully');
                             resolve();

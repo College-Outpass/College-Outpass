@@ -685,8 +685,10 @@
                 showMessage('✅ Login authorized. Accessing dashboard...', 'success');
 
                 setTimeout(() => {
-                    // Smart redirect based on administrative level
-                    if (isAdminLevel) {
+                    // Smart redirect based on role
+                    if (role === 'hod') {
+                        window.location.replace('admin-dashboard.html');
+                    } else if (role === 'admin') {
                         window.location.replace('staff-admin-dashboard.html');
                     } else {
                         window.location.replace('dashboard.html');

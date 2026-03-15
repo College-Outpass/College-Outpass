@@ -3714,33 +3714,32 @@
             foundOutpassForReporting = null;
 
             try {
-                // Get all outpasses and filter client-side
-                const allOutpassesQuery = await db.collection('outpasses')
-                    .orderBy('createdAt', 'desc')
-                    .limit(100)
+                // Improved: Query specific student records to find the absolute latest trip
+                const studentOutpassesQuery = await db.collection('outpasses')
+                    .where('studentId', '==', fullStudentId)
                     .get();
 
                 let latestOutpass = null;
                 let latestOutpassId = null;
-                let latestTimestamp = null;
+                let latestTimestamp = -1;
 
-                allOutpassesQuery.forEach(doc => {
+                studentOutpassesQuery.forEach(doc => {
                     const data = doc.data();
-                    if (data.studentId === fullStudentId) {
-                        let timestamp = 0;
-                        if (data.createdAt) {
-                            if (typeof data.createdAt.toMillis === 'function') {
-                                timestamp = data.createdAt.toMillis();
-                            } else {
-                                timestamp = new Date(data.createdAt).getTime();
-                            }
+                    let timestamp = 0;
+                    if (data.createdAt) {
+                        if (typeof data.createdAt.toMillis === 'function') {
+                            timestamp = data.createdAt.toMillis();
+                        } else {
+                            timestamp = new Date(data.createdAt).getTime();
                         }
+                    } else if (data.outDate) {
+                        timestamp = new Date(data.outDate).getTime();
+                    }
 
-                        if (!latestOutpass || timestamp > latestTimestamp) {
-                            latestOutpass = data;
-                            latestOutpassId = doc.id;
-                            latestTimestamp = timestamp;
-                        }
+                    if (!latestOutpass || timestamp > latestTimestamp) {
+                        latestOutpass = data;
+                        latestOutpassId = doc.id;
+                        latestTimestamp = timestamp;
                     }
                 });
 
@@ -3760,11 +3759,14 @@
                 currentReportingOutpassId = latestOutpassId;
                 foundOutpassForReporting = latestOutpass;
 
-                // Update the basic info display (Out Date and Scheduled In Date)
+                // Update the basic info display (Out Date and Scheduled Return)
                 reportingStudentName.textContent = latestOutpass.studentName || '-';
                 reportingSection.textContent = latestOutpass.section || '-';
-                reportingOutDateDisplay.textContent = formatDateForPDF(latestOutpass.outDate) || '-';
-                reportingScheduledInDateDisplay.textContent = formatDateForPDF(latestOutpass.inDate) || '-';
+                
+                // Show outDate and inDate (Scheduled Return)
+                // Use robust formatter to ensure it shows even if string format is slightly off
+                reportingOutDateDisplay.textContent = formatDateForDisplay(latestOutpass.outDate) || '-';
+                reportingScheduledInDateDisplay.textContent = formatDateForDisplay(latestOutpass.inDate) || '-';
 
                 // Check if student has already reported
                 if (latestOutpass.reportedAt) {
@@ -3992,14 +3994,25 @@
             return true;
         }
 
+        // Helper function to format dates for robust display (Fixes "not showing" issue)
+        function formatDateForDisplay(dateString) {
+            if (!dateString || dateString === '-' || dateString === 'N/A') return '-';
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) return dateString; // Return as is if already formatted
+                return date.toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+
         // Helper function to format dates for PDF
         function formatDateForPDF(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
+            return formatDateForDisplay(dateString);
         }
 
         // Helper function to format time for PDF
@@ -4297,11 +4310,25 @@
 
                             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
 
-                            // FIXED: Use the sequential medi slip number in filename
                             const filename = `MEDISLIP_${mediSlipData.studentName}_${mediSlipData.mediSlipNumber}.pdf`;
 
-                            console.log('Saving Medi Slip PDF:', filename);
-                            pdf.save(filename);
+                            console.log('Saving Medi Slip PDF using blob:', filename);
+                            
+                            // Use blob method for better mobile saving
+                            const pdfBlob = pdf.output('blob');
+                            const url = URL.createObjectURL(pdfBlob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = filename;
+                            link.style.display = 'none';
+                            document.body.appendChild(link);
+                            link.click();
+                            
+                            // Delayed cleanup for mobile reliability
+                            setTimeout(() => {
+                                document.body.removeChild(link);
+                                URL.revokeObjectURL(url);
+                            }, 500);
 
                             console.log('Medi Slip PDF download triggered successfully');
                             resolve();

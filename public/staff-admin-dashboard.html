@@ -1190,7 +1190,7 @@
             const storedCampus = localStorage.getItem('userCampus');
             const isPrincipal = localStorage.getItem('isPrincipal');
 
-            if (tidbToken && storedEmail && isPrincipal === 'true') {
+            if (tidbToken && storedEmail && (isPrincipal === 'true' || localStorage.getItem('isHOD') === 'true')) {
                 console.log('✅ TiDB Session found for Principal:', storedEmail);
                 currentUserEmail = storedEmail;
                 currentCampus = storedCampus;
@@ -1214,8 +1214,9 @@
                 
                 currentCampus = localStorage.getItem('userCampus');
                 const isPrincipalStored = localStorage.getItem('isPrincipal');
+                const isHODStored = localStorage.getItem('isHOD');
                 
-                if (!currentCampus || isPrincipalStored !== 'true') {
+                if (!currentCampus || (isPrincipalStored !== 'true' && isHODStored !== 'true')) {
                     window.location.href = 'staff-login.html';
                     return;
                 }
@@ -1241,17 +1242,27 @@
                 <tr>
                     <td colspan="11" class="no-data">
                         <div class="loader"></div>
-                        <p>Loading data for ${currentCampus}...</p>
+                        <p>Loading data for ${currentCampus === 'ALL' ? 'ALL Campuses' : currentCampus}...</p>
                     </td>
                 </tr>
             `;
 
             console.log("🔍 Loading data for campus:", currentCampus);
 
+            // Fetch queries based on campus
+            let outpassQuery = db.collection('outpasses');
+            let mediSlipQuery = db.collection('mediSlips');
+
+            // If not 'ALL', filter by specific campus
+            if (currentCampus !== 'ALL') {
+                outpassQuery = outpassQuery.where('campus', '==', currentCampus);
+                mediSlipQuery = mediSlipQuery.where('campus', '==', currentCampus);
+            }
+
             // Load all data filtered by CAMPUS directly from database
             Promise.all([
-                db.collection('outpasses').where('campus', '==', currentCampus).get(),
-                db.collection('mediSlips').where('campus', '==', currentCampus).get()
+                outpassQuery.get(),
+                mediSlipQuery.get()
             ]).then(([outpassSnapshot, mediSlipSnapshot]) => {
                 const outpasses = [];
                 const mediSlips = [];
@@ -1266,7 +1277,7 @@
                     outpasses.push({
                         id: doc.id,
                         type: 'outpass',
-                        campus: currentCampus,
+                        campus: data.campus || 'UNKNOWN',
                         passNumber: data.passNumber || `OUTPASS-${doc.id.substring(0, 8)}`,
                         studentName: data.studentName || 'N/A',
                         studentId: data.studentId || 'N/A',
@@ -1295,7 +1306,7 @@
                     mediSlips.push({
                         id: doc.id,
                         type: 'mediSlip',
-                        campus: currentCampus,
+                        campus: data.campus || 'UNKNOWN',
                         passNumber: data.mediSlipNumber || `MEDSLIP-${doc.id.substring(0, 8)}`,
                         studentName: data.studentName || 'N/A',
                         studentId: data.studentId || 'N/A',
@@ -1810,8 +1821,23 @@ if (item.type === 'outpass') {
                             
                             const filename = `MEDISLIP_${mediSlipData.studentName}_${mediSlipData.mediSlipNumber}.pdf`;
                             
-                            console.log('Saving Medi Slip PDF:', filename);
-                            pdf.save(filename);
+                            console.log('Saving Medi Slip PDF using blob:', filename);
+                            
+                            // Use blob method for better mobile saving
+                            const pdfBlob = pdf.output('blob');
+                            const url = URL.createObjectURL(pdfBlob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = filename;
+                            link.style.display = 'none';
+                            document.body.appendChild(link);
+                            link.click();
+                            
+                            // Delayed cleanup for mobile reliability
+                            setTimeout(() => {
+                                document.body.removeChild(link);
+                                URL.revokeObjectURL(url);
+                            }, 500);
                             
                             console.log('Medi Slip PDF download triggered successfully');
                             resolve();
