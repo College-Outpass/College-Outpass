@@ -13,7 +13,10 @@ service cloud.firestore {
       return email == 'pucneetboysprincipal@srichaitanyacollege.net' ||
              email == 'ecitypucprincipal2@srichaitanyacollege.net' ||
              email == 'ecitypucprincipal1@srichaitanyacollege.net' ||
-             email == 'electroniccityprincipal@srichaitanyaschool.net';
+             email == 'electroniccityprincipal@srichaitanyaschool.net' ||
+             email == 'srinivasnaidu.m@srichaitanyaschool.net' ||
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
     
     // Students collection - for student data upload and auto-fill
@@ -54,14 +57,14 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && isPrincipal();
     }
     
-    // Settings collection (for counters)
+    // Settings collection (for counters and branding)
     match /settings/{settingId} {
-      allow read: if isAuthenticated();
+      allow read: if settingId == 'logo' || isAuthenticated();
       allow write: if isAuthenticated();
     }
     
-    // Staff users collection
-    match /staffUsers/{userId} {
+    // Users collection (formerly staffUsers)
+    match /users/{userId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && isPrincipal();
     }
@@ -69,7 +72,7 @@ service cloud.firestore {
     // Security collection
     match /security/{securityId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && isPrincipal();
+      allow write: if isAuthenticated();
     }
     
     // Admins collection - for HOD admin access
