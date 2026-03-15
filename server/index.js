@@ -38,10 +38,14 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
 
         console.log(`🔑 Key check: ${serviceAccount.private_key ? serviceAccount.private_key.substring(0, 30) : 'MISSING'}`);
 
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
-        });
-        console.log('🔥 Firebase Admin initialized from ENV');
+        if (admin.apps.length === 0) {
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+            });
+            console.log('🔥 Firebase Admin initialized from ENV');
+        } else {
+            console.log('✅ Firebase Admin already initialized');
+        }
     } catch (e) {
         console.error('❌ Failed to initialize Firebase Admin from ENV:', e.message);
     }
@@ -75,8 +79,9 @@ app.use((req, res, next) => {
 app.get('/diag/logs', (req, res) => res.send(`<pre>${logs.join('\n')}</pre>`));
 app.get('/', (req, res) => res.json({ 
     service: 'Outpass API', 
-    version: '3.0', 
+    version: '3.1', 
     mode: 'Pure-TiDB', 
+    firebase: admin.apps.length > 0 ? 'Initialized' : 'Failed',
     status: 'Online',
     time: new Date().toISOString()
 }));
