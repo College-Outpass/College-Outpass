@@ -603,21 +603,21 @@
 
                 // Step 2: Fetch user metadata from Firestore
                 console.log('Fetching user profile from Firestore...');
-                const userDoc = await db.collection('users').doc(user.uid).get();
-                
+                let userDoc = await db.collection('users').doc(user.uid).get();
                 let userData;
+
                 if (userDoc.exists) {
                     userData = userDoc.data();
                 } else {
-                    // Fallback search by email if UID doesn't match
-                    const userQuery = await db.collection('users').where('email', '==', email).get();
-                    if (!userQuery.empty) {
-                        userData = userQuery.docs[0].data();
+                    // Try admins collection if not in users
+                    const adminDoc = await db.collection('admins').doc(user.uid).get();
+                    if (adminDoc.exists) {
+                        userData = adminDoc.data();
                     }
                 }
 
                 if (!userData) {
-                    throw new Error('User profile not found in Firebase records. Please contact Admin.');
+                    throw new Error('User profile not found in Firebase. Please contact Admin.');
                 }
 
                 // Verify campus matches (unless it's an admin with ALL access)
@@ -631,8 +631,9 @@
                 localStorage.clear();
                 localStorage.setItem('userCampus', userData.campus || campus);
                 localStorage.setItem('userEmail', userData.email);
-                localStorage.setItem('lastDashboard', 'staff');
-                localStorage.setItem('isPrincipal', userData.role === 'admin' ? 'true' : 'false');
+                const isAdmin = userData.role === 'admin';
+                localStorage.setItem('lastDashboard', isAdmin ? 'admin' : 'staff');
+                localStorage.setItem('isPrincipal', isAdmin ? 'true' : 'false');
                 
                 // Get ID Token for backend bridge if needed
                 const idToken = await user.getIdToken();
@@ -641,7 +642,12 @@
                 showMessage('✅ Login successful! Redirecting...', 'success');
 
                 setTimeout(() => {
-                    window.location.replace('dashboard.html');
+                    // Smart redirect based on role
+                    if (isAdmin) {
+                        window.location.replace('staff-admin-dashboard.html');
+                    } else {
+                        window.location.replace('dashboard.html');
+                    }
                 }, 1000);
 
             } catch (error) {
@@ -685,12 +691,21 @@
                 console.log('✅ Firebase Admin Auth successful!');
 
                 // Step 2: Check roles in sequence
-                // 1. Check HOD (admins collection)
-                const adminDoc = await db.collection('admins').doc(user.uid).get();
-                let isAdmin = adminDoc.exists;
-                let userData = isAdmin ? adminDoc.data() : null;
+                // 1. Check users collection first (for Bulk created Principals)
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                let isAdmin = userDoc.exists && userDoc.data().role === 'admin';
+                let userData = isAdmin ? userDoc.data() : null;
 
-                // 2. Check Principal emails (settings collection)
+                // 2. Check HOD (admins collection)
+                if (!isAdmin) {
+                    const adminDoc = await db.collection('admins').doc(user.uid).get();
+                    if (adminDoc.exists) {
+                        isAdmin = true;
+                        userData = adminDoc.data();
+                    }
+                }
+
+                // 3. Check Principal emails (settings collection)
                 if (!isAdmin) {
                     const settingsDoc = await db.collection('settings').doc('emails').get();
                     if (settingsDoc.exists) {
@@ -701,7 +716,7 @@
                         }
                     }
                 }
-
+                
                 if (!isAdmin) {
                     throw new Error('This account does not have Principal/Admin access rights in Firebase.');
                 }
