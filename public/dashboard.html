@@ -4107,7 +4107,7 @@
 
                     setTimeout(() => {
                         html2canvas(pdfTemplate, {
-                            scale: 4, // High Definition scale
+                            scale: 2, // Balanced scale for mobile stability
                             useCORS: true,
                             allowTaint: false,
                             logging: true,
@@ -4163,7 +4163,7 @@
 
                                 // Capture authorized letter page
                                 const authorizedLetterCanvas = await html2canvas(authorizedLetterTemplate, {
-                                    scale: 4, // High Definition scale
+                                    scale: 2, // Balanced scale for mobile stability
                                     useCORS: true,
                                     allowTaint: false,
                                     logging: false,
@@ -4269,7 +4269,7 @@
 
                     setTimeout(() => {
                         html2canvas(pdfTemplate, {
-                            scale: 4, // High Definition scale
+                            scale: 2, // Balanced scale for mobile stability
                             useCORS: true,
                             allowTaint: true,
                             logging: false,

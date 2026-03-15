@@ -1806,7 +1806,7 @@ if (item.type === 'outpass') {
 
                     setTimeout(() => {
                         html2canvas(pdfTemplate, {
-                            scale: 4, // High Definition
+                            scale: 2, // Balanced scale for mobile stability
                             useCORS: true,
                             allowTaint: true,
                             logging: false,
@@ -1928,7 +1928,7 @@ if (item.type === 'outpass') {
 
                     setTimeout(() => {
                         html2canvas(pdfTemplate, {
-                            scale: 4, // High Definition
+                            scale: 2, // Balanced scale for mobile stability
                             useCORS: true,
                             allowTaint: false,
                             logging: false,
@@ -1987,7 +1987,7 @@ if (item.type === 'outpass') {
                                 
                                 // Capture authorized letter page
                                 const authorizedLetterCanvas = await html2canvas(authorizedLetterTemplate, {
-                                    scale: 4, // High Definition
+                                    scale: 2, // Balanced scale for mobile stability
                                     useCORS: true,
                                     allowTaint: false,
                                     logging: false,
