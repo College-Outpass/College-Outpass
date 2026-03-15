@@ -634,15 +634,14 @@
                 console.log('Authenticating Admin with Firebase...');
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
-                console.log('✅ Firebase Admin Auth successful!');
+                console.log('✅ Admin Authentication successful!');
 
                 // Step 2: Verify role in Firestore HOD collection
                 const adminDoc = await db.collection('admins').doc(user.uid).get();
                 if (!adminDoc.exists && email !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
-                     throw new Error('HOD profile not found in Firebase. Please contact support.');
+                     throw new Error('Access profile not found. Please contact the administrator.');
                 }
 
-                // TiDB LOGIN SUCCESS (Firebase equivalent)
                 localStorage.clear();
                 localStorage.setItem('userCampus', 'ALL');
                 localStorage.setItem('userEmail', email);
@@ -659,21 +658,16 @@
                     role: 'admin'
                 }));
 
-                // Success message
-                showMessage('✅ Login successful! Redirecting...', 'success');
+                showMessage('✅ Login authorized. Accessing dashboard...', 'success');
 
-                // Redirect to dashboard
                 setTimeout(() => {
                     window.location.href = 'admin-dashboard.html';
                 }, 1000);
 
             } catch (error) {
                 console.error('Login error:', error);
-                let errorMsg = error.message;
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    errorMsg = 'Invalid admin email or password';
-                }
-                showMessage('❌ ' + errorMsg, 'error');
+                const professionalMsg = getProfessionalErrorMessage(error);
+                showMessage('❌ ' + professionalMsg, 'error');
             } finally {
                 loginText.style.display = 'flex';
                 loginLoader.style.display = 'none';
@@ -742,10 +736,9 @@
                 // Update password
                 await auth.currentUser.updatePassword(newPassword);
 
-                console.log('✅ Password changed successfully');
+                console.log('✅ Password updated successfully');
 
-                // Success message
-                showModalMessage('✅ Password changed successfully! Please login again with your new password.', 'success');
+                showModalMessage('✅ Your password has been updated successfully. Please sign in again.', 'success');
 
                 // Clear form
                 document.getElementById('changePasswordForm').reset();
@@ -753,7 +746,6 @@
                 // Close modal after 3 seconds
                 setTimeout(() => {
                     closeChangePasswordModal();
-                    // Optionally sign out and redirect to login
                     auth.signOut().then(() => {
                         window.location.href = 'admin-login.html';
                     });
@@ -761,15 +753,8 @@
 
             } catch (error) {
                 console.error('Change password error:', error);
-
-                let errorMessage = 'Failed to change password. Please check your current password.';
-                if (error.code === 'auth/weak-password') {
-                    errorMessage = 'New password is too weak. Please use a stronger password.';
-                } else if (error.code === 'auth/requires-recent-login') {
-                    errorMessage = 'Please login again to change your password.';
-                }
-
-                showModalMessage('❌ ' + errorMessage, 'error');
+                const professionalMsg = getProfessionalErrorMessage(error);
+                showModalMessage('❌ ' + professionalMsg, 'error');
             } finally {
                 // Reset button
                 changePwdText.style.display = 'flex';
@@ -798,6 +783,33 @@
             if (event.target == modal) {
                 closeChangePasswordModal();
             }
+        };
+
+        // Helper to translate technical errors to professional messages
+        function getProfessionalErrorMessage(error) {
+            const code = error.code;
+            const message = error.message;
+
+            if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-login-credentials') {
+                return "Incorrect email or password. Please try again.";
+            } else if (code === 'auth/too-many-requests') {
+                return "Account access is temporarily restricted due to multiple failed attempts. Please try again later.";
+            } else if (code === 'auth/network-request-failed') {
+                return "Unable to connect. Please check your internet connection.";
+            } else if (code === 'auth/user-disabled') {
+                return "This administrator account has been disabled. Please contact the system owner.";
+            } else if (code === 'auth/weak-password') {
+                return "The new password is too weak. Please choose a more secure password.";
+            } else if (code === 'auth/requires-recent-login') {
+                return "For security reasons, please sign out and sign back in before changing your password.";
+            }
+
+            // Fallback for non-Firebase errors
+            if (message && message.includes('profile not found')) {
+                return "Your access profile could not be found. Please notify the administration.";
+            }
+
+            return "An unexpected error occurred. Please try again or contact support if the issue persists.";
         }
 
         // Show message

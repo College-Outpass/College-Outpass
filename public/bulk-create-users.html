@@ -49,8 +49,9 @@
             <div class="form-group">
                 <label>Account Role</label>
                 <select id="role" onchange="updateFields()">
-                    <option value="staff">Staff / HOD</option>
-                    <option value="admin">Principal / Admin</option>
+                    <option value="staff">Staff</option>
+                    <option value="hod">HOD</option>
+                    <option value="admin">Principal (Admin)</option>
                     <option value="security">Security Personnel</option>
                 </select>
             </div>
@@ -138,6 +139,15 @@
                 hint.textContent = "name,email,campus,password";
                 document.getElementById('csvData').placeholder = "John Doe,john@edu,ECITY_SCHOOL,Outpass@123";
             }
+
+            // Campus override hint for HOD
+            const campusSelect = document.getElementById('campus');
+            if (role === 'hod') {
+                addLog('ℹ️ Note: HOD role automatically grants access to ALL campuses.');
+                campusSelect.style.opacity = '0.5';
+            } else {
+                campusSelect.style.opacity = '1';
+            }
         }
 
         document.getElementById('uForm').onsubmit = async (e) => {
@@ -191,11 +201,17 @@
                 const res = await fetch(`${API_URL}/users`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password, campus, role })
+                    body: JSON.stringify({ 
+                        name, 
+                        email, 
+                        password, 
+                        campus: (role === 'hod') ? 'ALL' : campus, 
+                        role 
+                    })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Account creation failed');
-                addLog(`✅ Account: "${name}" (${role}) Created`);
+                addLog(`✅ Account: "${name}" (${role}) Created${role === 'hod' ? ' [ALL Campuses]' : ''}`);
             }
             document.getElementById('uForm').reset();
             updateFields();
@@ -231,7 +247,13 @@
                         const res = await fetch(`${API_URL}/users`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ name, email, password, campus, role })
+                            body: JSON.stringify({ 
+                                name, 
+                                email, 
+                                password, 
+                                campus: (role === 'hod') ? 'ALL' : campus, 
+                                role 
+                            })
                         });
                         if (res.ok) success++;
                         else console.error('Failed line:', line);

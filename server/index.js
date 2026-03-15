@@ -102,15 +102,17 @@ async function authenticateToken(req, res, next) {
 
                 const adminDoc = await db.collection('admins').doc(decodedToken.uid).get();
                 if (adminDoc.exists) {
-                    role = 'admin';
-                    campus = adminDoc.data().campus || 'ALL';
-                    name = adminDoc.data().name || name;
+                    userData = adminDoc.data();
+                    role = userData.role || 'admin';
+                    campus = userData.campus || 'ALL';
+                    name = userData.name || name;
                 } else {
                     const userDoc = await db.collection('users').doc(decodedToken.uid).get();
                     if (userDoc.exists) {
-                        role = userDoc.data().role || 'staff';
-                        campus = userDoc.data().campus || 'ALL';
-                        name = userDoc.data().name || name;
+                        userData = userDoc.data();
+                        role = userData.role || 'staff';
+                        campus = userData.campus || 'ALL';
+                        name = userData.name || name;
                     }
                 }
 
@@ -167,7 +169,7 @@ app.post('/api/users', async (req, res) => {
         const userData = { uid: fbUser.uid, email: emailLower, name: name || null, campus, role: role || 'staff', updatedAt: admin.firestore.FieldValue.serverTimestamp() };
         
         await db.collection('users').doc(fbUser.uid).set(userData);
-        if (role === 'admin') await db.collection('admins').doc(fbUser.uid).set(userData);
+        if (role === 'admin' || role === 'hod') await db.collection('admins').doc(fbUser.uid).set(userData);
 
         res.json({ success: true, uid: fbUser.uid });
     } catch (err) {

@@ -570,6 +570,41 @@
 
             document.getElementById('loginForm').addEventListener('submit', handleStaffLogin);
             document.getElementById('adminPortalBtn').addEventListener('click', handleAdminLogin);
+            
+            // DYNAMIC BUTTON FILTERING BASED ON EMAIL
+            const emailField = document.getElementById('email');
+            emailField.addEventListener('input', function() {
+                const email = this.value.trim().toLowerCase();
+                const loginBtn = document.getElementById('loginBtn');
+                const adminPortalBtn = document.getElementById('adminPortalBtn');
+                const mainPortalBtn = document.getElementById('mainPortalBtn');
+                const divider = document.querySelector('.portal-divider');
+                
+                // Reset visibility
+                loginBtn.style.display = 'flex';
+                adminPortalBtn.style.display = 'flex';
+                mainPortalBtn.style.display = 'flex';
+                if (divider) divider.style.display = 'flex';
+
+                if (!email) return; // Show all if empty
+
+                if (email.includes('principal')) {
+                    // It's a Principal ID
+                    loginBtn.style.display = 'none';
+                    mainPortalBtn.style.display = 'none';
+                    if (divider) divider.style.display = 'none';
+                } else if (email.includes('hod')) {
+                    // It's an HOD ID
+                    loginBtn.style.display = 'none';
+                    adminPortalBtn.style.display = 'none';
+                } else {
+                    // Likely a standard Staff ID
+                    adminPortalBtn.style.display = 'none';
+                    mainPortalBtn.style.display = 'none';
+                    if (divider) divider.style.display = 'none';
+                }
+            });
+
             document.getElementById('campus').focus();
         });
 
@@ -631,19 +666,27 @@
                 localStorage.clear();
                 localStorage.setItem('userCampus', userData.campus || campus);
                 localStorage.setItem('userEmail', userData.email);
-                const isAdmin = userData.role === 'admin';
-                localStorage.setItem('lastDashboard', isAdmin ? 'admin' : 'staff');
-                localStorage.setItem('isPrincipal', isAdmin ? 'true' : 'false');
+                
+                const role = userData.role || 'staff';
+                localStorage.setItem('userRole', role);
+                localStorage.setItem('isHOD', role === 'hod' ? 'true' : 'false');
+                
+                // Determine portal type (Admin-level vs Staff-level)
+                const isAdminLevel = (role === 'admin' || role === 'hod');
+                const isPrincipal = (role === 'admin');
+                
+                localStorage.setItem('lastDashboard', isAdminLevel ? 'admin' : 'staff');
+                localStorage.setItem('isPrincipal', isPrincipal ? 'true' : 'false');
                 
                 // Get ID Token for backend bridge if needed
                 const idToken = await user.getIdToken();
                 localStorage.setItem('tidb_token', idToken);
 
-                showMessage('✅ Login successful! Redirecting...', 'success');
+                showMessage('✅ Login authorized. Accessing dashboard...', 'success');
 
                 setTimeout(() => {
-                    // Smart redirect based on role
-                    if (isAdmin) {
+                    // Smart redirect based on administrative level
+                    if (isAdminLevel) {
                         window.location.replace('staff-admin-dashboard.html');
                     } else {
                         window.location.replace('dashboard.html');
@@ -652,11 +695,8 @@
 
             } catch (error) {
                 console.error('Login error:', error);
-                let errorMsg = error.message;
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    errorMsg = 'Invalid email or password';
-                }
-                showMessage('❌ ' + errorMsg, 'error');
+                const professionalMsg = getProfessionalErrorMessage(error);
+                showMessage('❌ ' + professionalMsg, 'error');
                 loginText.style.display = 'inline';
                 loginLoader.style.display = 'none';
                 document.getElementById('loginBtn').disabled = false;
@@ -731,7 +771,7 @@
                 const idToken = await user.getIdToken();
                 localStorage.setItem('tidb_token', idToken);
 
-                showMessage('✅ Admin login successful!', 'success');
+                showMessage('✅ Authentication successful! Redirecting...', 'success');
 
                 setTimeout(() => {
                     window.location.replace('staff-admin-dashboard.html');
@@ -739,15 +779,35 @@
 
             } catch (error) {
                 console.error('Admin login error:', error);
-                let errorMsg = error.message;
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    errorMsg = 'Invalid admin email or password';
-                }
-                showMessage('❌ ' + errorMsg, 'error');
+                const professionalMsg = getProfessionalErrorMessage(error);
+                showMessage('❌ ' + professionalMsg, 'error');
                 adminBtn.innerHTML = originalBtnContent;
                 adminBtn.disabled = false;
                 isLoggingIn = false;
             }
+        }
+
+        // Helper to translate technical errors to professional messages
+        function getProfessionalErrorMessage(error) {
+            const code = error.code;
+            const message = error.message;
+
+            if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-login-credentials') {
+                return "Incorrect email or password. Please try again.";
+            } else if (code === 'auth/too-many-requests') {
+                return "Account access is temporarily restricted due to multiple failed attempts. Please try again later.";
+            } else if (code === 'auth/network-request-failed') {
+                return "Unable to connect. Please check your internet connection.";
+            } else if (code === 'auth/user-disabled') {
+                return "This account has been disabled. Please contact the system administrator.";
+            }
+
+            // Fallback for non-Firebase errors
+            if (message && (message.includes('profile not found') || message.includes('access rights'))) {
+                return "Your access profile could not be found or you lack required permissions. Please notify the administration.";
+            }
+
+            return "An unexpected error occurred. Please try again or contact support if the issue persists.";
         }
 
         function showMessage(message, type) {
