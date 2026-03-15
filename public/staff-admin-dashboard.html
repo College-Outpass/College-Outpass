@@ -1836,7 +1836,15 @@ if (item.type === 'outpass') {
                             const filename = `MEDISLIP_${sanitizedStudentName}_${mediSlipData.mediSlipNumber}.pdf`;
                             
                             console.log('Saving Medi Slip PDF:', filename);
+                            
+                            // TRICK: Set document title for APK filename support
+                            const originalTitle = document.title;
+                            document.title = filename.replace('.pdf', '');
+                            
                             pdf.save(filename);
+                            
+                            // Restore title
+                            setTimeout(() => { document.title = originalTitle; }, 1000);
                             
                             console.log('Medi Slip PDF download triggered successfully');
                             resolve();
@@ -2013,7 +2021,15 @@ if (item.type === 'outpass') {
                             const filename = `OUTPASS_${sanitizedName}_${outpassData.passNumber}.pdf`;
                             
                             console.log('Saving PDF:', filename);
+                            
+                            // TRICK: Set document title for APK filename support
+                            const originalTitle = document.title;
+                            document.title = filename.replace('.pdf', '');
+                            
                             pdf.save(filename);
+                            
+                            // Restore title
+                            setTimeout(() => { document.title = originalTitle; }, 1000);
                             
                             console.log('PDF download triggered successfully');
                             resolve();

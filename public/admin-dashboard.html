@@ -2138,12 +2138,20 @@
                                 console.log('Authorized Letter page added successfully');
                             }
 
-                            // Save PDF using original save method for reliable mobile download
+                            // Save PDF using original safe method
                             const sanitizedName = outpassData.studentName.replace(/[^a-z0-9]/gi, '_');
                             const filename = `OUTPASS_${sanitizedName}_${outpassData.passNumber}.pdf`;
 
                             console.log('Saving PDF:', filename);
+                            
+                            // TRICK: Set document title for APK filename support
+                            const originalTitle = document.title;
+                            document.title = filename.replace('.pdf', '');
+                            
                             pdf.save(filename);
+                            
+                            // Restore title
+                            setTimeout(() => { document.title = originalTitle; }, 1000);
 
                             console.log('PDF download triggered successfully');
                             resolve();
@@ -2242,7 +2250,15 @@
                             const filename = `MEDISLIP_${sanitizedStudentName}_${mediSlipData.mediSlipNumber}.pdf`;
 
                             console.log('Saving Medi Slip PDF:', filename);
+                            
+                            // TRICK: Set document title for APK filename support
+                            const originalTitle = document.title;
+                            document.title = filename.replace('.pdf', '');
+                            
                             pdf.save(filename);
+                            
+                            // Restore title
+                            setTimeout(() => { document.title = originalTitle; }, 1000);
 
                             console.log('Medi Slip PDF download triggered successfully');
                             resolve();
