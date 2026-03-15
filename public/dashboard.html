@@ -1967,9 +1967,20 @@
                             </div>
                             <div class="reporting-info">
                                 <div class="reporting-label">Out Date</div>
-                                <div class="reporting-value" id="reportingOutDate">-</div>
+                                <div class="reporting-value" id="reportingOutDateDisplay">-</div>
+                            </div>
+                            <div class="reporting-info">
+                                <div class="reporting-label">Scheduled Return</div>
+                                <div class="reporting-value" id="reportingScheduledInDateDisplay">-</div>
                             </div>
                         </div>
+                    </div>
+
+                    <div id="alreadyReportedContainer" style="display: none; margin-bottom: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 8px; color: #856404;">
+                        <p style="margin-bottom: 10px; font-weight: bold;">⚠️ This student record was already updated.</p>
+                        <button type="button" id="editReportedBtn" class="upload-btn" style="background-color: #ffc107; color: #212529; border: none;">
+                            ✏️ Edit This Record Instead
+                        </button>
                     </div>
 
                     <!-- ONLY CHANGE: Made In Date editable -->
@@ -2610,6 +2621,9 @@
             }
         }
 
+        // Global for reporting status
+        let currentReportingOutpassId = null;
+
         // Variable to store original WhatsApp number when data is loaded
         let originalWhatsappNumber = null;
 
@@ -2819,7 +2833,6 @@
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', async () => {
-                if (!confirm('Are you sure you want to logout?')) return;
                 
                 try {
                     console.log('Logging out...');
@@ -2913,10 +2926,13 @@
         const reportingStudentId = document.getElementById('reportingStudentId');
         const reportingStudentName = document.getElementById('reportingStudentName');
         const reportingSection = document.getElementById('reportingSection');
-        const reportingOutDate = document.getElementById('reportingOutDate');
+        const reportingOutDateDisplay = document.getElementById('reportingOutDateDisplay');
+        const reportingScheduledInDateDisplay = document.getElementById('reportingScheduledInDateDisplay');
         const reportingInDate = document.getElementById('reportingInDate');
         const reportingTime = document.getElementById('reportingTime');
         const setCurrentTimeBtn = document.getElementById('setCurrentTimeBtn');
+        const editReportedBtn = document.getElementById('editReportedBtn');
+        const alreadyReportedContainer = document.getElementById('alreadyReportedContainer');
         const searchStudentBtn = document.getElementById('searchStudentBtn');
         const saveReportingBtn = document.getElementById('saveReportingBtn');
         const saveReportingText = document.getElementById('saveReportingText');
@@ -3060,8 +3076,14 @@
             // Reset reporting info
             reportingStudentName.textContent = '-';
             reportingSection.textContent = '-';
-            reportingOutDate.textContent = '-';
-            reportingInDate.textContent = '-';
+            reportingOutDateDisplay.textContent = '-';
+            reportingScheduledInDateDisplay.textContent = '-';
+            
+            // Reset state
+            alreadyReportedContainer.style.display = 'none';
+            saveReportingText.textContent = "Save Reporting Time";
+            currentReportingOutpassId = null;
+            foundOutpassForReporting = null;
 
             document.getElementById('reportingStudentId').focus();
         });
@@ -3670,6 +3692,9 @@
             }
         });
 
+        // Global to store latest found outpass for editing
+        let foundOutpassForReporting = null;
+
         // Search student functionality
         searchStudentBtn.addEventListener('click', async function () {
             // Get full student ID with SCS prefix
@@ -3684,6 +3709,9 @@
             searchStudentBtn.disabled = true;
             searchStudentBtn.textContent = '🔍 Searching...';
             hideMessages();
+            alreadyReportedContainer.style.display = 'none';
+            currentReportingOutpassId = null;
+            foundOutpassForReporting = null;
 
             try {
                 // Get all outpasses and filter client-side
@@ -3693,12 +3721,12 @@
                     .get();
 
                 let latestOutpass = null;
+                let latestOutpassId = null;
                 let latestTimestamp = null;
 
                 allOutpassesQuery.forEach(doc => {
                     const data = doc.data();
                     if (data.studentId === fullStudentId) {
-                        // Handle both Firestore Timestamp and TiDB string/ISO date
                         let timestamp = 0;
                         if (data.createdAt) {
                             if (typeof data.createdAt.toMillis === 'function') {
@@ -3710,6 +3738,7 @@
 
                         if (!latestOutpass || timestamp > latestTimestamp) {
                             latestOutpass = data;
+                            latestOutpassId = doc.id;
                             latestTimestamp = timestamp;
                         }
                     }
@@ -3718,80 +3747,49 @@
                 if (!latestOutpass) {
                     reportingStudentName.textContent = '-';
                     reportingSection.textContent = '-';
-                    reportingOutDate.textContent = '-';
-                    reportingInDate.textContent = '-';
+                    reportingOutDateDisplay.textContent = '-';
+                    reportingScheduledInDateDisplay.textContent = '-';
                     document.getElementById('reportingInDate').value = '';
-                    showReportingStatusError('No outpass found for this student ID');
+                    showReportingStatusError('No outpass record found for this student ID');
                     searchStudentBtn.disabled = false;
                     searchStudentBtn.textContent = '🔍 Search Student';
                     return;
                 }
+
+                // Store for potential editing
+                currentReportingOutpassId = latestOutpassId;
+                foundOutpassForReporting = latestOutpass;
+
+                // Update the basic info display (Out Date and Scheduled In Date)
+                reportingStudentName.textContent = latestOutpass.studentName || '-';
+                reportingSection.textContent = latestOutpass.section || '-';
+                reportingOutDateDisplay.textContent = formatDateForPDF(latestOutpass.outDate) || '-';
+                reportingScheduledInDateDisplay.textContent = formatDateForPDF(latestOutpass.inDate) || '-';
 
                 // Check if student has already reported
                 if (latestOutpass.reportedAt) {
-                    // Student has already reported
+                    alreadyReportedContainer.style.display = 'block';
+                    
                     let reportedDate;
-                    if (latestOutpass.reportedAt.toDate) {
-                        // Firestore timestamp
-                        reportedDate = latestOutpass.reportedAt.toDate();
-                    } else if (latestOutpass.reportedAt.seconds) {
-                        // Firestore timestamp (seconds)
-                        reportedDate = new Date(latestOutpass.reportedAt.seconds * 1000);
-                    } else {
-                        // Regular date
-                        reportedDate = new Date(latestOutpass.reportedAt);
-                    }
+                    if (latestOutpass.reportedAt.toDate) reportedDate = latestOutpass.reportedAt.toDate();
+                    else if (latestOutpass.reportedAt.seconds) reportedDate = new Date(latestOutpass.reportedAt.seconds * 1000);
+                    else reportedDate = new Date(latestOutpass.reportedAt);
 
-                    const reportedDateStr = reportedDate.toLocaleDateString('en-IN', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                    });
+                    const reportedDateStr = reportedDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    
+                    let reportedTimeStr = latestOutpass.reportingTime || reportedDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-                    // Get reporting time - prefer stored reportingTime, otherwise use reportedAt time
-                    let reportedTimeStr;
-                    if (latestOutpass.reportingTime) {
-                        // Format the stored time
-                        const [hours, minutes] = latestOutpass.reportingTime.split(':');
-                        const hour = parseInt(hours);
-                        const ampm = hour >= 12 ? 'PM' : 'AM';
-                        const displayHour = hour % 12 || 12;
-                        reportedTimeStr = `${displayHour}:${minutes} ${ampm}`;
-                    } else {
-                        // Use time from reportedAt timestamp
-                        reportedTimeStr = reportedDate.toLocaleTimeString('en-IN', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: true
-                        });
-                    }
-
-                    // Clear form fields
-                    reportingStudentName.textContent = '-';
-                    reportingSection.textContent = '-';
-                    reportingOutDate.textContent = '-';
-                    reportingInDate.textContent = '-';
+                    showReportingStatusError(`ℹ️ Note: This record was already updated on ${reportedDateStr} at ${reportedTimeStr}.`);
+                    
+                    // Clear the input fields so user must click edit to change
                     document.getElementById('reportingInDate').value = '';
-                    document.getElementById('reportingTime').value = '';
-
-                    // Show message that student has already reported
-                    showReportingStatusError(`⚠️ This student has already reported!<br><strong>Reported Date:</strong> ${reportedDateStr}<br><strong>Reported Time:</strong> ${reportedTimeStr}`);
-                    searchStudentBtn.disabled = false;
-                    searchStudentBtn.textContent = '🔍 Search Student';
-                    return;
+                    reportingTime.value = '';
+                } else {
+                    // Not reported yet - populate for new entry
+                    document.getElementById('reportingInDate').value = latestOutpass.inDate || '';
+                    showReportingStatusSuccess('✅ Student record found. Please enter the return time.');
                 }
 
-                // Student hasn't reported yet, proceed with fetching details
-                // Update the form with student information
-                reportingStudentName.textContent = latestOutpass.studentName || '-';
-                reportingSection.textContent = latestOutpass.section || '-';
-                reportingOutDate.textContent = formatDateForPDF(latestOutpass.outDate) || '-';
-                reportingInDate.textContent = formatDateForPDF(latestOutpass.inDate) || '-';
-
-                // Set the In Date from the outpass data, but allow editing
-                document.getElementById('reportingInDate').value = latestOutpass.inDate || '';
-
-                showReportingStatusSuccess('✅ Student information loaded successfully! You can modify the In Date if needed.');
                 searchStudentBtn.disabled = false;
                 searchStudentBtn.textContent = '🔍 Search Student';
 
@@ -3801,6 +3799,20 @@
                 searchStudentBtn.disabled = false;
                 searchStudentBtn.textContent = '🔍 Search Student';
             }
+        });
+
+        // Edit already reported record logic
+        editReportedBtn.addEventListener('click', function() {
+            if (!foundOutpassForReporting) return;
+            
+            // Populate fields with original reported data
+            document.getElementById('reportingInDate').value = foundOutpassForReporting.inDate || '';
+            reportingTime.value = foundOutpassForReporting.reportingTime || '';
+            
+            alreadyReportedContainer.style.display = 'none';
+            showReportingStatusSuccess('📝 You are now editing an existing report. Update the fields and save.');
+            
+            saveReportingText.textContent = "Update Reporting Record";
         });
 
         // Also allow Enter key to trigger search
@@ -3836,50 +3848,20 @@
                 const reportingTimeValue = reportingTime.value;
                 const reportingInDateValue = document.getElementById('reportingInDate').value;
 
-                // Get all outpasses and find the latest one for this student
-                const allOutpassesQuery = await db.collection('outpasses')
-                    .orderBy('createdAt', 'desc')
-                    .limit(100)
-                    .get();
-
-                let latestOutpass = null;
-                let latestOutpassId = null;
-                let latestTimestamp = null;
-
-                allOutpassesQuery.forEach(doc => {
-                    const data = doc.data();
-                    if (data.studentId === fullStudentId) {
-                        // Handle both Firestore Timestamp and TiDB string/ISO date
-                        let timestamp = 0;
-                        if (data.createdAt) {
-                            if (typeof data.createdAt.toMillis === 'function') {
-                                timestamp = data.createdAt.toMillis();
-                            } else {
-                                timestamp = new Date(data.createdAt).getTime();
-                            }
-                        }
-
-                        if (!latestOutpass || timestamp > latestTimestamp) {
-                            latestOutpass = data;
-                            latestOutpassId = doc.id;
-                            latestTimestamp = timestamp;
-                        }
-                    }
-                });
-
-                if (!latestOutpass) {
-                    throw new Error('No outpass found for this student ID');
+                if (!currentReportingOutpassId) {
+                    throw new Error('Please search for a student record first.');
                 }
 
                 // Update the outpass with reporting time and modified in date
-                await db.collection('outpasses').doc(latestOutpassId).update({
+                await db.collection('outpasses').doc(currentReportingOutpassId).update({
                     reportingTime: reportingTimeValue,
                     inDate: reportingInDateValue, // Update the in date with the modified value
                     reportedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     reportedBy: user.email
                 });
 
-                showReportingStatusSuccess('✅ Reporting time and In Date saved successfully!');
+                showReportingStatusSuccess('✅ Reporting record updated successfully!');
+                saveReportingText.textContent = "Save Reporting Time";
                 saveReportingText.style.display = 'inline';
                 saveReportingLoader.style.display = 'none';
                 saveReportingBtn.disabled = false;
@@ -4190,7 +4172,7 @@
                             }
 
                             // Save PDF using blob download (silent - no preview)
-                            const filename = `${outpassData.passNumber}_${outpassData.studentName}.pdf`;
+                            const filename = `OUTPASS_${outpassData.studentName}_${outpassData.passNumber}.pdf`;
 
                             console.log('Saving PDF:', filename);
 
@@ -4316,7 +4298,7 @@
                             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
 
                             // FIXED: Use the sequential medi slip number in filename
-                            const filename = `${mediSlipData.mediSlipNumber}_${mediSlipData.studentName}.pdf`;
+                            const filename = `MEDISLIP_${mediSlipData.studentName}_${mediSlipData.mediSlipNumber}.pdf`;
 
                             console.log('Saving Medi Slip PDF:', filename);
                             pdf.save(filename);

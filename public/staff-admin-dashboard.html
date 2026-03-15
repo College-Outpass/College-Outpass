@@ -1808,7 +1808,7 @@ if (item.type === 'outpass') {
                             
                             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
                             
-                            const filename = `${mediSlipData.mediSlipNumber}_${mediSlipData.studentName}.pdf`;
+                            const filename = `MEDISLIP_${mediSlipData.studentName}_${mediSlipData.mediSlipNumber}.pdf`;
                             
                             console.log('Saving Medi Slip PDF:', filename);
                             pdf.save(filename);
@@ -1984,7 +1984,7 @@ if (item.type === 'outpass') {
                             }
                             
                             // Save PDF using blob download (silent - no preview)
-                            const filename = `${outpassData.passNumber}_${outpassData.studentName}.pdf`;
+                            const filename = `OUTPASS_${outpassData.studentName}_${outpassData.passNumber}.pdf`;
                             
                             console.log('Saving PDF:', filename);
                             
