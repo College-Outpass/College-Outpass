@@ -4310,11 +4310,28 @@
 
                             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
 
-                            // FIXED: Use the sequential medi slip number in filename
+                            // Save Medi Slip PDF using blob download (silent - no preview)
                             const filename = `${mediSlipData.mediSlipNumber}_${mediSlipData.studentName}.pdf`;
 
                             console.log('Saving Medi Slip PDF:', filename);
-                            pdf.save(filename);
+                            
+                            // Use blob method for silent download
+                            const pdfBlob = pdf.output('blob');
+                            const url = URL.createObjectURL(pdfBlob);
+
+                            // Create download link
+                            const downloadLink = document.createElement('a');
+                            downloadLink.href = url;
+                            downloadLink.download = filename;
+                            downloadLink.style.display = 'none';
+
+                            // Add to body, click, and remove
+                            document.body.appendChild(downloadLink);
+                            downloadLink.click();
+                            document.body.removeChild(downloadLink);
+
+                            // Clean up URL
+                            setTimeout(() => URL.revokeObjectURL(url), 100);
 
                             console.log('Medi Slip PDF download triggered successfully');
                             resolve();

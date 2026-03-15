@@ -1236,7 +1236,7 @@
             const e = email.toLowerCase();
             if (e.includes('school')) return 'ECITY_SCHOOL';
             if (e.includes('boys')) return 'ECITY_NEET_BOYS';
-            if (e.includes('girls') && e.includes('residential') && !e.includes('engg')) return 'ECITY_GIRLS_RESIDENTIAL';
+            if (e.includes('ecitygirls') || (e.includes('girls') && e.includes('residential') && !e.includes('engg'))) return 'ECITY_GIRLS_RESIDENTIAL';
             if (e.includes('engg') && e.includes('girls')) return 'ECITY_ENGG_GIRLS_RESIDENTIAL';
             return 'ECITY_SCHOOL'; // Default fallback
         }
@@ -1831,11 +1831,28 @@ if (item.type === 'outpass') {
                             
                             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
                             
-                            // FIXED: Use the sequential medi slip number in filename
+                            // Save Medi Slip PDF using blob download (silent - no preview)
                             const filename = `${mediSlipData.mediSlipNumber}_${mediSlipData.studentName}.pdf`;
                             
                             console.log('Saving Medi Slip PDF:', filename);
-                            pdf.save(filename);
+                            
+                            // Use blob method for silent download
+                            const pdfBlob = pdf.output('blob');
+                            const url = URL.createObjectURL(pdfBlob);
+                            
+                            // Create download link
+                            const downloadLink = document.createElement('a');
+                            downloadLink.href = url;
+                            downloadLink.download = filename;
+                            downloadLink.style.display = 'none';
+                            
+                            // Add to body, click, and remove
+                            document.body.appendChild(downloadLink);
+                            downloadLink.click();
+                            document.body.removeChild(downloadLink);
+                            
+                            // Clean up URL
+                            setTimeout(() => URL.revokeObjectURL(url), 100);
                             
                             console.log('Medi Slip PDF download triggered successfully');
                             resolve();
