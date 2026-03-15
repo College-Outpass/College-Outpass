@@ -147,11 +147,17 @@ async function initDb() {
             )
         `);
 
-        // Migration for security table
+        // Migration for security table (Fixed Split Commands)
         const [secCols] = await connection.query("SHOW COLUMNS FROM security");
         const existingSecCols = secCols.map(c => c.Field);
-        if (!existingSecCols.includes('uid')) await connection.query("ALTER TABLE security ADD COLUMN uid VARCHAR(128) AFTER id, ADD UNIQUE(uid)");
-        if (!existingSecCols.includes('email')) await connection.query("ALTER TABLE security ADD COLUMN email VARCHAR(255) AFTER uid, ADD UNIQUE(email)");
+        if (!existingSecCols.includes('uid')) {
+            await connection.query("ALTER TABLE security ADD COLUMN uid VARCHAR(128) AFTER id");
+            await connection.query("ALTER TABLE security ADD UNIQUE(uid)");
+        }
+        if (!existingSecCols.includes('email')) {
+            await connection.query("ALTER TABLE security ADD COLUMN email VARCHAR(255) AFTER uid");
+            await connection.query("ALTER TABLE security ADD UNIQUE(email)");
+        }
 
         // Insert default admin if not exists
         const [users] = await connection.query("SELECT * FROM users WHERE email = 'admin@college.com' OR email = 'srinivasnaidu.m@srichaitanyaschool.net'");

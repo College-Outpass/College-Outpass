@@ -46,16 +46,24 @@ function initializeFirebase() {
                 let key = serviceAccount.private_key;
                 key = key.replace(/\\n/g, '\n').replace(/\\n/g, '\n');
                 
-                // PEM Reformation (More robust)
-                let cleanKey = key.replace(/\\n/g, '\n').replace(/\n/g, ' ');
-                // Extract just the base64 part if it's already a PEM
-                const base64Body = (cleanKey.match(/-----BEGIN PRIVATE KEY-----([\s\S]+?)-----END PRIVATE KEY-----/) || [null, cleanKey])[1].replace(/\s/g, '');
+                // PEM Reformation (ULTRA-ROBUST v3.7)
+                // 1. Remove escaped newlines and real newlines
+                let rawKey = key.replace(/\\n/g, '').replace(/\n/g, '').trim();
                 
+                // 2. Extract base64 content between headers (if they exist)
+                // or just remove them if they were part of the mess
+                let base64 = rawKey
+                    .replace('-----BEGIN PRIVATE KEY-----', '')
+                    .replace('-----END PRIVATE KEY-----', '')
+                    .replace(/\s/g, '');
+                
+                // 3. Reconstruct mathematically perfect PEM format
                 let formatted = '';
-                for (let i = 0; i < base64Body.length; i += 64) {
-                    formatted += base64Body.substring(i, i + 64) + '\n';
+                for (let i = 0; i < base64.length; i += 64) {
+                    formatted += base64.substring(i, i + 64) + '\n';
                 }
                 serviceAccount.private_key = `-----BEGIN PRIVATE KEY-----\n${formatted}-----END PRIVATE KEY-----\n`;
+                console.log('💎 Firebase: Private key successfully reconstructed and cleaned.');
             }
 
             admin.initializeApp({
@@ -99,7 +107,7 @@ app.get('/diag/logs', (req, res) => res.send(`<pre>${logs.join('\n')}</pre>`));
 app.get('/', (req, res) => {
     res.json({ 
         service: 'Outpass API', 
-        version: '3.6', 
+        version: '3.7', 
         mode: 'Pure-TiDB', 
         firebase: admin.apps.length > 0 ? 'Initialized' : 'Failed',
         status: 'Online',
@@ -109,7 +117,7 @@ app.get('/', (req, res) => {
 
 app.get('/hello', (req, res) => {
     const fbCount = admin.apps.length;
-    res.send(`<h1>API Version 3.6</h1><p>Firebase Status: ${fbCount > 0 ? 'READY' : 'ERROR'}</p><p>Last Error: ${firebaseInitError || 'None'}</p>`);
+    res.send(`<h1>API Version 3.7</h1><p>Firebase Status: ${fbCount > 0 ? 'READY' : 'ERROR'}</p><p>Last Error: ${firebaseInitError || 'None'}</p>`);
 });
 const publicPath = path.join(__dirname, '../public');
 
