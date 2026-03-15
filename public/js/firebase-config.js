@@ -7,7 +7,18 @@ const API_URL = (window.location.hostname === 'localhost' || window.location.hos
   ? 'http://localhost:5000/api'
   : `${RENDER_URL}/api`;
 
-console.log("🚀 TiDB Bridge Initializing...");
+console.log("🚀 TiDB Bridge Initializing (v4.3)...");
+
+// Diagnostics helper
+window.getBridgeStatus = () => {
+  return {
+    apiUrl: API_URL,
+    hostname: window.location.hostname,
+    authStatus: firebase.auth().currentUser ? 'LoggedIn' : 'LoggedOut',
+    tidbToken: !!(localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token')),
+    campus: localStorage.getItem('userCampus')
+  };
+};
 
 // 1. SETUP REAL FIREBASE (If not already done)
 const fbConfig = {

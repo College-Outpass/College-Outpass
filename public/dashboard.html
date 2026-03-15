@@ -11,7 +11,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Issue Outpass - Sri Chaitanya</title>
+    <title>Issue Outpass - Sri Chaitanya v4.5</title>
     <style>
         * {
             margin: 0;
@@ -1581,6 +1581,7 @@
                 <h2>Sri Chaitanya Educational Institutions - Student Portal</h2>
             </div>
             <div class="nav-right">
+                <button onclick="alert(JSON.stringify(window.getBridgeStatus(), null, 2))" style="background:none; border:1px solid rgba(255,255,255,0.3); color:white; border-radius:50%; width:30px; height:30px; cursor:pointer;" title="Diagnostics">🛠️</button>
                 <span id="userEmail" class="user-email">Loading...</span>
                 <button id="logoutBtn" class="btn-secondary">Logout</button>
             </div>
@@ -2563,32 +2564,15 @@
                 
                 if (!campusId) return { error: 'NO_CAMPUS', message: 'Campus session lost. Please re-login.' };
 
-                // 2. TRY FIRESTORE FIRST (Real Firebase)
-                const firestore = firebase.firestore();
-                console.log(`🔍 Searching Firestore for ${prefixedId} or ${rawId}...`);
-                
-                let studentDoc = await firestore.collection('students').doc(prefixedId).get();
-                if (!studentDoc.exists) {
-                    studentDoc = await firestore.collection('students').doc(rawId).get();
-                }
-
-                if (studentDoc.exists) {
-                    const data = studentDoc.data();
-                    if (data.campus === campusId || !data.campus) {
-                        console.log("✅ Student found in Firestore");
-                        return data;
-                    }
-                }
-
-                // 3. FALLBACK TO TiDB (Via Proxy)
-                console.log("⚠️ Not in Firestore, checking TiDB...");
+                // 1. TRY TiDB FIRST (As per user request - Primary data source)
+                console.log(`🔍 Searching TiDB for ${prefixedId} or ${rawId}...`);
                 try {
                     let tidbDoc = await window.db.collection('students').doc(prefixedId).get();
-                    if (!tidbDoc.exists) {
+                    if (!tidbDoc || !tidbDoc.exists) {
                         tidbDoc = await window.db.collection('students').doc(rawId).get();
                     }
 
-                    if (tidbDoc.exists) {
+                    if (tidbDoc && tidbDoc.exists) {
                         const data = tidbDoc.data();
                         const normalizedData = {
                             studentId: data.id || data.studentId,
@@ -2600,11 +2584,28 @@
                             campus: data.campus
                         };
                         
-                        console.log("✅ Student found in TiDB");
+                        console.log("✅ Student found in TiDB:", normalizedData.studentName);
                         return normalizedData;
+                    } else {
+                        console.log("❌ Student found in TiDB structure but .exists is false or data missing");
                     }
                 } catch (tidbErr) {
                     console.error('TiDB fetch failed:', tidbErr);
+                }
+
+                // 2. FALLBACK TO FIRESTORE (Legacy)
+                const firestore = firebase.firestore();
+                console.log(`🔍 Checking Firestore fallback for ${prefixedId}...`);
+                
+                let studentDoc = await firestore.collection('students').doc(prefixedId).get();
+                if (!studentDoc.exists) {
+                    studentDoc = await firestore.collection('students').doc(rawId).get();
+                }
+
+                if (studentDoc.exists) {
+                    const data = studentDoc.data();
+                    console.log("✅ Student found in Firestore fallback");
+                    return data;
                 }
 
                 return {
@@ -2823,27 +2824,33 @@
         }
 
         // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
-            try {
-                if (!confirm('Are you sure you want to logout?')) return;
-                
-                console.log('Logging out...');
-                await auth.signOut();
-                
-                // Clear all storage
-                localStorage.removeItem('userEmail');
-                localStorage.removeItem('userCampus');
-                localStorage.removeItem('tidb_token');
-                localStorage.removeItem('isPrincipal');
-                sessionStorage.clear();
-                
-                console.log('User logged out successfully');
-                window.location.href = 'staff-login.html';
-            } catch (error) {
-                console.error('Logout error:', error);
-                alert('Error logging out. Please try again.');
-            }
-        });
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async () => {
+                try {
+                    if (!confirm('Are you sure you want to logout?')) return;
+                    
+                    console.log('Logging out...');
+                    sessionStorage.setItem('explicitLogout', 'true');
+                    
+                    // Clear all storage
+                    localStorage.removeItem('userEmail');
+                    localStorage.removeItem('userCampus');
+                    localStorage.removeItem('tidb_token');
+                    localStorage.removeItem('isPrincipal');
+                    sessionStorage.clear();
+                    
+                    try { await auth.signOut(); } catch (e) { console.warn("Firebase signout skipped:", e); }
+                    
+                    console.log('User logged out successfully');
+                    window.location.replace('staff-login.html');
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    alert('Error during logout. Forcing redirect...');
+                    window.location.replace('staff-login.html');
+                }
+            });
+        }
 
         // Dashboard selection functionality
         document.getElementById('outpassOption').addEventListener('click', function () {
@@ -3480,9 +3487,17 @@
         // Capture photo with error handling
         captureBtn.addEventListener('click', function () {
             try {
+                if (cameraVideo.readyState < 2) {
+                    showError('Please wait for camera to load...');
+                    return;
+                }
+                
                 const context = cameraCanvas.getContext('2d');
-                cameraCanvas.width = cameraVideo.videoWidth;
-                cameraCanvas.height = cameraVideo.videoHeight;
+                // Use actual video dimensions
+                cameraCanvas.width = cameraVideo.videoWidth || 640;
+                cameraCanvas.height = cameraVideo.videoHeight || 480;
+                
+                console.log(`📸 Capturing: ${cameraCanvas.width}x${cameraCanvas.height}`);
 
                 context.drawImage(cameraVideo, 0, 0, cameraCanvas.width, cameraCanvas.height);
 
@@ -3493,7 +3508,7 @@
                 retakeBtn.style.display = 'block';
             } catch (error) {
                 console.error('Error capturing photo:', error);
-                showError('Failed to capture photo. Please try again.');
+                showError('Failed to capture photo: ' + error.message);
             }
         });
 
@@ -4916,6 +4931,8 @@ For queries, contact hostel office.`;
             }
             e.target.value = value;
         });
+        // Initial Check
+        console.log("Dashboard Loaded. Bridge Status:", window.getBridgeStatus ? window.getBridgeStatus() : "Bridge helper missing");
     </script>
 </body>
 
