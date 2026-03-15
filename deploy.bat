@@ -138,7 +138,7 @@ echo SUCCESS: Updates processed!
 echo ==============================================
 echo.
 echo Firebase Web: https://college-out-pass-system-62552.web.app
-echo Render API: https://college-outpass-api.onrender.com/hello
+echo Render API: https://college-outpass-api.onrender.com/
 echo.
 echo ==============================================
 
