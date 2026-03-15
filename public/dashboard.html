@@ -11,7 +11,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Issue Outpass - Sri Chaitanya v4.5</title>
+    <title>Issue Outpass - Sri Chaitanya (Firebase Mode)</title>
     <style>
         * {
             margin: 0;
@@ -427,7 +427,7 @@
             }
         }
 
-        /* ==================== ENHANCED CAMERA MODAL ==================== */
+        /* ==================== MODERN MOBILE CAMERA (V5.1) ==================== */
         .camera-modal {
             display: none;
             position: fixed;
@@ -435,148 +435,164 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-        }
-
-        .camera-container {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            width: 100%;
-            max-width: 500px;
-            max-height: 90vh;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            overflow-y: auto;
-            position: relative;
-        }
-
-        .camera-preview {
-            width: 100%;
-            max-width: 400px;
-            height: 400px;
             background: #000;
-            margin: 0 auto 15px;
-            border-radius: 10px;
-            overflow: hidden;
-            display: flex;
+            z-index: 99999;
+            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            border: 2px solid #ddd;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
         }
 
-        .camera-preview video,
-        .camera-preview canvas {
+        .camera-overlay-header {
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            z-index: 10;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+        }
+
+        .camera-overlay-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .camera-preview-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            object-position: center center;
-        }
-
-        .camera-controls {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-
-        .capture-btn,
-        .retake-btn,
-        .close-camera-btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            min-height: 44px;
+            overflow: hidden;
+            background: #000;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
         }
 
-        .capture-btn {
+        .camera-preview-wrapper video,
+        .camera-preview-wrapper canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .camera-overlay-footer {
+            width: 100%;
+            padding: 30px 20px 50px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 10;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+        }
+
+        .capture-circle-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: white;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            transition: transform 0.2s, background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .capture-circle-btn:active {
+            transform: scale(0.9);
+            background: #e0e0e0;
+        }
+
+        .capture-inner-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #000;
+        }
+
+        .camera-icon-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            transition: background 0.2s;
+        }
+
+        .camera-icon-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .retake-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding-bottom: 50px;
+            z-index: 20;
+        }
+
+        .camera-action-btn {
+            padding: 15px 35px;
+            border-radius: 30px;
+            border: none;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            text-transform: uppercase;
+            min-width: 150px;
+        }
+
+        .camera-save-btn {
             background: #28a745;
             color: white;
         }
 
-        .capture-btn:hover {
-            background: #218838;
+        .camera-retake-btn {
+            background: white;
+            color: #333;
         }
 
-        .retake-btn {
-            background: #ffc107;
-            color: #212529;
-        }
-
-        .retake-btn:hover {
-            background: #e0a800;
-        }
-
-        .close-camera-btn {
-            background: #6c757d;
-            color: white;
-        }
-
-        .close-camera-btn:hover {
-            background: #5a6268;
-        }
-
-        /* Better mobile support */
-        @media (max-width: 768px) {
+        /* Responsive Desktop */
+        @media (min-width: 1025px) {
             .camera-modal {
-                padding: 5px;
+                background: rgba(0,0,0,0.9);
             }
-
-            .camera-container {
-                padding: 15px;
-                max-height: 95vh;
-                margin: 10px;
-            }
-
-            .camera-preview {
-                height: 300px;
-                max-width: 100%;
-            }
-
-            .camera-controls {
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .capture-btn,
-            .retake-btn,
-            .close-camera-btn {
-                width: 100%;
-                padding: 14px;
+            .camera-preview-wrapper {
+                max-width: 500px;
+                max-height: 80vh;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                border-radius: 20px;
+                border: 4px solid #333;
             }
         }
-
-        /* Tablet and desktop mode on mobile */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .camera-preview {
-                height: 350px;
-            }
-        }
-
-        /* Very small screens */
-        @media (max-height: 600px) {
-            .camera-preview {
-                height: 250px;
-            }
-
-            .camera-container {
-                padding: 10px;
-            }
-        }
-
-        /* ==================== PDF TEMPLATE STYLES ==================== */
 
         #pdfTemplate {
             display: none;
@@ -1581,7 +1597,6 @@
                 <h2>Sri Chaitanya Educational Institutions - Student Portal</h2>
             </div>
             <div class="nav-right">
-                <button onclick="alert(JSON.stringify(window.getBridgeStatus(), null, 2))" style="background:none; border:1px solid rgba(255,255,255,0.3); color:white; border-radius:50%; width:30px; height:30px; cursor:pointer;" title="Diagnostics">🛠️</button>
                 <span id="userEmail" class="user-email">Loading...</span>
                 <button id="logoutBtn" class="btn-secondary">Logout</button>
             </div>
@@ -2236,19 +2251,32 @@
         </div>
     </div>
 
-    <!-- Camera Modal -->
+    <!-- Modern Full-Screen Camera Modal -->
     <div id="cameraModal" class="camera-modal">
-        <div class="camera-container">
-            <h3 id="cameraTitle">Take Student Photo</h3>
-            <div class="camera-preview">
-                <video id="cameraVideo" autoplay playsinline></video>
-                <canvas id="cameraCanvas" style="display: none;"></canvas>
+        <div class="camera-overlay-header">
+            <h3 id="cameraTitle">Capture Photo</h3>
+            <button id="closeCameraBtn" class="camera-icon-btn">✕</button>
+        </div>
+
+        <div class="camera-preview-wrapper">
+            <video id="cameraVideo" autoplay playsinline muted></video>
+            <canvas id="cameraCanvas" style="display: none;"></canvas>
+        </div>
+
+        <!-- Retake Overlay -->
+        <div id="retakeOverlay" class="retake-overlay">
+            <div style="text-align: center; width: 100%;">
+                <button id="retakeBtn" class="camera-action-btn camera-retake-btn">🔄 Retake</button>
+                <button id="savePhotoBtn" class="camera-action-btn camera-save-btn">✅ Save Photo</button>
             </div>
-            <div class="camera-controls">
-                <button id="captureBtn" class="capture-btn">📸 Capture Photo</button>
-                <button id="retakeBtn" class="retake-btn" style="display: none;">🔄 Retake</button>
-                <button id="closeCameraBtn" class="close-camera-btn">❌ Close Camera</button>
-            </div>
+        </div>
+
+        <div class="camera-overlay-footer" id="cameraFooter">
+            <div style="width: 50px;"></div> <!-- Spacer -->
+            <button id="captureBtn" class="capture-circle-btn">
+                <div class="capture-inner-circle"></div>
+            </button>
+            <button id="switchCameraBtn" class="camera-icon-btn" title="Switch Camera">🔄</button>
         </div>
     </div>
 
@@ -2389,22 +2417,19 @@
         const tidbToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
         const storedEmail = localStorage.getItem('userEmail');
 
-        if (tidbToken && storedEmail) {
-            console.log('✅ TiDB Session found for Staff:', storedEmail);
-            initializeDashboardWithUser({ email: storedEmail });
-        } else {
-            // Fallback to Firebase for older sessions
-            auth.onAuthStateChanged((user) => {
-                if (isCameraActive) return;
-                if (!user) {
-                    if (!window.location.href.includes('staff-login.html') && !authStateInitialized) {
-                        window.location.href = 'staff-login.html';
-                    }
-                    return;
+        auth.onAuthStateChanged((user) => {
+            if (isCameraActive) return;
+            if (!user) {
+                // If there's an explicit logout, don't auto-redirect (prevents loops)
+                if (sessionStorage.getItem('explicitLogout') === 'true') return;
+
+                if (!window.location.href.includes('staff-login.html')) {
+                    window.location.href = 'staff-login.html';
                 }
-                initializeDashboardWithUser(user);
-            });
-        }
+                return;
+            }
+            initializeDashboardWithUser(user);
+        });
 
         function initializeDashboardWithUser(user) {
             if (authStateInitialized && user.email === document.getElementById('userEmail').textContent) return;
@@ -2550,71 +2575,38 @@
 
         // ==================== STUDENT DATA AUTO-FILL FUNCTIONS ====================
 
-        // Function to fetch student data from Firestore (campus-specific)
+        // Function to fetch student data from Firestore (ONLY)
         async function fetchStudentData(studentId) {
             try {
                 if (!studentId) return { error: 'MISSING_ID', message: 'Enter Student ID' };
                 
-                // 1. Prepare ID variations (raw and with SCS prefix)
                 const rawId = studentId.replace(/SCS/gi, '').trim();
                 const prefixedId = 'SCS' + rawId;
                 
-                const userEmail = localStorage.getItem('userEmail');
-                const campusId = localStorage.getItem('userCampus');
+                const db = firebase.firestore();
+                console.log(`🔍 Searching Firestore for ${prefixedId} or ${rawId}...`);
                 
-                if (!campusId) return { error: 'NO_CAMPUS', message: 'Campus session lost. Please re-login.' };
-
-                // 1. TRY TiDB FIRST (As per user request - Primary data source)
-                console.log(`🔍 Searching TiDB for ${prefixedId} or ${rawId}...`);
-                try {
-                    let tidbDoc = await window.db.collection('students').doc(prefixedId).get();
-                    if (!tidbDoc || !tidbDoc.exists) {
-                        tidbDoc = await window.db.collection('students').doc(rawId).get();
-                    }
-
-                    if (tidbDoc && tidbDoc.exists) {
-                        const data = tidbDoc.data();
-                        const normalizedData = {
-                            studentId: data.id || data.studentId,
-                            studentName: data.studentName || data.name,
-                            category: data.category,
-                            section: data.section,
-                            fatherName: data.fatherName || data.father_name,
-                            whatsappNumber: data.whatsappNumber || data.whatsapp_number,
-                            campus: data.campus
-                        };
-                        
-                        console.log("✅ Student found in TiDB:", normalizedData.studentName);
-                        return normalizedData;
-                    } else {
-                        console.log("❌ Student found in TiDB structure but .exists is false or data missing");
-                    }
-                } catch (tidbErr) {
-                    console.error('TiDB fetch failed:', tidbErr);
-                }
-
-                // 2. FALLBACK TO FIRESTORE (Legacy)
-                const firestore = firebase.firestore();
-                console.log(`🔍 Checking Firestore fallback for ${prefixedId}...`);
+                // Try prefixed ID first
+                let studentDoc = await db.collection('students').doc(prefixedId).get();
                 
-                let studentDoc = await firestore.collection('students').doc(prefixedId).get();
+                // Try raw ID if prefixed fails
                 if (!studentDoc.exists) {
-                    studentDoc = await firestore.collection('students').doc(rawId).get();
+                    studentDoc = await db.collection('students').doc(rawId).get();
                 }
 
                 if (studentDoc.exists) {
                     const data = studentDoc.data();
-                    console.log("✅ Student found in Firestore fallback");
+                    console.log("✅ Student found in Firestore");
                     return data;
                 }
 
                 return {
                     error: 'MISSING_ID',
-                    message: 'Student ID not found in either Firestore or TiDB for this campus.'
+                    message: 'Student ID not found in database. Please check and try again.'
                 };
             } catch (error) {
                 console.error('Error fetching student data:', error);
-                return { error: 'FETCH_ERROR', message: 'Error connecting to student database (v4.1).' };
+                return { error: 'FETCH_ERROR', message: 'Error connecting to database.' };
             }
         }
 
@@ -2823,31 +2815,29 @@
             }
         }
 
-        // Logout functionality
+        // Standard Firebase Logout
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', async () => {
+                if (!confirm('Are you sure you want to logout?')) return;
+                
                 try {
-                    if (!confirm('Are you sure you want to logout?')) return;
-                    
                     console.log('Logging out...');
                     sessionStorage.setItem('explicitLogout', 'true');
                     
-                    // Clear all storage
-                    localStorage.removeItem('userEmail');
-                    localStorage.removeItem('userCampus');
-                    localStorage.removeItem('tidb_token');
-                    localStorage.removeItem('isPrincipal');
+                    // Clear all storage immediately
+                    localStorage.clear();
                     sessionStorage.clear();
                     
-                    try { await auth.signOut(); } catch (e) { console.warn("Firebase signout skipped:", e); }
+                    // Sign out from Firebase
+                    await auth.signOut();
                     
-                    console.log('User logged out successfully');
-                    window.location.replace('staff-login.html');
+                    console.log('Logout successful');
+                    window.location.href = 'staff-login.html';
                 } catch (error) {
                     console.error('Logout error:', error);
-                    alert('Error during logout. Forcing redirect...');
-                    window.location.replace('staff-login.html');
+                    // Force redirect anyway
+                    window.location.href = 'staff-login.html';
                 }
             });
         }
@@ -3199,258 +3189,121 @@
         });
 
         // ============================================================
-        // IMPROVED CAMERA FUNCTIONALITY - WORKS ON BOTH MOBILE & DESKTOP
+        // Upgraded Camera System (v5.2) - Unified Logic
         // ============================================================
-
-        // ============================================================
-        // IMPROVED: Camera detection that works in all modes
-        // ============================================================
-        // ============================================================
-        // SIMPLIFIED CAMERA FUNCTIONALITY - WORKS ON BOTH MOBILE & DESKTOP
-        // ============================================================
-
-        // ============================================================
-        // CAMERA FUNCTIONALITY - WORKS ON BOTH MOBILE & DESKTOP (NO ERROR MESSAGE)
-        // ============================================================
+        let currentFacingMode = 'environment';
+        const switchCameraBtn = document.getElementById('switchCameraBtn');
+        const savePhotoBtn = document.getElementById('savePhotoBtn');
+        const retakeOverlay = document.getElementById('retakeOverlay');
+        const cameraFooter = document.getElementById('cameraFooter');
 
         function openCamera(photoType) {
             currentPhotoType = photoType;
             isCameraActive = true;
+            currentFacingMode = 'environment'; 
 
-            // Prefer getUserMedia if available (HTTPS)
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                console.log('Using Browser Camera Modal');
-                cameraTitle.textContent = `Take ${photoType.charAt(0).toUpperCase() + photoType.slice(1)} Photo`;
-                cameraModal.style.display = 'flex';
-                captureBtn.style.display = 'block';
-                retakeBtn.style.display = 'none';
-                cameraVideo.style.display = 'block';
-                cameraCanvas.style.display = 'none';
-                cameraVideo.srcObject = null;
+            cameraTitle.textContent = `Capture ${photoType.charAt(0).toUpperCase() + photoType.slice(1)}`;
+            cameraModal.style.display = 'flex';
+            
+            // UI Reset
+            cameraVideo.style.display = 'block';
+            cameraCanvas.style.display = 'none';
+            retakeOverlay.style.display = 'none';
+            cameraFooter.style.display = 'flex';
 
-                startCamera().catch(error => {
-                    console.error('Camera Modal failed:', error);
-                    useFileInputFallback(photoType);
-                });
-            } else {
-                console.log('Browser Camera not supported, using file input fallback');
-                useFileInputFallback(photoType);
-            }
-        }
-
-        function useFileInputFallback(photoType) {
-            const tempInput = document.createElement('input');
-            tempInput.type = 'file';
-            tempInput.accept = 'image/*';
-            tempInput.capture = 'environment';
-            tempInput.style.display = 'none';
-
-            tempInput.addEventListener('change', function (e) {
-                if (e.target.files && e.target.files[0]) {
-                    handlePhotoUpload(e, photoType);
-                }
-                isCameraActive = false;
+            startCamera(currentFacingMode).catch(err => {
+                console.error('Camera startup failed:', err);
+                useFileInputFallback();
             });
-            tempInput.click();
         }
 
-        // ============================================================
-        // Detect if running in Android WebView
-        // ============================================================
-        function isAndroidWebView() {
-            const ua = navigator.userAgent.toLowerCase();
-            return ua.indexOf('wv') > -1 ||
-                (ua.indexOf('android') > -1 && ua.indexOf('version') > -1);
-        }
-
-        // ============================================================
-        // Start camera stream (SUPPRESS INITIAL ERRORS)
-        // ============================================================
-        async function startCamera() {
+        async function startCamera(facingMode) {
             try {
-                // Stop any existing stream
                 if (cameraStream) {
                     cameraStream.getTracks().forEach(track => track.stop());
-                    cameraStream = null;
                 }
 
-                // Get camera access with proper permission handling
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: facingMode,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+
+                cameraVideo.srcObject = cameraStream;
+                await cameraVideo.play();
+                console.log(`Camera started: ${facingMode}`);
+            } catch (err) {
+                console.warn("Retrying with simple constraints:", err.name);
                 try {
                     cameraStream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            facingMode: 'environment', // Use back camera by default
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 }
-                        }
+                        video: { facingMode: facingMode }
                     });
-
-                    // Wait for video to be ready before setting srcObject
-                    if (cameraStream) {
-                        cameraVideo.srcObject = cameraStream;
-
-                        // Wait for video to be ready (loadedmetadata event)
-                        await new Promise((resolve, reject) => {
-                            const timeout = setTimeout(() => {
-                                reject(new Error('Camera timeout'));
-                            }, 10000); // 10 second timeout
-
-                            cameraVideo.onloadedmetadata = () => {
-                                clearTimeout(timeout);
-                                resolve();
-                            };
-
-                            cameraVideo.onerror = () => {
-                                clearTimeout(timeout);
-                                reject(new Error('Video error'));
-                            };
-                        });
-
-                        // Ensure video is playing
-                        try {
-                            await cameraVideo.play();
-                        } catch (playError) {
-                            console.log('Auto-play prevented, but video is ready');
-                        }
-
-                        console.log('Camera started successfully');
-                    }
-                } catch (permissionError) {
-                    console.log('Camera permission error:', permissionError.name);
-
-                    // Handle specific permission errors
-                    if (permissionError.name === 'NotAllowedError' || permissionError.name === 'PermissionDeniedError') {
-                        // User denied permission - show friendly message
-                        alert('Camera permission denied. Please allow camera access in your browser settings and try again.');
-                        closeCameraSilently();
-                        return;
-                    } else if (permissionError.name === 'NotFoundError' || permissionError.name === 'DevicesNotFoundError') {
-                        // No camera found
-                        alert('No camera found. Please use gallery upload instead.');
-                        closeCameraSilently();
-                        return;
-                    } else {
-                        // Other errors - fall back to file input
-                        console.log('Falling back to file input');
-                        useFileInputFallback();
-                    }
+                    cameraVideo.srcObject = cameraStream;
+                    await cameraVideo.play();
+                } catch (fallbackErr) {
+                    console.error("Camera fallback failed:", fallbackErr);
+                    useFileInputFallback();
                 }
-
-            } catch (error) {
-                // Catch any other unexpected errors
-                console.log('Camera error:', error);
-                useFileInputFallback();
             }
         }
 
-        // ============================================================
-        // Silent fallback to file input
-        // ============================================================
-        function useFileInputFallback() {
-            // Close camera modal silently
+        if (switchCameraBtn) {
+            switchCameraBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+                startCamera(currentFacingMode);
+            });
+        }
+
+        captureBtn.addEventListener('click', () => {
+            if (!cameraVideo.videoWidth) return;
+
+            const context = cameraCanvas.getContext('2d');
+            cameraCanvas.width = cameraVideo.videoWidth;
+            cameraCanvas.height = cameraVideo.videoHeight;
+            
+            if (currentFacingMode === 'user') {
+                context.translate(cameraCanvas.width, 0);
+                context.scale(-1, 1);
+            }
+            
+            context.drawImage(cameraVideo, 0, 0, cameraCanvas.width, cameraCanvas.height);
+
+            cameraVideo.style.display = 'none';
+            cameraCanvas.style.display = 'block';
+            if (retakeOverlay) retakeOverlay.style.display = 'flex';
+            if (cameraFooter) cameraFooter.style.display = 'none';
+        });
+
+        retakeBtn.addEventListener('click', () => {
+            cameraVideo.style.display = 'block';
+            cameraCanvas.style.display = 'none';
+            if (retakeOverlay) retakeOverlay.style.display = 'none';
+            if (cameraFooter) cameraFooter.style.display = 'flex';
+        });
+
+        if (savePhotoBtn) {
+            savePhotoBtn.addEventListener('click', () => {
+                const photoData = cameraCanvas.toDataURL('image/jpeg', 0.8);
+                savePhotoFromCamera(photoData);
+                closeCameraSilently();
+            });
+        }
+
+        closeCameraBtn.addEventListener('click', closeCameraSilently);
+
+        function closeCameraSilently() {
             if (cameraStream) {
                 cameraStream.getTracks().forEach(track => track.stop());
                 cameraStream = null;
             }
             cameraVideo.srcObject = null;
             cameraModal.style.display = 'none';
-            isCameraActive = false; // Reset flag when falling back to file input
-
-            // Use file input instead
-            const tempInput = document.createElement('input');
-            tempInput.type = 'file';
-            tempInput.accept = 'image/*';
-            tempInput.style.display = 'none';
-
-            tempInput.addEventListener('change', function (e) {
-                if (e.target.files && e.target.files[0]) {
-                    handlePhotoUpload(e, currentPhotoType);
-                }
-                if (document.body.contains(tempInput)) {
-                    document.body.removeChild(tempInput);
-                }
-            });
-
-            document.body.appendChild(tempInput);
-            setTimeout(() => {
-                tempInput.click();
-            }, 100);
+            isCameraActive = false;
         }
 
-        // ============================================================
-        // Capture photo with error handling (SUPPRESS ERRORS)
-        // ============================================================
-        captureBtn.addEventListener('click', function () {
-            try {
-                const context = cameraCanvas.getContext('2d');
-                cameraCanvas.width = cameraVideo.videoWidth;
-                cameraCanvas.height = cameraVideo.videoHeight;
-
-                context.drawImage(cameraVideo, 0, 0, cameraCanvas.width, cameraCanvas.height);
-
-                cameraVideo.style.display = 'none';
-                cameraCanvas.style.display = 'block';
-
-                captureBtn.style.display = 'none';
-                retakeBtn.style.display = 'block';
-            } catch (error) {
-                // SILENTLY handle capture errors
-                console.log('Capture error handled silently');
-                // Fall back to file input
-                useFileInputFallback();
-            }
-        });
-
-        // ============================================================
-        // Close camera with silent error handling
-        // ============================================================
-        closeCameraBtn.addEventListener('click', function () {
-            closeCameraSilently();
-        });
-
-        // ============================================================
-        // Silent close camera function
-        // ============================================================
-        function closeCameraSilently() {
-            try {
-                // If we have a captured image, save it
-                if (cameraCanvas.style.display === 'block') {
-                    const photoData = cameraCanvas.toDataURL('image/jpeg', 0.7);
-                    savePhotoFromCamera(photoData);
-                }
-
-                // Stop camera stream silently
-                if (cameraStream) {
-                    cameraStream.getTracks().forEach(track => track.stop());
-                    cameraStream = null;
-                }
-
-                // Reset video element
-                cameraVideo.srcObject = null;
-
-                // Hide modal
-                cameraModal.style.display = 'none';
-                isCameraActive = false; // Reset flag when camera is closed
-            } catch (error) {
-                // SILENTLY handle any errors during close
-                console.log('Close camera error handled silently');
-                cameraModal.style.display = 'none';
-                isCameraActive = false; // Reset flag even on error
-            }
-        }
-
-        // ============================================================
-        // Retake photo
-        // ============================================================
-        retakeBtn.addEventListener('click', function () {
-            cameraVideo.style.display = 'block';
-            cameraCanvas.style.display = 'none';
-            captureBtn.style.display = 'block';
-            retakeBtn.style.display = 'none';
-        });
-
-        // ============================================================
-        // Save photo captured from camera
-        // ============================================================
         function savePhotoFromCamera(photoData) {
             if (currentPhotoType === 'student') {
                 studentPhotoData = photoData;
@@ -3470,73 +3323,25 @@
             }
 
             const sizeInKB = Math.round((photoData.length * 3) / 4 / 1024);
-            const typeName = currentPhotoType === 'authorizedLetter' ? 'Authorized Letter' : currentPhotoType.charAt(0).toUpperCase() + currentPhotoType.slice(1);
-            showSuccess(`✅ ${typeName} photo captured & saved (${sizeInKB}KB)!`);
+            showSuccess(`✅ Photo saved (${sizeInKB}KB)!`);
             setTimeout(() => hideMessages(), 2000);
         }
 
-        // ============================================================
-        // CAMERA EVENT LISTENERS
-        // ============================================================
-
-        // Close camera with better error handling
-        closeCameraBtn.addEventListener('click', function () {
-            closeCamera();
-        });
-
-        // Capture photo with error handling
-        captureBtn.addEventListener('click', function () {
-            try {
-                if (cameraVideo.readyState < 2) {
-                    showError('Please wait for camera to load...');
-                    return;
+        function useFileInputFallback() {
+            closeCameraSilently();
+            const tempInput = document.createElement('input');
+            tempInput.type = 'file';
+            tempInput.accept = 'image/*';
+            tempInput.capture = 'environment';
+            tempInput.style.display = 'none';
+            tempInput.onchange = (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    handlePhotoUpload(e, currentPhotoType);
                 }
-                
-                const context = cameraCanvas.getContext('2d');
-                // Use actual video dimensions
-                cameraCanvas.width = cameraVideo.videoWidth || 640;
-                cameraCanvas.height = cameraVideo.videoHeight || 480;
-                
-                console.log(`📸 Capturing: ${cameraCanvas.width}x${cameraCanvas.height}`);
-
-                context.drawImage(cameraVideo, 0, 0, cameraCanvas.width, cameraCanvas.height);
-
-                cameraVideo.style.display = 'none';
-                cameraCanvas.style.display = 'block';
-
-                captureBtn.style.display = 'none';
-                retakeBtn.style.display = 'block';
-            } catch (error) {
-                console.error('Error capturing photo:', error);
-                showError('Failed to capture photo: ' + error.message);
-            }
-        });
-
-        // Retake photo
-        retakeBtn.addEventListener('click', function () {
-            cameraVideo.style.display = 'block';
-            cameraCanvas.style.display = 'none';
-            captureBtn.style.display = 'block';
-            retakeBtn.style.display = 'none';
-        });
-
-        // Function to close camera and save if image is captured
-        function closeCamera() {
-            // If we have a captured image, save it
-            if (cameraCanvas.style.display === 'block') {
-                const photoData = cameraCanvas.toDataURL('image/jpeg', 0.7);
-                savePhotoFromCamera(photoData);
-            }
-
-            // Stop camera stream
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
-            }
-
-            // Hide modal
-            cameraModal.style.display = 'none';
+            };
+            tempInput.click();
         }
+
 
 
         // Form submission - SEND WHATSAPP FIRST, THEN PDF
@@ -4932,7 +4737,7 @@ For queries, contact hostel office.`;
             e.target.value = value;
         });
         // Initial Check
-        console.log("Dashboard Loaded. Bridge Status:", window.getBridgeStatus ? window.getBridgeStatus() : "Bridge helper missing");
+        console.log("Dashboard Loaded - Firebase Mode Enabled");
     </script>
 </body>
 

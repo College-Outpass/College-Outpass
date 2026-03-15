@@ -37,7 +37,7 @@
 </head>
 <body>
     <div class="creator-card">
-        <h1>🛠️ Universal Bulk Creator <small style="font-size: 12px; opacity: 0.5;">v4.2</small></h1>
+        <h1>Universal Bulk Creator <small style="font-size: 12px; opacity: 0.5;">v4.2</small></h1>
         <p>Generate accounts or security entries with ease</p>
 
         <div class="tabs">
@@ -155,7 +155,9 @@
                     await processBulk(role);
                 }
             } catch (err) {
-                addLog(`❌ ERROR: ${err.message}`, true);
+                // Try to parse the error message if it's JSON from server
+                let errorMsg = err.message;
+                addLog(`❌ ERROR: ${errorMsg}`, true);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Generate Now';
@@ -176,7 +178,10 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, campus, whatsappNumber: whatsapp })
                 });
-                if (!res.ok) throw new Error('Security entry failed');
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Security entry failed');
+                }
                 addLog(`✅ Security: "${name}" Added to database`);
             } else {
                 const email = document.getElementById('email').value;
