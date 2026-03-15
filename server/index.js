@@ -115,52 +115,96 @@ initDb();
 
 
 
-function authenticateToken(req, res, next) {
+async function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
     if (token == null) return res.sendStatus(401);
 
     try {
-        const decoded = jwt.decode(token);
-        if (decoded && decoded.email) {
-            const email = decoded.email.toLowerCase();
-            // Accept Firebase tokens (iss contains securetoken.google.com)
-            const isFirebaseToken = decoded.iss && decoded.iss.includes('securetoken.google.com');
-            if (isFirebaseToken || decoded.email_verified || email === 'srinivasnaidu.m@srichaitanyaschool.net') {
-                req.user = { ...decoded, email };
-                console.log(`✅ Firebase/verified token accepted for: ${email}`);
+        // 1. Try Firebase Admin Verify
+        if (admin.apps.length) {
+            try {
+                const decodedToken = await admin.auth().verifyIdToken(token);
+                const email = decodedToken.email.toLowerCase();
+                
+                // Fetch extra info (role, campus) from Firestore
+                const db = admin.firestore();
+                let role = 'staff';
+                let campus = 'ALL';
+                let name = decodedToken.name || '';
+
+                // Check admins collection for HOD
+                const adminDoc = await db.collection('admins').doc(decodedToken.uid).get();
+                if (adminDoc.exists) {
+                    role = 'admin';
+                    campus = adminDoc.data().campus || 'ALL';
+                    name = adminDoc.data().name || name;
+                } else {
+                    // Check users collection for Staff/Principals
+                    const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+                    if (userDoc.exists) {
+                        role = userDoc.data().role || 'staff';
+                        campus = userDoc.data().campus || 'ALL';
+                        name = userDoc.data().name || name;
+                    } else {
+                        // Check if email is in settings -> principal list
+                        const settingsDoc = await db.collection('settings').doc('emails').get();
+                        if (settingsDoc.exists) {
+                            const principalEmails = settingsDoc.data().emails || [];
+                            if (principalEmails.some(e => e.trim().toLowerCase() === email)) {
+                                role = 'admin';
+                            }
+                        }
+                    }
+                }
+
+                // Force HOD admin status
+                if (email === 'srinivasnaidu.m@srichaitanyaschool.net') {
+                    role = 'admin';
+                    campus = 'ALL';
+                }
+
+                req.user = { 
+                    uid: decodedToken.uid, 
+                    email: email, 
+                    role: role, 
+                    campus: campus,
+                    name: name
+                };
+                
+                console.log(`✅ [FIREBASE AUTH] ${email} (Role: ${role}, Campus: ${campus})`);
                 return next();
+            } catch (fbErr) {
+                // Not a valid Firebase token, or verification failed
+                // Fallback to JWT or Decode (for legacy support during transition)
             }
         }
-    } catch (e) {
-        console.warn('Token decode error:', e.message);
-    }
 
-    // Fallback: verify with our custom JWT secret (admin portal logins)
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) {
-            // Last resort decode — allow any token with an email
-            try {
-                const decoded = jwt.decode(token);
-                if (decoded && decoded.email) {
-                    const email = decoded.email.toLowerCase();
-                    const role = (email === 'srinivasnaidu.m@srichaitanyaschool.net') ? 'admin' : (decoded.role || 'staff');
-                    req.user = { ...decoded, email, role };
-                    console.log(`⚠️ Accepted via decode fallback: ${email} (Role: ${role})`);
-                    return next();
-                }
-            } catch (e2) { }
-            return res.sendStatus(403);
-        }
-        
-        // Ensure HOD always has admin role even if token is old
-        if (user.email && user.email.toLowerCase() === 'srinivasnaidu.m@srichaitanyaschool.net') {
-            user.role = 'admin';
-        }
-        
-        req.user = user;
-        next();
-    });
+        // 2. Legacy JWT Verify (Fallback)
+        jwt.verify(token, JWT_SECRET, (err, user) => {
+            if (user) {
+                const email = user.email.toLowerCase();
+                const role = (email === 'srinivasnaidu.m@srichaitanyaschool.net') ? 'admin' : (user.role || 'staff');
+                req.user = { ...user, email, role };
+                return next();
+            }
+            
+            // 3. Last Resort: Decode (only for transition/dev)
+            const decoded = jwt.decode(token);
+            if (decoded && decoded.email) {
+                const email = decoded.email.toLowerCase();
+                const role = (email === 'srinivasnaidu.m@srichaitanyaschool.net') ? 'admin' : (decoded.role || 'staff');
+                req.user = { ...decoded, email, role };
+                return next();
+            }
+            
+            res.sendStatus(403);
+        });
+
+    } catch (e) {
+        console.error('Auth Middleware Error:', e.message);
+        res.sendStatus(403);
+    }
 }
 
 
@@ -288,70 +332,126 @@ app.post('/api/auth/verify', authenticateToken, (req, res) => {
     res.json({ user: req.user });
 });
 
-// User Management (Admins only)
+// User Management (Firebase + TiDB Synced)
 app.post('/api/users', authenticateToken, async (req, res) => {
-    // Only admins or the HOD can create users
-    console.log(`🔍 USER CREATION ATTEMPT: ${req.user.email} (Role: ${req.user.role})`);
-    console.log(`📦 Request Body: ${JSON.stringify(req.body)}`);
-
     if (req.user.role !== 'admin' && req.user.email.toLowerCase() !== 'srinivasnaidu.m@srichaitanyaschool.net') {
-        console.warn(`❌ Unauthorized attempt: ${req.user.email} is not admin`);
         return res.status(403).json({ error: 'Unauthorized: Admin access required' });
     }
 
     try {
         const { email, password, name, campus, role } = req.body;
-        console.log(`👤 [TiDB CREATE] Data received for: ${email} (Role: ${role})`);
-
         if (!email || !password || !campus) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        const uid = 'u_' + Date.now();
-        const password_hash = await bcrypt.hash(password, 10);
         const userRole = role || 'staff';
-
-        // 1. Insert into unified transfer_admins table
-        await pool.query(
-            'INSERT INTO transfer_admins (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?)',
-            [uid, email.toLowerCase(), password_hash, name || null, campus, userRole]
-        );
-
-        // 3. Keep Firebase Auth synced
+        const emailLower = email.toLowerCase();
+        
+        // 1. Create in Firebase Auth
+        let uid;
         try {
-            await admin.auth().createUser({
-                uid: uid,
-                email: email.toLowerCase(),
+            const fbUser = await admin.auth().createUser({
+                email: emailLower,
                 password: password,
                 displayName: name || null
             });
-            console.log('🔥 User created in Firebase Auth');
+            uid = fbUser.uid;
+            console.log('🔥 User created in Firebase Auth:', uid);
         } catch (fbErr) {
-            console.warn('⚠️ Firebase User creation failed (maybe already exists):', fbErr.message);
+            if (fbErr.code === 'auth/email-already-exists') {
+                const existingUser = await admin.auth().getUserByEmail(emailLower);
+                uid = existingUser.uid;
+                console.log('♻️ Using existing Firebase User:', uid);
+            } else {
+                throw fbErr;
+            }
         }
 
-        console.log(`✅ User saved to TiDB (transfer_admins)`);
+        // 2. Sync to Firestore (Mandatory for new Firebase-only Auth)
+        const db = admin.firestore();
+        const userData = {
+            uid: uid,
+            email: emailLower,
+            name: name || null,
+            campus: campus,
+            role: userRole,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+
+        await db.collection('users').doc(uid).set(userData);
+        if (userRole === 'admin') {
+            await db.collection('admins').doc(uid).set(userData);
+        }
+        console.log('🔥 Firestore metadata updated');
+
+        // 3. Keep TiDB in sync for data relations
+        const password_hash = await bcrypt.hash(password, 10);
+        await pool.query(
+            'INSERT INTO transfer_admins (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=?, campus=?, role=?, password_hash=?',
+            [uid, emailLower, password_hash, name || null, campus, userRole, name || null, campus, userRole, password_hash]
+        );
+        console.log(`✅ User saved to TiDB`);
+
         res.json({ success: true, uid });
     } catch (err) {
         console.error('❌ User creation error:', err);
-        res.status(500).json({ error: 'Database Error: ' + err.message });
+        res.status(500).json({ error: 'Server Error: ' + err.message });
     }
 });
 
 app.get('/api/users', authenticateToken, async (req, res) => {
-    console.log(`🔍 FETCHING USERS LIST: requested by ${req.user.email}`);
     if (req.user.role !== 'admin' && req.user.email !== 'srinivasnaidu.m@srichaitanyaschool.net') {
-        console.warn(`❌ Unauthorized users list fetch attempt by: ${req.user.email}`);
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
     try {
+        // Try Firestore first if available
+        if (admin.apps.length) {
+            const db = admin.firestore();
+            const snapshot = await db.collection('users').get();
+            if (!snapshot.empty) {
+                const users = snapshot.docs.map(doc => ({
+                    ...doc.data(),
+                    id: doc.id,
+                    created_at: doc.data().updatedAt ? doc.data().updatedAt.toDate() : new Date()
+                }));
+                return res.json(users);
+            }
+        }
+
+        // Fallback to TiDB
         const [rows] = await pool.query('SELECT uid, email, name, campus, role, created_at FROM transfer_admins ORDER BY created_at DESC');
         res.json(rows);
     } catch (err) {
-        res.status(500).json({ error: 'Failed' });
+        console.error('Fetch users error:', err);
+        res.status(500).json({ error: err.message });
     }
 });
+
+app.get('/api/users/:uid', authenticateToken, async (req, res) => {
+    const { uid } = req.params;
+    try {
+        if (admin.apps.length) {
+            const db = admin.firestore();
+            const userDoc = await db.collection('users').doc(uid).get();
+            if (userDoc.exists) {
+                return res.json({ exists: true, data: userDoc.data() });
+            }
+            
+            // Check admins collection too
+            const adminDoc = await db.collection('admins').doc(uid).get();
+            if (adminDoc.exists) {
+                return res.json({ exists: true, data: adminDoc.data() });
+            }
+        }
+        
+        // Fallback or search in TiDB if needed (though we want Firebase-only for metadata)
+        res.status(404).json({ exists: false });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 
 app.delete('/api/users/:uid', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin' && req.user.email !== 'srinivasnaidu.m@srichaitanyaschool.net') {
@@ -367,6 +467,14 @@ app.delete('/api/users/:uid', authenticateToken, async (req, res) => {
         try {
             await admin.auth().deleteUser(uid);
             console.log(`🔥 Deleted user from Firebase Auth: ${uid}`);
+        } catch (e) { }
+
+        // Delete from Firestore
+        try {
+            const db = admin.firestore();
+            await db.collection('users').doc(uid).delete();
+            await db.collection('admins').doc(uid).delete();
+            console.log(`🔥 Deleted user from Firestore: ${uid}`);
         } catch (e) { }
 
         res.json({ success: true });

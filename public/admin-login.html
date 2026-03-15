@@ -601,7 +601,7 @@
             document.getElementById('email').focus();
         });
 
-        // Handle login with TiDB Database
+        // Handle login with Firebase directly
         async function handleLogin() {
             const email = document.getElementById('email').value.trim().toLowerCase();
             const password = document.getElementById('password').value;
@@ -609,7 +609,7 @@
             const loginText = document.getElementById('loginText');
             const loginLoader = document.getElementById('loginLoader');
 
-            console.log('Login attempt:', email);
+            console.log('Admin login attempt:', email);
 
             // Validate
             if (!email || !password) {
@@ -630,49 +630,34 @@
             hideMessages();
 
             try {
-                const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                    ? 'http://localhost:5000/api'
-                    : 'https://college-outpass-api.onrender.com/api';
+                // [FIREBASE ONLY MODE] Step 1: Login with Firebase Auth
+                console.log('Authenticating Admin with Firebase...');
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                console.log('✅ Firebase Admin Auth successful!');
 
-                console.log('Authenticating with TiDB (Render)...');
-                const response = await fetch(`${API_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-
-                const loginResult = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(loginResult.error || loginResult.code || 'Login failed');
+                // Step 2: Verify role in Firestore HOD collection
+                const adminDoc = await db.collection('admins').doc(user.uid).get();
+                if (!adminDoc.exists && email !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
+                     throw new Error('HOD profile not found in Firebase. Please contact support.');
                 }
 
-                console.log('✅ Admin verified:', loginResult.user);
-
-                // TiDB LOGIN SUCCESS
+                // TiDB LOGIN SUCCESS (Firebase equivalent)
                 localStorage.clear();
-                localStorage.setItem('tidb_token', loginResult.token);
-                localStorage.setItem('userCampus', 'ALL_CAMPUSES');
-                localStorage.setItem('userEmail', loginResult.user.email);
+                localStorage.setItem('userCampus', 'ALL');
+                localStorage.setItem('userEmail', email);
                 localStorage.setItem('isPrincipal', 'true');
                 localStorage.setItem('lastDashboard', 'admin');
+                
+                const idToken = await user.getIdToken();
+                localStorage.setItem('tidb_token', idToken);
 
                 // Store for legacy compatibility
                 sessionStorage.setItem('adminAuth', JSON.stringify({
-                    email: loginResult.user.email,
-                    token: loginResult.token,
+                    email: email,
+                    token: idToken,
                     role: 'admin'
                 }));
-
-                // Authenticate with Firebase using Custom Token
-                if (loginResult.firebaseToken) {
-                    try {
-                        await auth.signInWithCustomToken(loginResult.firebaseToken);
-                        console.log('🔥 Signed in to Firebase Admin with Custom Token!');
-                    } catch (fbErr) {
-                        console.error('Firebase token login failed:', fbErr.message);
-                    }
-                }
 
                 // Success message
                 showMessage('✅ Login successful! Redirecting...', 'success');
@@ -684,7 +669,11 @@
 
             } catch (error) {
                 console.error('Login error:', error);
-                showMessage('❌ ' + error.message, 'error');
+                let errorMsg = error.message;
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMsg = 'Invalid admin email or password';
+                }
+                showMessage('❌ ' + errorMsg, 'error');
             } finally {
                 loginText.style.display = 'flex';
                 loginLoader.style.display = 'none';
