@@ -2495,12 +2495,11 @@
 
                         // Auto-fill form when valid SCS number is entered
                         if (validateStudentId(input)) {
+                            console.log(`🔍 Valid ID detected: ${value}, fetching data...`);
                             if (input.id === 'studentId') {
-                                // Clear fields first, then auto-fill outpass form
                                 clearStudentFields();
                                 autoFillOutpassForm(value);
                             } else if (input.id === 'mediStudentId') {
-                                // Clear field first, then auto-fill medical slip form
                                 clearMediSlipStudentField();
                                 autoFillMediSlipForm(value);
                             }
@@ -2583,26 +2582,29 @@
 
                 // 3. FALLBACK TO TiDB (Via Proxy)
                 console.log("⚠️ Not in Firestore, checking TiDB...");
-                let tidbDoc = await window.db.collection('students').doc(prefixedId).get();
-                if (!tidbDoc.exists) {
-                    tidbDoc = await window.db.collection('students').doc(rawId).get();
-                }
+                try {
+                    let tidbDoc = await window.db.collection('students').doc(prefixedId).get();
+                    if (!tidbDoc.exists) {
+                        tidbDoc = await window.db.collection('students').doc(rawId).get();
+                    }
 
-                if (tidbDoc.exists) {
-                    const data = tidbDoc.data();
-                    // TiDB data structure might be slightly different
-                    const normalizedData = {
-                        studentId: data.id || data.studentId,
-                        studentName: data.studentName || data.name,
-                        category: data.category,
-                        section: data.section,
-                        fatherName: data.fatherName || data.father_name,
-                        whatsappNumber: data.whatsappNumber || data.whatsapp_number,
-                        campus: data.campus
-                    };
-                    
-                    console.log("✅ Student found in TiDB");
-                    return normalizedData;
+                    if (tidbDoc.exists) {
+                        const data = tidbDoc.data();
+                        const normalizedData = {
+                            studentId: data.id || data.studentId,
+                            studentName: data.studentName || data.name,
+                            category: data.category,
+                            section: data.section,
+                            fatherName: data.fatherName || data.father_name,
+                            whatsappNumber: data.whatsappNumber || data.whatsapp_number,
+                            campus: data.campus
+                        };
+                        
+                        console.log("✅ Student found in TiDB");
+                        return normalizedData;
+                    }
+                } catch (tidbErr) {
+                    console.error('TiDB fetch failed:', tidbErr);
                 }
 
                 return {
@@ -2611,7 +2613,7 @@
                 };
             } catch (error) {
                 console.error('Error fetching student data:', error);
-                return { error: 'FETCH_ERROR', message: 'Error connecting to student database.' };
+                return { error: 'FETCH_ERROR', message: 'Error connecting to student database (v4.1).' };
             }
         }
 
@@ -2823,11 +2825,19 @@
         // Logout functionality
         document.getElementById('logoutBtn').addEventListener('click', async () => {
             try {
-                sessionStorage.setItem('explicitLogout', 'true');
+                if (!confirm('Are you sure you want to logout?')) return;
+                
+                console.log('Logging out...');
                 await auth.signOut();
-                console.log('User logged out');
-                localStorage.clear();
+                
+                // Clear all storage
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userCampus');
+                localStorage.removeItem('tidb_token');
+                localStorage.removeItem('isPrincipal');
                 sessionStorage.clear();
+                
+                console.log('User logged out successfully');
                 window.location.href = 'staff-login.html';
             } catch (error) {
                 console.error('Logout error:', error);
@@ -3198,52 +3208,43 @@
 
         function openCamera(photoType) {
             currentPhotoType = photoType;
-            isCameraActive = true; // Set flag to prevent auth redirects
+            isCameraActive = true;
 
-            // Smart detection: Android WebView or Browser?
-            if (isAndroidWebView()) {
-                console.log('Android WebView detected - using native camera');
-
-                // Create temporary file input with camera capture
-                const tempInput = document.createElement('input');
-                tempInput.type = 'file';
-                tempInput.accept = 'image/*';
-                tempInput.capture = 'environment';
-                tempInput.style.display = 'none';
-
-                tempInput.addEventListener('change', function (e) {
-                    if (e.target.files && e.target.files[0]) {
-                        handlePhotoUpload(e, photoType);
-                    }
-                    isCameraActive = false; // Reset flag
-                    if (document.body.contains(tempInput)) {
-                        document.body.removeChild(tempInput);
-                    }
-                });
-
-                document.body.appendChild(tempInput);
-                tempInput.click();
-
-            } else {
-                // Browser - use original camera modal
-                console.log('Browser detected - using camera modal');
+            // Prefer getUserMedia if available (HTTPS)
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                console.log('Using Browser Camera Modal');
                 cameraTitle.textContent = `Take ${photoType.charAt(0).toUpperCase() + photoType.slice(1)} Photo`;
                 cameraModal.style.display = 'flex';
                 captureBtn.style.display = 'block';
                 retakeBtn.style.display = 'none';
                 cameraVideo.style.display = 'block';
                 cameraCanvas.style.display = 'none';
-
-                // Reset video element
                 cameraVideo.srcObject = null;
 
-                // Start camera with proper error handling
                 startCamera().catch(error => {
-                    console.log('Camera start error handled:', error);
-                    isCameraActive = false; // Reset flag on error
-                    // Don't show error to user, just fall back silently
+                    console.error('Camera Modal failed:', error);
+                    useFileInputFallback(photoType);
                 });
+            } else {
+                console.log('Browser Camera not supported, using file input fallback');
+                useFileInputFallback(photoType);
             }
+        }
+
+        function useFileInputFallback(photoType) {
+            const tempInput = document.createElement('input');
+            tempInput.type = 'file';
+            tempInput.accept = 'image/*';
+            tempInput.capture = 'environment';
+            tempInput.style.display = 'none';
+
+            tempInput.addEventListener('change', function (e) {
+                if (e.target.files && e.target.files[0]) {
+                    handlePhotoUpload(e, photoType);
+                }
+                isCameraActive = false;
+            });
+            tempInput.click();
         }
 
         // ============================================================
@@ -3522,30 +3523,6 @@
             cameraModal.style.display = 'none';
         }
 
-        // Save photo captured from camera (duplicate function - keeping for compatibility)
-        function savePhotoFromCamera(photoData) {
-            if (currentPhotoType === 'student') {
-                studentPhotoData = photoData;
-                previewStudentImage.src = studentPhotoData;
-                studentPhotoPreview.style.display = 'block';
-                deleteStudentPhotoBtn.style.display = 'inline-block';
-            } else if (currentPhotoType === 'parent') {
-                parentPhotoData = photoData;
-                previewParentImage.src = parentPhotoData;
-                parentPhotoPreview.style.display = 'block';
-                deleteParentPhotoBtn.style.display = 'inline-block';
-            } else if (currentPhotoType === 'authorizedLetter') {
-                authorizedLetterPhotoData = photoData;
-                previewAuthorizedLetterImage.src = authorizedLetterPhotoData;
-                authorizedLetterPhotoPreview.style.display = 'block';
-                deleteAuthorizedLetterPhotoBtn.style.display = 'inline-block';
-            }
-
-            const sizeInKB = Math.round((photoData.length * 3) / 4 / 1024);
-            const typeName = currentPhotoType === 'authorizedLetter' ? 'Authorized Letter' : currentPhotoType.charAt(0).toUpperCase() + currentPhotoType.slice(1);
-            showSuccess(`✅ ${typeName} photo captured & saved (${sizeInKB}KB)!`);
-            setTimeout(() => hideMessages(), 2000);
-        }
 
         // Form submission - SEND WHATSAPP FIRST, THEN PDF
         form.addEventListener('submit', async (e) => {

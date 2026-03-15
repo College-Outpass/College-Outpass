@@ -11,66 +11,94 @@
             --bg: #f1f5f9;
         }
         body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); padding: 40px 10px; }
-        .creator-card { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-        h1 { margin: 0 0 5px 0; font-size: 20px; color: var(--primary); text-align: center; }
-        p { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 20px; }
+        .creator-card { max-width: 550px; margin: 0 auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        h1 { margin: 0 0 5px 0; font-size: 24px; color: var(--primary); text-align: center; }
+        p { text-align: center; color: #64748b; font-size: 14px; margin-bottom: 25px; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+        .tab { padding: 8px 16px; cursor: pointer; border-radius: 6px; font-weight: 600; font-size: 14px; color: #64748b; }
+        .tab.active { background: var(--primary); color: white; }
+
         .form-group { margin-bottom: 15px; }
         label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 5px; color: #475569; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; background: var(--primary); color: white; font-weight: 600; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; background: var(--primary); color: white; font-weight: 600; cursor: pointer; transition: 0.2s; margin-top: 10px; }
         .btn:hover { background: #1e293b; transform: translateY(-1px); }
-        .log-container { max-width: 450px; margin: 20px auto; font-size: 12px; }
-        .log-item { background: white; padding: 8px 12px; border-radius: 6px; margin-bottom: 5px; border-left: 4px solid #10b981; display: flex; justify-content: space-between; }
-        .error { border-left-color: #ef4444; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .log-container { max-width: 550px; margin: 20px auto; font-size: 12px; }
+        .log-item { background: white; padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #10b981; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .log-item.error { border-left-color: #ef4444; }
+        
+        .csv-info { background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #1e40af; border: 1px solid #bfdbfe; }
+        .csv-format { font-family: monospace; background: white; padding: 5px; border-radius: 4px; display: block; margin-top: 5px; }
     </style>
 </head>
 <body>
     <div class="creator-card">
-        <h1>🛠️ Super Admin Creator <small style="font-size: 10px; opacity: 0.5;">v4.0</small></h1>
-        <p>Direct Database & Auth Account Generator</p>
+        <h1>🛠️ Universal Bulk Creator <small style="font-size: 12px; opacity: 0.5;">v4.2</small></h1>
+        <p>Generate accounts or security entries with ease</p>
+
+        <div class="tabs">
+            <div class="tab active" id="singleTab" onclick="switchTab('single')">Single Entry</div>
+            <div class="tab" id="bulkTab" onclick="switchTab('bulk')">Bulk Import (CSV)</div>
+        </div>
 
         <form id="uForm">
             <div class="form-group">
                 <label>Account Role</label>
-                <select id="role" onchange="toggleSecurityFields()">
+                <select id="role" onchange="updateFields()">
                     <option value="staff">Staff / HOD</option>
+                    <option value="admin">Principal / Admin</option>
                     <option value="security">Security Personnel</option>
                 </select>
             </div>
 
-            <div class="form-group">
-                <label>Full Name</label>
-                <input type="text" id="name" placeholder="Full Name" required>
-            </div>
-
-            <div class="form-group">
-                <label>Login Email</label>
-                <input type="email" id="email" placeholder="example@srichaitanya.edu" required>
-            </div>
-
-            <div id="secFields" style="display: none;">
+            <div id="singleSection">
                 <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="name" placeholder="Full Name">
+                </div>
+
+                <div class="form-group" id="emailGroup">
+                    <label>Login Email</label>
+                    <input type="email" id="email" placeholder="example@srichaitanya.edu">
+                </div>
+
+                <div class="form-group">
+                    <label>Campus</label>
+                    <select id="campus">
+                        <option value="ECITY_GIRLS_RESIDENTIAL">ECITY_GIRLS_RESIDENTIAL</option>
+                        <option value="ECITY_ENGG_GIRLS_RESIDENTIAL">ECITY_ENGG_GIRLS_RESIDENTIAL</option>
+                        <option value="ECITY_SCHOOL">ECITY_SCHOOL</option>
+                        <option value="ECITY_NEET_BOYS">ECITY_NEET_BOYS</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="whatsappGroup" style="display: none;">
                     <label>WhatsApp Number</label>
                     <input type="tel" id="whatsapp" placeholder="10 Digit Number">
                 </div>
+
+                <div class="form-group" id="passGroup">
+                    <label>Default Password</label>
+                    <input type="text" id="pass" value="Outpass@123">
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>Campus</label>
-                <select id="campus">
-                    <option value="ECITY_GIRLS_RESIDENTIAL">ECITY_GIRLS_RESIDENTIAL</option>
-                    <option value="ECITY_ENGG_GIRLS_RESIDENTIAL">ECITY_ENGG_GIRLS_RESIDENTIAL</option>
-                    <option value="ECITY_SCHOOL">ECITY_SCHOOL</option>
-                    <option value="ECITY_NEET_BOYS">ECITY_NEET_BOYS</option>
-                </select>
+            <div id="bulkSection" style="display: none;">
+                <div class="csv-info">
+                    <strong>CSV Required Format:</strong>
+                    <span id="csvFormatHint" class="csv-format">name,email,campus,password</span>
+                </div>
+                <div class="form-group">
+                    <label>Paste CSV Data (One per line)</label>
+                    <textarea id="csvData" rows="6" placeholder="John Doe,john@edu,ECITY_SCHOOL,Pass123"></textarea>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>Default Password</label>
-                <input type="text" id="pass" value="Outpass@123" required>
-            </div>
-
-            <button type="submit" class="btn" id="sBtn">Create Account Now</button>
+            <button type="submit" class="btn" id="sBtn">Generate Now</button>
         </form>
     </div>
 
@@ -81,46 +109,133 @@
             ? 'http://localhost:5000/api'
             : 'https://college-outpass-api.onrender.com/api';
 
-        function toggleSecurityFields() {
+        let currentTab = 'single';
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('singleTab').classList.toggle('active', tab === 'single');
+            document.getElementById('bulkTab').classList.toggle('active', tab === 'bulk');
+            document.getElementById('singleSection').style.display = tab === 'single' ? 'block' : 'none';
+            document.getElementById('bulkSection').style.display = tab === 'bulk' ? 'block' : 'none';
+            updateFields();
+        }
+
+        function updateFields() {
             const role = document.getElementById('role').value;
-            document.getElementById('secFields').style.display = role === 'security' ? 'block' : 'none';
+            const isSecurity = role === 'security';
+            
+            // Single section adjustments
+            document.getElementById('emailGroup').style.display = isSecurity ? 'none' : 'block';
+            document.getElementById('passGroup').style.display = isSecurity ? 'none' : 'block';
+            document.getElementById('whatsappGroup').style.display = isSecurity ? 'block' : 'none';
+            
+            // Bulk section adjustments
+            const hint = document.getElementById('csvFormatHint');
+            if (isSecurity) {
+                hint.textContent = "name,campus,whatsappNumber";
+                document.getElementById('csvData').placeholder = "Ramesh Reddy,ECITY_SCHOOL,9876543210";
+            } else {
+                hint.textContent = "name,email,campus,password";
+                document.getElementById('csvData').placeholder = "John Doe,john@edu,ECITY_SCHOOL,Outpass@123";
+            }
         }
 
         document.getElementById('uForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('sBtn');
             const role = document.getElementById('role').value;
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value.toLowerCase().trim();
-            const campus = document.getElementById('campus').value;
-            const password = document.getElementById('pass').value;
-            const whatsapp = document.getElementById('whatsapp').value;
 
             btn.disabled = true;
             btn.textContent = 'Processing...';
 
             try {
-                // Sending request WITHOUT auth token as requested for direct Super Admin use
+                if (currentTab === 'single') {
+                    await processSingle(role);
+                } else {
+                    await processBulk(role);
+                }
+            } catch (err) {
+                addLog(`❌ ERROR: ${err.message}`, true);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Generate Now';
+            }
+        };
+
+        async function processSingle(role) {
+            const name = document.getElementById('name').value;
+            const campus = document.getElementById('campus').value;
+            const isSecurity = role === 'security';
+
+            if (isSecurity) {
+                const whatsapp = document.getElementById('whatsapp').value;
+                if (!name || !campus || !whatsapp) throw new Error('Missing fields for Security entry');
+                
+                const res = await fetch(`${API_URL}/security`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, campus, whatsappNumber: whatsapp })
+                });
+                if (!res.ok) throw new Error('Security entry failed');
+                addLog(`✅ Security: "${name}" Added to database`);
+            } else {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('pass').value;
+                if (!name || !email || !campus || !password) throw new Error('Missing fields for account');
+                
                 const res = await fetch(`${API_URL}/users`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password, campus, role, whatsapp_number: whatsapp })
+                    body: JSON.stringify({ name, email, password, campus, role })
                 });
-
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Server rejected creation');
-
-                addLog(`✅ SUCCESS: ${role.toUpperCase()} "${name}" Created & Synced`);
-                document.getElementById('uForm').reset();
-                document.getElementById('pass').value = 'Outpass@123';
-                toggleSecurityFields();
-            } catch (err) {
-                addLog(`❌ FAILED: ${err.message}`, true);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Create Account Now';
+                if (!res.ok) throw new Error(data.error || 'Account creation failed');
+                addLog(`✅ Account: "${name}" (${role}) Created`);
             }
-        };
+            document.getElementById('uForm').reset();
+            updateFields();
+        }
+
+        async function processBulk(role) {
+            const lines = document.getElementById('csvData').value.split('\n').filter(l => l.trim());
+            const isSecurity = role === 'security';
+            addLog(`🚀 Starting bulk import of ${lines.length} items...`);
+
+            if (isSecurity) {
+                const batch = lines.map(line => {
+                    const row = line.split(',');
+                    return { 
+                        name: (row[0] || '').trim(), 
+                        campus: (row[1] || '').trim(), 
+                        whatsappNumber: (row[2] || '').trim() 
+                    };
+                });
+                
+                const res = await fetch(`${API_URL}/migrate/security-batch`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ batch })
+                });
+                if (!res.ok) throw new Error('Bulk security import failed');
+                addLog(`✅ SUCCESS: Imported ${lines.length} Security entries`);
+            } else {
+                let success = 0;
+                for (let line of lines) {
+                    try {
+                        const [name, email, campus, password] = line.split(',').map(s => s.trim());
+                        const res = await fetch(`${API_URL}/users`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name, email, password, campus, role })
+                        });
+                        if (res.ok) success++;
+                        else console.error('Failed line:', line);
+                    } catch (e) { console.error(e); }
+                }
+                addLog(`✅ SUCCESS: ${success}/${lines.length} Accounts generated`);
+            }
+            document.getElementById('csvData').value = '';
+        }
 
         function addLog(msg, isError = false) {
             const l = document.getElementById('logs');
@@ -129,6 +244,8 @@
             d.innerHTML = `<span>${msg}</span><span style="opacity: 0.5;">${new Date().toLocaleTimeString()}</span>`;
             l.prepend(d);
         }
+
+        updateFields();
     </script>
 </body>
 </html>

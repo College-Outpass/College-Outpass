@@ -147,6 +147,22 @@ async function initDb() {
             )
         `);
 
+        // Students table
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS students (
+                id VARCHAR(100) PRIMARY KEY,
+                studentId VARCHAR(100),
+                studentName VARCHAR(255),
+                category VARCHAR(100),
+                section VARCHAR(100),
+                fatherName VARCHAR(255),
+                whatsappNumber VARCHAR(50),
+                campus VARCHAR(255),
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
+
         // Migration for security table (Fixed Split Commands)
         const [secCols] = await connection.query("SHOW COLUMNS FROM security");
         const existingSecCols = secCols.map(c => c.Field);

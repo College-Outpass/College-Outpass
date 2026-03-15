@@ -137,7 +137,7 @@ app.get('/hello', (req, res) => {
     } catch(e) {}
     
     res.send(`
-        <h1>API Version 4.0</h1>
+        <h1>API Version 4.1</h1>
         <p>Firebase Status: <strong>${fbCount > 0 ? 'READY' : 'ERROR'}</strong></p>
         <p>Diagnostics: ${diag}</p>
         <p style="color:red">Last Error: ${firebaseInitError || 'None'}</p>
@@ -889,6 +889,27 @@ app.get('/api/students', async (req, res) => {
         res.json(formattedRows);
     } catch (err) {
         console.error('❌ Error fetching students collection:', err);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+app.post('/api/students', authenticateToken, async (req, res) => {
+    try {
+        const { id, studentId, studentName, category, section, fatherName, whatsappNumber, campus } = req.body;
+        const sid = id || studentId;
+        console.log(`📚 Creating/Updating student: ${sid}`);
+        
+        await pool.query(
+            `INSERT INTO students (id, studentId, studentName, category, section, fatherName, whatsappNumber, campus) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE 
+             studentName=VALUES(studentName), category=VALUES(category), section=VALUES(section), 
+             fatherName=VALUES(fatherName), whatsappNumber=VALUES(whatsappNumber), campus=VALUES(campus)`,
+            [sid, sid, studentName, category, section, fatherName, whatsappNumber, campus]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error('❌ Error saving student:', err);
         res.status(500).json({ error: 'Database error' });
     }
 });
