@@ -17,14 +17,18 @@ function initializeFirebase() {
     try {
         let serviceAccount = null;
 
-        if (process.env.FB_PRIVATE_KEY && process.env.FB_CLIENT_EMAIL) {
+        const pKey = process.env.FB_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY;
+        const cEmail = process.env.FB_CLIENT_EMAIL || process.env.FIREBASE_CLIENT_EMAIL;
+        const pId = process.env.FB_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+
+        if (pKey && cEmail) {
             // OPTION A: Triple Variables (Most Reliable)
             serviceAccount = {
-                project_id: process.env.FB_PROJECT_ID || process.env.FIREBASE_PROJECT_ID,
-                client_email: process.env.FB_CLIENT_EMAIL,
-                private_key: process.env.FB_PRIVATE_KEY
+                project_id: pId || 'college-out-pass-system-62552',
+                client_email: cEmail,
+                private_key: pKey
             };
-            console.log('📦 Firebase: Using Triple Variables from ENV (3.8)');
+            console.log('📦 Firebase: Using Individual Variables from ENV (v4.0)');
         } else if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
             // OPTION B: Base64/JSON String
             let rawData = process.env.FIREBASE_SERVICE_ACCOUNT_B64.trim();
@@ -53,20 +57,26 @@ function initializeFirebase() {
                 let key = serviceAccount.private_key;
                 key = key.replace(/\\n/g, '\n').replace(/\\n/g, '\n');
                 
-                // PEM Reformation (ULTRA-CLEAN v3.9)
-                // Remove everything that isn't a Base64 character
-                const base64Only = key
-                    .replace('-----BEGIN PRIVATE KEY-----', '')
-                    .replace('-----END PRIVATE KEY-----', '')
+                // PEM Reformation (ULTRA-CLEAN v4.0)
+                // 1. Remove literal string "\n", actual newlines, and spaces
+                let base64Only = key
                     .replace(/\\n/g, '')
-                    .replace(/[^A-Za-z0-9+/=]/g, ''); // Keep only Base64 chars
+                    .replace(/\n/g, '')
+                    .replace(/\s/g, '');
+
+                // 2. Remove PEM headers if they were accidentally included in the middle
+                base64Only = base64Only
+                    .replace('-----BEGINPRIVATEKEY-----', '')
+                    .replace('-----ENDPRIVATEKEY-----', '')
+                    .replace('-----BEGINPRIVATEKEY-----', '') // Double check
+                    .replace(/[^A-Za-z0-9+/=]/g, ''); // Final Base64 safety filter
                 
                 let formatted = '';
                 for (let i = 0; i < base64Only.length; i += 64) {
                     formatted += base64Only.substring(i, i + 64) + '\n';
                 }
                 serviceAccount.private_key = `-----BEGIN PRIVATE KEY-----\n${formatted}-----END PRIVATE KEY-----\n`;
-                console.log('💎 Firebase: Key rebuilt using Base64 filter (v3.9).');
+                console.log('💎 Firebase: Key rebuilt and sanitized (v4.0).');
             }
 
             admin.initializeApp({
@@ -110,7 +120,7 @@ app.get('/diag/logs', (req, res) => res.send(`<pre>${logs.join('\n')}</pre>`));
 app.get('/', (req, res) => {
     res.json({ 
         service: 'Outpass API', 
-        version: '3.9', 
+        version: '4.0', 
         mode: 'Pure-TiDB', 
         firebase: admin.apps.length > 0 ? 'Initialized' : 'Failed',
         status: 'Online',
@@ -122,17 +132,17 @@ app.get('/hello', (req, res) => {
     const fbCount = admin.apps.length;
     let diag = 'No key loaded';
     try {
-        if (process.env.FB_PRIVATE_KEY) diag = `FB_PRIVATE_KEY present (${process.env.FB_PRIVATE_KEY.length} chars)`;
-        else if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) diag = `B64 present (${process.env.FIREBASE_SERVICE_ACCOUNT_B64.length} chars)`;
+        if (process.env.FB_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY) diag = `Individual Variables Active (v4.0)`;
+        else if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) diag = `B64 String Active (${process.env.FIREBASE_SERVICE_ACCOUNT_B64.length} chars)`;
     } catch(e) {}
     
     res.send(`
-        <h1>API Version 3.9</h1>
+        <h1>API Version 4.0</h1>
         <p>Firebase Status: <strong>${fbCount > 0 ? 'READY' : 'ERROR'}</strong></p>
         <p>Diagnostics: ${diag}</p>
         <p style="color:red">Last Error: ${firebaseInitError || 'None'}</p>
         <hr>
-        <p>Check if you have added <b>FB_PROJECT_ID</b>, <b>FB_CLIENT_EMAIL</b>, and <b>FB_PRIVATE_KEY</b> in Render.</p>
+        <p>Ensure you have deleted <b>FIREBASE_SERVICE_ACCOUNT_B64</b> if you added the individual variables.</p>
     `);
 });
 const publicPath = path.join(__dirname, '../public');
