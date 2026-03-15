@@ -17,26 +17,33 @@ function initializeFirebase() {
     try {
         let serviceAccount = null;
 
-        if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
+        if (process.env.FB_PRIVATE_KEY && process.env.FB_CLIENT_EMAIL) {
+            // OPTION A: Triple Variables (Most Reliable)
+            serviceAccount = {
+                project_id: process.env.FB_PROJECT_ID || process.env.FIREBASE_PROJECT_ID,
+                client_email: process.env.FB_CLIENT_EMAIL,
+                private_key: process.env.FB_PRIVATE_KEY
+            };
+            console.log('📦 Firebase: Using Triple Variables from ENV (3.8)');
+        } else if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
+            // OPTION B: Base64/JSON String
             let rawData = process.env.FIREBASE_SERVICE_ACCOUNT_B64.trim();
-            // Remove quotes
             rawData = rawData.replace(/['"]+$/g, '').replace(/^['"]+/g, '');
             
             try {
-                // Try parsing as raw JSON first
                 serviceAccount = JSON.parse(rawData);
                 console.log('📦 Firebase: Using raw JSON from ENV');
             } catch (e) {
-                // Not raw JSON, try Base64
                 try {
                     const decoded = Buffer.from(rawData.replace(/\s+/g, ''), 'base64').toString('utf8');
                     serviceAccount = JSON.parse(decoded);
                     console.log('📦 Firebase: Using Base64 from ENV');
                 } catch (e2) {
-                    throw new Error('Failed to parse FIREBASE_SERVICE_ACCOUNT_B64 as JSON or Base64');
+                    throw new Error('Failed to parse FIREBASE_SERVICE_ACCOUNT_B64');
                 }
             }
         } else if (fs.existsSync(serviceAccountPath)) {
+            // OPTION C: local key.json
             serviceAccount = require(serviceAccountPath);
             console.log('🔥 Firebase Admin: Found key.json');
         }
@@ -46,24 +53,22 @@ function initializeFirebase() {
                 let key = serviceAccount.private_key;
                 key = key.replace(/\\n/g, '\n').replace(/\\n/g, '\n');
                 
-                // PEM Reformation (ULTRA-ROBUST v3.7)
-                // 1. Remove escaped newlines and real newlines
-                let rawKey = key.replace(/\\n/g, '').replace(/\n/g, '').trim();
+                // PEM Reformation (ULTRA-ROBUST v3.8)
+                // 1. Remove all types of newlines and spaces
+                let rawKey = key.replace(/\\n/g, '').replace(/\n/g, '').replace(/\s/g, '').trim();
                 
-                // 2. Extract base64 content between headers (if they exist)
-                // or just remove them if they were part of the mess
+                // 2. Locate the core base64 data
                 let base64 = rawKey
-                    .replace('-----BEGIN PRIVATE KEY-----', '')
-                    .replace('-----END PRIVATE KEY-----', '')
-                    .replace(/\s/g, '');
+                    .replace('-----BEGINPRIVATEKEY-----', '')
+                    .replace('-----ENDPRIVATEKEY-----', '');
                 
-                // 3. Reconstruct mathematically perfect PEM format
+                // 3. Re-wrap with perfect newlines every 64 chars
                 let formatted = '';
                 for (let i = 0; i < base64.length; i += 64) {
                     formatted += base64.substring(i, i + 64) + '\n';
                 }
                 serviceAccount.private_key = `-----BEGIN PRIVATE KEY-----\n${formatted}-----END PRIVATE KEY-----\n`;
-                console.log('💎 Firebase: Private key successfully reconstructed and cleaned.');
+                console.log('💎 Firebase: Private key cleaned and rebuilt (v3.8).');
             }
 
             admin.initializeApp({
@@ -86,7 +91,7 @@ function initializeFirebase() {
 // Initial attempt
 initializeFirebase();
 
-console.log('🚀 Final Pure-Database Mode v3.3');
+console.log('🚀 Final Pure-Database Mode v3.8');
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -107,7 +112,7 @@ app.get('/diag/logs', (req, res) => res.send(`<pre>${logs.join('\n')}</pre>`));
 app.get('/', (req, res) => {
     res.json({ 
         service: 'Outpass API', 
-        version: '3.7', 
+        version: '3.8', 
         mode: 'Pure-TiDB', 
         firebase: admin.apps.length > 0 ? 'Initialized' : 'Failed',
         status: 'Online',
@@ -117,7 +122,7 @@ app.get('/', (req, res) => {
 
 app.get('/hello', (req, res) => {
     const fbCount = admin.apps.length;
-    res.send(`<h1>API Version 3.7</h1><p>Firebase Status: ${fbCount > 0 ? 'READY' : 'ERROR'}</p><p>Last Error: ${firebaseInitError || 'None'}</p>`);
+    res.send(`<h1>API Version 3.8</h1><p>Firebase Status: ${fbCount > 0 ? 'READY' : 'ERROR'}</p><p>Last Error: ${firebaseInitError || 'None'}</p>`);
 });
 const publicPath = path.join(__dirname, '../public');
 
