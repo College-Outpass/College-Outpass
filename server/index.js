@@ -20,13 +20,23 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
         const serviceAccount = JSON.parse(decodedKey);
         
         if (serviceAccount.private_key) {
-            // First replace literal \n if they exist
-            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-            // Then ensure it's trimmed and has proper PEM headers
-            serviceAccount.private_key = serviceAccount.private_key.trim();
+            let key = serviceAccount.private_key;
+            // Fix 1: Replace literal '\n' strings with actual newlines
+            key = key.replace(/\\n/g, '\n');
+            
+            // Fix 2: Ensure there is a newline after the BEGIN header if missing
+            if (key.includes('-----BEGIN PRIVATE KEY-----') && !key.includes('-----BEGIN PRIVATE KEY-----\n')) {
+                key = key.replace('-----BEGIN PRIVATE KEY-----', '-----BEGIN PRIVATE KEY-----\n');
+            }
+            // Fix 3: Ensure there is a newline before the END header if missing
+            if (key.includes('-----END PRIVATE KEY-----') && !key.includes('\n-----END PRIVATE KEY-----')) {
+                key = key.replace('-----END PRIVATE KEY-----', '\n-----END PRIVATE KEY-----');
+            }
+            
+            serviceAccount.private_key = key.trim();
         }
 
-        console.log(`🔑 Key check: ${serviceAccount.private_key ? serviceAccount.private_key.substring(0, 30) : 'MISSING'}...`);
+        console.log(`🔑 Key check: ${serviceAccount.private_key ? serviceAccount.private_key.substring(0, 30) : 'MISSING'}`);
 
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
