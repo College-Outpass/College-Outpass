@@ -46,20 +46,16 @@ function initializeFirebase() {
                 let key = serviceAccount.private_key;
                 key = key.replace(/\\n/g, '\n').replace(/\\n/g, '\n');
                 
-                // PEM Reformation
-                const pemMatch = key.match(/-----BEGIN PRIVATE KEY-----([\s\S]+?)-----END PRIVATE KEY-----/);
-                if (pemMatch) {
-                    const body = pemMatch[1].replace(/\s/g, '');
-                    let formatted = '';
-                    for (let i = 0; i < body.length; i += 64) formatted += body.substring(i, i + 64) + '\n';
-                    key = `-----BEGIN PRIVATE KEY-----\n${formatted}-----END PRIVATE KEY-----\n`;
-                } else if (!key.includes('---')) {
-                    const body = key.replace(/\s/g, '');
-                    let formatted = '';
-                    for (let i = 0; i < body.length; i += 64) formatted += body.substring(i, i + 64) + '\n';
-                    key = `-----BEGIN PRIVATE KEY-----\n${formatted}-----END PRIVATE KEY-----\n`;
+                // PEM Reformation (More robust)
+                let cleanKey = key.replace(/\\n/g, '\n').replace(/\n/g, ' ');
+                // Extract just the base64 part if it's already a PEM
+                const base64Body = (cleanKey.match(/-----BEGIN PRIVATE KEY-----([\s\S]+?)-----END PRIVATE KEY-----/) || [null, cleanKey])[1].replace(/\s/g, '');
+                
+                let formatted = '';
+                for (let i = 0; i < base64Body.length; i += 64) {
+                    formatted += base64Body.substring(i, i + 64) + '\n';
                 }
-                serviceAccount.private_key = key.trim();
+                serviceAccount.private_key = `-----BEGIN PRIVATE KEY-----\n${formatted}-----END PRIVATE KEY-----\n`;
             }
 
             admin.initializeApp({
@@ -103,7 +99,7 @@ app.get('/diag/logs', (req, res) => res.send(`<pre>${logs.join('\n')}</pre>`));
 app.get('/', (req, res) => {
     res.json({ 
         service: 'Outpass API', 
-        version: '3.5', 
+        version: '3.6', 
         mode: 'Pure-TiDB', 
         firebase: admin.apps.length > 0 ? 'Initialized' : 'Failed',
         status: 'Online',
@@ -113,7 +109,7 @@ app.get('/', (req, res) => {
 
 app.get('/hello', (req, res) => {
     const fbCount = admin.apps.length;
-    res.send(`<h1>API Version 3.5</h1><p>Firebase Status: ${fbCount > 0 ? 'READY' : 'ERROR'}</p>`);
+    res.send(`<h1>API Version 3.6</h1><p>Firebase Status: ${fbCount > 0 ? 'READY' : 'ERROR'}</p><p>Last Error: ${firebaseInitError || 'None'}</p>`);
 });
 const publicPath = path.join(__dirname, '../public');
 
@@ -409,6 +405,12 @@ app.post('/api/users', async (req, res) => {
         const userRole = role || 'staff';
         const emailLower = email.toLowerCase();
         console.log(`🛠️ Creating ${userRole} for ${emailLower}...`);
+        
+        // 0. Ensure Firebase is ready
+        if (admin.apps.length === 0) {
+            console.error('❌ Firebase not initialized. Error:', firebaseInitError);
+            return res.status(500).json({ error: `Firebase Startup Error: ${firebaseInitError || 'Unknown initialization failure'}` });
+        }
         
         // 1. Create in Firebase Auth
         let uid;
