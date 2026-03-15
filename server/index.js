@@ -9,57 +9,80 @@ const jwt = require('jsonwebtoken');
 // Firebase Admin Setup
 const admin = require('firebase-admin');
 const serviceAccountPath = path.join(__dirname, '../key.json');
-if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
+let firebaseInitError = null;
+
+function initializeFirebase() {
+    if (admin.apps.length > 0) return true;
+
     try {
-        let b64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64.trim();
-        // Remove quotes if they exist (common when pasting env vars)
-        if (b64.startsWith('"') && b64.endsWith('"')) b64 = b64.substring(1, b64.length - 1);
-        if (b64.startsWith("'") && b64.endsWith("'")) b64 = b64.substring(1, b64.length - 1);
-        
-        const decodedKey = Buffer.from(b64, 'base64').toString('utf8');
-        const serviceAccount = JSON.parse(decodedKey);
-        
-        if (serviceAccount.private_key) {
-            let key = serviceAccount.private_key;
-            // Fix 1: Replace literal '\n' strings with actual newlines
-            key = key.replace(/\\n/g, '\n');
+        let serviceAccount = null;
+
+        if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
+            let rawData = process.env.FIREBASE_SERVICE_ACCOUNT_B64.trim();
+            // Remove quotes
+            rawData = rawData.replace(/['"]+$/g, '').replace(/^['"]+/g, '');
             
-            // Fix 2: Ensure there is a newline after the BEGIN header if missing
-            if (key.includes('-----BEGIN PRIVATE KEY-----') && !key.includes('-----BEGIN PRIVATE KEY-----\n')) {
-                key = key.replace('-----BEGIN PRIVATE KEY-----', '-----BEGIN PRIVATE KEY-----\n');
+            try {
+                // Try parsing as raw JSON first
+                serviceAccount = JSON.parse(rawData);
+                console.log('📦 Firebase: Using raw JSON from ENV');
+            } catch (e) {
+                // Not raw JSON, try Base64
+                try {
+                    const decoded = Buffer.from(rawData.replace(/\s+/g, ''), 'base64').toString('utf8');
+                    serviceAccount = JSON.parse(decoded);
+                    console.log('📦 Firebase: Using Base64 from ENV');
+                } catch (e2) {
+                    throw new Error('Failed to parse FIREBASE_SERVICE_ACCOUNT_B64 as JSON or Base64');
+                }
             }
-            // Fix 3: Ensure there is a newline before the END header if missing
-            if (key.includes('-----END PRIVATE KEY-----') && !key.includes('\n-----END PRIVATE KEY-----')) {
-                key = key.replace('-----END PRIVATE KEY-----', '\n-----END PRIVATE KEY-----');
-            }
-            
-            serviceAccount.private_key = key.trim();
+        } else if (fs.existsSync(serviceAccountPath)) {
+            serviceAccount = require(serviceAccountPath);
+            console.log('🔥 Firebase Admin: Found key.json');
         }
 
-        console.log(`🔑 Key check: ${serviceAccount.private_key ? serviceAccount.private_key.substring(0, 30) : 'MISSING'}`);
+        if (serviceAccount) {
+            if (serviceAccount.private_key) {
+                let key = serviceAccount.private_key;
+                key = key.replace(/\\n/g, '\n').replace(/\\n/g, '\n');
+                
+                // PEM Reformation
+                const pemMatch = key.match(/-----BEGIN PRIVATE KEY-----([\s\S]+?)-----END PRIVATE KEY-----/);
+                if (pemMatch) {
+                    const body = pemMatch[1].replace(/\s/g, '');
+                    let formatted = '';
+                    for (let i = 0; i < body.length; i += 64) formatted += body.substring(i, i + 64) + '\n';
+                    key = `-----BEGIN PRIVATE KEY-----\n${formatted}-----END PRIVATE KEY-----\n`;
+                } else if (!key.includes('---')) {
+                    const body = key.replace(/\s/g, '');
+                    let formatted = '';
+                    for (let i = 0; i < body.length; i += 64) formatted += body.substring(i, i + 64) + '\n';
+                    key = `-----BEGIN PRIVATE KEY-----\n${formatted}-----END PRIVATE KEY-----\n`;
+                }
+                serviceAccount.private_key = key.trim();
+            }
 
-        if (admin.apps.length === 0) {
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount)
             });
-            console.log('🔥 Firebase Admin initialized from ENV');
+            console.log('✅ Firebase Admin initialized successfully');
+            return true;
         } else {
-            console.log('✅ Firebase Admin already initialized');
+            console.warn('⚠️ No Firebase credentials found (ENV or key.json)');
+            firebaseInitError = 'No credentials found';
+            return false;
         }
-    } catch (e) {
-        console.error('❌ Failed to initialize Firebase Admin from ENV:', e.message);
+    } catch (err) {
+        console.error('❌ Firebase Init Error:', err.message);
+        firebaseInitError = err.message;
+        return false;
     }
-} else if (fs.existsSync(serviceAccountPath)) {
-    const serviceAccount = require(serviceAccountPath);
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
-    console.log('🔥 Firebase Admin initialized from key.json');
-} else {
-    console.warn('⚠️ Firebase Admin Initialization failed: key.json or ENV not found');
 }
 
-console.log('🚀 Final Pure-Database Mode v3.0');
+// Initial attempt
+initializeFirebase();
+
+console.log('🚀 Final Pure-Database Mode v3.3');
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -77,14 +100,21 @@ app.use((req, res, next) => {
 });
 
 app.get('/diag/logs', (req, res) => res.send(`<pre>${logs.join('\n')}</pre>`));
-app.get('/', (req, res) => res.json({ 
-    service: 'Outpass API', 
-    version: '3.1', 
-    mode: 'Pure-TiDB', 
-    firebase: admin.apps.length > 0 ? 'Initialized' : 'Failed',
-    status: 'Online',
-    time: new Date().toISOString()
-}));
+app.get('/', (req, res) => {
+    res.json({ 
+        service: 'Outpass API', 
+        version: '3.5', 
+        mode: 'Pure-TiDB', 
+        firebase: admin.apps.length > 0 ? 'Initialized' : 'Failed',
+        status: 'Online',
+        time: new Date().toISOString()
+    });
+});
+
+app.get('/hello', (req, res) => {
+    const fbCount = admin.apps.length;
+    res.send(`<h1>API Version 3.5</h1><p>Firebase Status: ${fbCount > 0 ? 'READY' : 'ERROR'}</p>`);
+});
 const publicPath = path.join(__dirname, '../public');
 
 // Log all incoming requests for debugging
@@ -100,19 +130,22 @@ app.get('/', (req, res) => {
 
 app.get('/hello', (req, res) => {
     console.log('✅ HELLO route hit!');
-    res.send('<h1>I am alive!</h1><p>Server version: 2.5 (Students API Ready)</p>');
+    const fbCount = admin.apps.length;
+    const status = fbCount > 0 ? 'READY' : 'ERROR/FAILED';
+    const detail = firebaseInitError ? `(Error: ${firebaseInitError})` : `(Apps: ${fbCount})`;
+    res.send(`<h1>I am alive!</h1><p>Server version: 3.3</p><p>Firebase Status: <b>${status}</b> ${detail}</p>`);
 });
 
 app.get('/diag/db', async (req, res) => {
     try {
-        const [[totalCount]] = await pool.query('SELECT COUNT(*) as count FROM transfer_admins');
-        const [[staffCount]] = await pool.query("SELECT COUNT(*) as count FROM transfer_admins WHERE role = 'staff'");
-        const [[adminsCount]] = await pool.query("SELECT COUNT(*) as count FROM transfer_admins WHERE role = 'admin'");
+        const [[totalCount]] = await pool.query('SELECT COUNT(*) as count FROM users');
+        const [[staffCount]] = await pool.query("SELECT COUNT(*) as count FROM users WHERE role = 'staff'");
+        const [[adminsCount]] = await pool.query("SELECT COUNT(*) as count FROM users WHERE role = 'admin'");
         const [[securityCount]] = await pool.query('SELECT COUNT(*) as count FROM security').catch(() => [{count: 0}]);
         const [[studentsCount]] = await pool.query('SELECT COUNT(*) as count FROM students').catch(() => [{count: 'ERROR/MISSING'}]);
         
         // Fetch last 5 users for verification
-        const [lastUsers] = await pool.query('SELECT uid, email, role, created_at FROM transfer_admins ORDER BY created_at DESC LIMIT 5');
+        const [lastUsers] = await pool.query('SELECT uid, email, role, created_at FROM users ORDER BY created_at DESC LIMIT 5');
 
         res.json({
             status: 'connected',
@@ -243,8 +276,8 @@ app.post('/api/auth/login', async (req, res) => {
         const { email, password } = req.body;
         console.log(`🔑 Login attempt: ${email}`);
 
-        // [SECURE MODE] Fetch user from transfer_admins table
-        const [users] = await pool.query('SELECT * FROM transfer_admins WHERE email = ?', [email.toLowerCase()]);
+        // [SECURE MODE] Fetch user from users table
+        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email.toLowerCase()]);
         
         if (users.length === 0) {
             return res.status(404).json({ code: 'auth/user-not-found' });
@@ -311,8 +344,8 @@ app.patch('/api/users/:uid/password', authenticateToken, async (req, res) => {
 
         const hash = await bcrypt.hash(password, 10);
         
-        // Update ONLY transfer_admins table
-        await pool.query('UPDATE transfer_admins SET password_hash = ? WHERE uid = ?', [hash, uid]);
+        // Update ONLY users table
+        await pool.query('UPDATE users SET password_hash = ? WHERE uid = ?', [hash, uid]);
 
         // Sync with Firebase Auth
         try {
@@ -336,8 +369,8 @@ app.post('/api/auth/verify_firebase_staff', authenticateToken, async (req, res) 
 
         console.log(`🔍 Verifying TiDB profile for: ${email}`);
 
-        // Fetch profile from transfer_admins
-        const [users] = await pool.query('SELECT uid, email, role, campus FROM transfer_admins WHERE email = ?', [email]);
+        // Fetch profile from users
+        const [users] = await pool.query('SELECT uid, email, role, campus FROM users WHERE email = ?', [email]);
         
         if (users.length === 0) {
             console.error(`❌ Profile missing in TiDB for: ${email}`);
@@ -363,19 +396,19 @@ app.post('/api/auth/verify', authenticateToken, (req, res) => {
 });
 
 // User Management (Firebase + TiDB Synced)
-app.post('/api/users', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'admin' && req.user.email.toLowerCase() !== 'srinivasnaidu.m@srichaitanyaschool.net') {
-        return res.status(403).json({ error: 'Unauthorized: Admin access required' });
-    }
-
+app.post('/api/users', async (req, res) => {
+    console.log(`👤 PUBLIC CREATION REQUEST: ${req.body.email || 'no-email'}`);
+    
     try {
-        const { email, password, name, campus, role } = req.body;
+        const { email, password, name, campus, role, whatsapp_number } = req.body;
         if (!email || !password || !campus) {
+            console.error('❌ Missing fields in creation request');
             return res.status(400).json({ error: 'Missing required fields' });
         }
-
+        
         const userRole = role || 'staff';
         const emailLower = email.toLowerCase();
+        console.log(`🛠️ Creating ${userRole} for ${emailLower}...`);
         
         // 1. Create in Firebase Auth
         let uid;
@@ -414,13 +447,34 @@ app.post('/api/users', authenticateToken, async (req, res) => {
         }
         console.log('🔥 Firestore metadata updated');
 
-        // 3. Keep TiDB in sync for data relations
+        // 3. Keep TiDB in sync for data relations (Preserving original logic)
         const password_hash = await bcrypt.hash(password, 10);
+        
+        // Sync to primary users table
         await pool.query(
-            'INSERT INTO transfer_admins (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=?, campus=?, role=?, password_hash=?',
+            'INSERT INTO users (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=?, campus=?, role=?, password_hash=?',
             [uid, emailLower, password_hash, name || null, campus, userRole, name || null, campus, userRole, password_hash]
         );
-        console.log(`✅ User saved to TiDB`);
+
+        // Sync to specific role tables
+        if (userRole === 'admin') {
+            await pool.query(
+                'INSERT INTO admins (uid, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=?, role=?, password_hash=?',
+                [uid, emailLower, password_hash, name || null, userRole, name || null, userRole, password_hash]
+            );
+        } else if (userRole === 'security') {
+            await pool.query(
+                'INSERT INTO security (uid, email, name, campus, whatsapp_number) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=?, campus=?, whatsapp_number=?',
+                [uid, emailLower, name || null, campus, whatsapp_number || null, name || null, campus, whatsapp_number || null]
+            );
+        } else {
+            await pool.query(
+                'INSERT INTO staff (uid, email, password_hash, name, campus, role) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=?, campus=?, role=?, password_hash=?',
+                [uid, emailLower, password_hash, name || null, campus, userRole, name || null, campus, userRole, password_hash]
+            );
+        }
+        
+        console.log(`✅ User synced to TiDB`);
 
         res.json({ success: true, uid });
     } catch (err) {
@@ -450,7 +504,7 @@ app.get('/api/users', authenticateToken, async (req, res) => {
         }
 
         // Fallback to TiDB
-        const [rows] = await pool.query('SELECT uid, email, name, campus, role, created_at FROM transfer_admins ORDER BY created_at DESC');
+        const [rows] = await pool.query('SELECT uid, email, name, campus, role, created_at FROM users ORDER BY created_at DESC');
         res.json(rows);
     } catch (err) {
         console.error('Fetch users error:', err);
@@ -475,7 +529,12 @@ app.get('/api/users/:uid', authenticateToken, async (req, res) => {
             }
         }
         
-        // Fallback or search in TiDB if needed (though we want Firebase-only for metadata)
+        // Fallback to TiDB
+        const [rows] = await pool.query('SELECT * FROM users WHERE uid = ?', [uid]);
+        if (rows.length > 0) {
+            return res.json({ exists: true, data: rows[0] });
+        }
+        
         res.status(404).json({ exists: false });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -489,9 +548,10 @@ app.delete('/api/users/:uid', authenticateToken, async (req, res) => {
     }
 
     try {
-        const uid = req.params.uid;
-        // Delete ONLY from transfer_admins
-        await pool.query('DELETE FROM transfer_admins WHERE uid = ?', [uid]);
+        // Delete from TiDB tables
+        await pool.query('DELETE FROM users WHERE uid = ?', [uid]);
+        await pool.query('DELETE FROM staff WHERE uid = ?', [uid]);
+        await pool.query('DELETE FROM admins WHERE uid = ?', [uid]);
 
         // Delete from Firebase Auth
         try {
@@ -530,14 +590,23 @@ app.get('/api/admins/:uid', authenticateToken, async (req, res) => {
 
         // Standard check
         const [users] = await pool.query(
-            'SELECT role, email FROM transfer_admins WHERE (uid = ? OR email = ?) AND role = "admin"',
+            'SELECT role, email FROM admins WHERE (uid = ? OR email = ?) AND role = "admin"',
             [uid, email]
         );
 
         if (users.length > 0) {
             res.json({ exists: true, data: { ...users[0] } });
         } else {
-            res.json({ exists: false });
+            // Check users table as well
+            const [genUsers] = await pool.query(
+                'SELECT role, email FROM users WHERE (uid = ? OR email = ?) AND role = "admin"',
+                [uid, email]
+            );
+            if (genUsers.length > 0) {
+                res.json({ exists: true, data: { ...genUsers[0] } });
+            } else {
+                res.json({ exists: false });
+            }
         }
     } catch (err) {
         console.error('Admin check error:', err);

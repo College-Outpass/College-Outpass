@@ -84,6 +84,8 @@ async function initDb() {
                 issuedDate VARCHAR(100),
                 issuedTime VARCHAR(100),
                 studentPhoto LONGTEXT,
+                parentPhoto LONGTEXT,
+                authorizedLetterPhoto LONGTEXT,
                 createdBy VARCHAR(255),
                 campus VARCHAR(255),
                 reportingTime VARCHAR(100),
@@ -123,6 +125,8 @@ async function initDb() {
         if (!existingOutpassCols.includes('reportedBy')) await connection.query("ALTER TABLE outpasses ADD COLUMN reportedBy VARCHAR(255)");
         if (!existingOutpassCols.includes('reportedAt')) await connection.query("ALTER TABLE outpasses ADD COLUMN reportedAt TIMESTAMP NULL");
         if (!existingOutpassCols.includes('createdAt')) await connection.query("ALTER TABLE outpasses ADD COLUMN createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+        if (!existingOutpassCols.includes('parentPhoto')) await connection.query("ALTER TABLE outpasses ADD COLUMN parentPhoto LONGTEXT");
+        if (!existingOutpassCols.includes('authorizedLetterPhoto')) await connection.query("ALTER TABLE outpasses ADD COLUMN authorizedLetterPhoto LONGTEXT");
 
         // Column migrations for sick_slips
         const [sickSlipCols] = await connection.query("SHOW COLUMNS FROM sick_slips");
@@ -134,12 +138,20 @@ async function initDb() {
         await connection.query(`
             CREATE TABLE IF NOT EXISTS security (
                 id INT AUTO_INCREMENT PRIMARY KEY,
+                uid VARCHAR(128) UNIQUE,
+                email VARCHAR(255) UNIQUE,
                 name VARCHAR(255),
                 campus VARCHAR(255),
                 whatsapp_number VARCHAR(50),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        // Migration for security table
+        const [secCols] = await connection.query("SHOW COLUMNS FROM security");
+        const existingSecCols = secCols.map(c => c.Field);
+        if (!existingSecCols.includes('uid')) await connection.query("ALTER TABLE security ADD COLUMN uid VARCHAR(128) AFTER id, ADD UNIQUE(uid)");
+        if (!existingSecCols.includes('email')) await connection.query("ALTER TABLE security ADD COLUMN email VARCHAR(255) AFTER uid, ADD UNIQUE(email)");
 
         // Insert default admin if not exists
         const [users] = await connection.query("SELECT * FROM users WHERE email = 'admin@college.com' OR email = 'srinivasnaidu.m@srichaitanyaschool.net'");

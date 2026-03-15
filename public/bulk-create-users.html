@@ -3,267 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk Create Firebase Users</title>
+    <title>Universal User Creator - Super Admin</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 50px auto;
-            padding: 20px;
-            background: #f5f5f5;
+        :root {
+            --primary: #0f172a;
+            --accent: #3b82f6;
+            --bg: #f1f5f9;
         }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #1e3c72;
-            text-align: center;
-        }
-        .user-list {
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            padding: 15px;
-            margin: 20px 0;
-            background: #f9f9f9;
-        }
-        .user-item {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-        }
-        .status {
-            font-weight: bold;
-        }
-        .success { color: #28a745; }
-        .error { color: #dc3545; }
-        .pending { color: #ffc107; }
-        button {
-            background: #1e3c72;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-            margin: 10px 0;
-        }
-        button:hover {
-            background: #2a5298;
-        }
-        button:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-        }
-        .progress {
-            width: 100%;
-            height: 20px;
-            background: #e9ecef;
-            border-radius: 10px;
-            margin: 20px 0;
-            overflow: hidden;
-        }
-        .progress-bar {
-            height: 100%;
-            background: #28a745;
-            width: 0%;
-            transition: width 0.3s;
-        }
-        .stats {
-            display: flex;
-            justify-content: space-between;
-            margin: 20px 0;
-            padding: 15px;
-            background: #e3f2fd;
-            border-radius: 5px;
-        }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); padding: 40px 10px; }
+        .creator-card { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        h1 { margin: 0 0 5px 0; font-size: 20px; color: var(--primary); text-align: center; }
+        p { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 5px; color: #475569; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; background: var(--primary); color: white; font-weight: 600; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        .btn:hover { background: #1e293b; transform: translateY(-1px); }
+        .log-container { max-width: 450px; margin: 20px auto; font-size: 12px; }
+        .log-item { background: white; padding: 8px 12px; border-radius: 6px; margin-bottom: 5px; border-left: 4px solid #10b981; display: flex; justify-content: space-between; }
+        .error { border-left-color: #ef4444; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📋 Bulk Create Firebase Users</h1>
-        <p>This will create all staff users with password: <strong>Outpass@123</strong></p>
-        
-        <div class="stats">
-            <div>Total Users: <span id="totalCount">0</span></div>
-            <div>Success: <span id="successCount" class="success">0</span></div>
-            <div>Failed: <span id="errorCount" class="error">0</span></div>
-            <div>Pending: <span id="pendingCount" class="pending">0</span></div>
-        </div>
-        
-        <div class="progress">
-            <div class="progress-bar" id="progressBar"></div>
-        </div>
-        
-        <button id="createUsersBtn" onclick="createAllUsers()">🚀 Create All Users</button>
-        <button id="resetBtn" onclick="resetCreation()" style="background: #6c757d;">🔄 Reset</button>
-        
-        <div class="user-list" id="userList">
-            <!-- Users will be listed here -->
-        </div>
+    <div class="creator-card">
+        <h1>🛠️ Super Admin Creator <small style="font-size: 10px; opacity: 0.5;">v3.5</small></h1>
+        <p>Direct Database & Auth Account Generator</p>
+
+        <form id="uForm">
+            <div class="form-group">
+                <label>Account Role</label>
+                <select id="role" onchange="toggleSecurityFields()">
+                    <option value="staff">Staff / HOD</option>
+                    <option value="security">Security Personnel</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="name" placeholder="Full Name" required>
+            </div>
+
+            <div class="form-group">
+                <label>Login Email</label>
+                <input type="email" id="email" placeholder="example@srichaitanya.edu" required>
+            </div>
+
+            <div id="secFields" style="display: none;">
+                <div class="form-group">
+                    <label>WhatsApp Number</label>
+                    <input type="tel" id="whatsapp" placeholder="10 Digit Number">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Campus</label>
+                <select id="campus">
+                    <option value="ECITY_GIRLS_RESIDENTIAL">ECITY_GIRLS_RESIDENTIAL</option>
+                    <option value="ECITY_ENGG_GIRLS_RESIDENTIAL">ECITY_ENGG_GIRLS_RESIDENTIAL</option>
+                    <option value="ECITY_SCHOOL">ECITY_SCHOOL</option>
+                    <option value="ECITY_NEET_BOYS">ECITY_NEET_BOYS</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Default Password</label>
+                <input type="text" id="pass" value="Outpass@123" required>
+            </div>
+
+            <button type="submit" class="btn" id="sBtn">Create Account Now</button>
+        </form>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    
+    <div class="log-container" id="logs"></div>
+
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyBFHwulhuw9NlGQi0DWzy9mU47RSO5TUkw",
-            authDomain: "college-out-pass-system-62552.firebaseapp.com",
-            projectId: "college-out-pass-system-62552",
-            storageBucket: "college-out-pass-system-62552.firebasestorage.app",
-            messagingSenderId: "71169367861",
-            appId: "1:71169367861:web:7105b401d52c049476f67c"
-        };
-        
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5000/api'
+            : 'https://college-outpass-api.onrender.com/api';
 
-        const staffUsers = [
-            // ECITY_GIRLS_RESIDENTIAL
-            { email: "aruna.ecitygirls@srichaitanya.edu", name: "Aruna" },
-            { email: "prathibha.ecitygirls@srichaitanya.edu", name: "Prathibha" },
-            { email: "rajeswari.ecitygirls@srichaitanya.edu", name: "Rajeswari" },
-            { email: "manjula.ecitygirls@srichaitanya.edu", name: "Manjula" },
-            { email: "roja.ecitygirls@srichaitanya.edu", name: "Roja" },
-            { email: "swathika.ecitygirls@srichaitanya.edu", name: "Swathika" },
-            { email: "savitha.ecitygirls@srichaitanya.edu", name: "Savitha" },
-            { email: "swathi.ecitygirls@srichaitanya.edu", name: "Swathi" },
-            { email: "lavanya.ecitygirls@srichaitanya.edu", name: "Lavanya" },
-            { email: "annapoorna.ecitygirls@srichaitanya.edu", name: "Annapoorna" },
-            { email: "sunitha.ecitygirls@srichaitanya.edu", name: "Sunitha" },
-            
-            // ECITY_ENGG_GIRLS_RESIDENTIAL
-            { email: "anitha.ecityengggirls@srichaitanya.edu", name: "Anitha" },
-            { email: "nirmala.ecityengggirls@srichaitanya.edu", name: "Nirmala" },
-            { email: "srilakshmi.ecityengggirls@srichaitanya.edu", name: "Sri Lakshmi" },
-            { email: "vasantha.ecityengggirls@srichaitanya.edu", name: "Vasantha" },
-            { email: "chandrakala.ecityengggirls@srichaitanya.edu", name: "Chandrakala" },
-            
-            
-            // ECITY_SCHOOL
-            { email: "sudhakar.ecityschool@srichaitanya.edu", name: "Sudhakar" },
-            { email: "anuf.ecityschool@srichaitanya.edu", name: "Anuf" },
-            { email: "santhosh.ecityschool@srichaitanya.edu", name: "Santhosh" },
-            { email: "naresh.ecityschool@srichaitanya.edu", name: "Naresh" },
-            { email: "manjunath.ecityschool@srichaitanya.edu", name: "Manjunath" },
-            { email: "huseenbee.ecityschool@srichaitanya.edu", name: "Huseenbee" },
-            
-            // ECITY_NEET_BOYS
-            { email: "munuswami.ecityneetboys@srichaitanya.edu", name: "Munu Swami" },
-            { email: "anilbabu.ecityneetboys@srichaitanya.edu", name: "Anil Babu" },
-            { email: "veeraiah.ecityneetboys@srichaitanya.edu", name: "Veeraiah" },
-            { email: "chandrashekar.ecityneetboys@srichaitanya.edu", name: "Chandra Shekar" },
-            { email: "ravi.ecityneetboys@srichaitanya.edu", name: "Ravi" },
-            { email: "sai.ecityneetboys@srichaitanya.edu", name: "Sai" },
-        ];
-
-        const PASSWORD = "Outpass@123";
-        let creationResults = [];
-
-        function initializeUI() {
-            document.getElementById('totalCount').textContent = staffUsers.length;
-            updateCounts();
-            renderUserList();
+        function toggleSecurityFields() {
+            const role = document.getElementById('role').value;
+            document.getElementById('secFields').style.display = role === 'security' ? 'block' : 'none';
         }
 
-        function renderUserList() {
-            const userList = document.getElementById('userList');
-            userList.innerHTML = '';
-            
-            staffUsers.forEach((user, index) => {
-                const result = creationResults[index] || { status: 'pending' };
-                const userDiv = document.createElement('div');
-                userDiv.className = 'user-item';
-                userDiv.innerHTML = `
-                    <div>
-                        <strong>${user.name}</strong><br>
-                        <small>${user.email}</small>
-                    </div>
-                    <div class="status ${result.status}">
-                        ${result.status === 'success' ? '✅' : 
-                          result.status === 'error' ? '❌' : '⏳'} 
-                        ${result.status.toUpperCase()}
-                    </div>
-                `;
-                userList.appendChild(userDiv);
-            });
-        }
+        document.getElementById('uForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('sBtn');
+            const role = document.getElementById('role').value;
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value.toLowerCase().trim();
+            const campus = document.getElementById('campus').value;
+            const password = document.getElementById('pass').value;
+            const whatsapp = document.getElementById('whatsapp').value;
 
-        function updateCounts() {
-            const successCount = creationResults.filter(r => r.status === 'success').length;
-            const errorCount = creationResults.filter(r => r.status === 'error').length;
-            const pendingCount = staffUsers.length - successCount - errorCount;
-            
-            document.getElementById('successCount').textContent = successCount;
-            document.getElementById('errorCount').textContent = errorCount;
-            document.getElementById('pendingCount').textContent = pendingCount;
-            
-            const progress = (successCount + errorCount) / staffUsers.length * 100;
-            document.getElementById('progressBar').style.width = progress + '%';
-        }
-
-        async function createAllUsers() {
-            const btn = document.getElementById('createUsersBtn');
             btn.disabled = true;
-            btn.textContent = 'Creating Users...';
-            
-            creationResults = [];
-            updateCounts();
-            renderUserList();
-            
-            for (let i = 0; i < staffUsers.length; i++) {
-                const user = staffUsers[i];
-                try {
-                    // Create user with email and password
-                    const userCredential = await auth.createUserWithEmailAndPassword(user.email, PASSWORD);
-                    
-                    creationResults[i] = {
-                        status: 'success',
-                        message: 'User created successfully',
-                        uid: userCredential.user.uid
-                    };
-                    
-                    console.log(`✅ Created: ${user.email}`);
-                    
-                } catch (error) {
-                    creationResults[i] = {
-                        status: 'error',
-                        message: error.message
-                    };
-                    
-                    console.error(`❌ Failed: ${user.email} - ${error.message}`);
-                }
-                
-                updateCounts();
-                renderUserList();
-                
-                // Small delay to avoid rate limiting
-                await new Promise(resolve => setTimeout(resolve, 500));
+            btn.textContent = 'Processing...';
+
+            try {
+                // Sending request WITHOUT auth token as requested for direct Super Admin use
+                const res = await fetch(`${API_URL}/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, campus, role, whatsapp_number: whatsapp })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Server rejected creation');
+
+                addLog(`✅ SUCCESS: ${role.toUpperCase()} "${name}" Created & Synced`);
+                document.getElementById('uForm').reset();
+                document.getElementById('pass').value = 'Outpass@123';
+                toggleSecurityFields();
+            } catch (err) {
+                addLog(`❌ FAILED: ${err.message}`, true);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create Account Now';
             }
-            
-            btn.textContent = 'Creation Complete';
-            btn.style.background = '#28a745';
-        }
+        };
 
-        function resetCreation() {
-            creationResults = [];
-            const btn = document.getElementById('createUsersBtn');
-            btn.disabled = false;
-            btn.textContent = '🚀 Create All Users';
-            btn.style.background = '#1e3c72';
-            document.getElementById('progressBar').style.width = '0%';
-            updateCounts();
-            renderUserList();
+        function addLog(msg, isError = false) {
+            const l = document.getElementById('logs');
+            const d = document.createElement('div');
+            d.className = 'log-item' + (isError ? ' error' : '');
+            d.innerHTML = `<span>${msg}</span><span style="opacity: 0.5;">${new Date().toLocaleTimeString()}</span>`;
+            l.prepend(d);
         }
-
-        // Initialize the UI when page loads
-        document.addEventListener('DOMContentLoaded', initializeUI);
     </script>
 </body>
 </html>
