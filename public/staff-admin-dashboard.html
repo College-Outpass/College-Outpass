@@ -1185,6 +1185,11 @@
 
         // [TiDB MODE] First check for our database token
         document.addEventListener('DOMContentLoaded', function() {
+            const tidbToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+            const storedEmail = localStorage.getItem('userEmail');
+            const storedCampus = localStorage.getItem('userCampus');
+            const isPrincipal = localStorage.getItem('isPrincipal');
+
             if (tidbToken && storedEmail && isPrincipal === 'true') {
                 console.log('✅ TiDB Session found for Principal:', storedEmail);
                 currentUserEmail = storedEmail;

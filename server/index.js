@@ -519,13 +519,29 @@ app.post('/api/outpasses', authenticateToken, async (req, res) => {
     try {
         const data = req.body;
         const id = 'out_' + Date.now();
-        const campus = data.campus || (req.user && req.user.campus) || 'UNKNOWN';
-        console.log(`📝 Saving outpass for campus: ${campus}`);
+        // Get campus from request body or user session
+        const campus = data.campus || (req.user ? req.user.campus : 'ALL');
+
+        console.log(`📝 Inserting outpass: ${data.passNumber} for student: ${data.studentId}`);
+        
         await pool.query(
-            `INSERT INTO outpasses (id, passNumber, studentId, studentName, category, section, fatherName, whatsappNumber, requestedBy, issuedBy, status, outDate, inDate, reason, issuedDate, issuedTime, studentPhoto, createdBy, campus) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-            [id, data.passNumber, data.studentId, data.studentName, data.category, data.section, data.fatherName, data.whatsappNumber, data.requestedBy, data.issuedBy, data.status, data.outDate, data.inDate, data.reason, data.issuedDate, data.issuedTime, data.studentPhoto, data.createdBy, campus]
+            `INSERT INTO outpasses (
+                id, passNumber, studentId, studentName, category, section, 
+                fatherName, whatsappNumber, requestedBy, issuedBy, status, 
+                outDate, inDate, reason, issuedDate, issuedTime, 
+                studentPhoto, parentPhoto, authorizedLetterPhoto, createdBy, campus
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            [
+                id, data.passNumber, data.studentId, data.studentName, data.category, data.section, 
+                data.fatherName, data.whatsappNumber, data.requestedBy, data.issuedBy, data.status, 
+                data.outDate, data.inDate, data.reason, data.issuedDate, data.issuedTime, 
+                data.studentPhoto || null, data.parentPhoto || null, data.authorizedLetterPhoto || null, 
+                data.createdBy || (req.user ? req.user.email : 'system'), campus
+            ]
         );
-        res.json({ id });
+        
+        console.log(`✅ Outpass ${id} saved successfully`);
+        res.json({ id, message: 'Saved to TiDB' });
     } catch (err) {
         console.error('❌ Error saving outpass:', err);
         res.status(500).json({ error: 'Failed' });
@@ -686,9 +702,17 @@ app.post('/api/security', authenticateToken, async (req, res) => {
 // Students Collection - No authentication required for staff dashboard
 app.get('/api/students/:id', async (req, res) => {
     try {
-        const studentId = req.params.id.toUpperCase();
-        console.log(`📚 Fetching student: ${studentId}`);
-        const [rows] = await pool.query('SELECT * FROM students WHERE id = ?', [studentId]);
+        const studentId = req.params.id.toUpperCase().trim();
+        const rawId = studentId.replace(/SCS/gi, '');
+        const prefixedId = 'SCS' + rawId;
+
+        console.log(`📚 Fetching student: ${studentId} (Checking ${prefixedId} and ${rawId})`);
+        
+        // Check for both variations
+        const [rows] = await pool.query(
+            'SELECT * FROM students WHERE id = ? OR id = ?', 
+            [prefixedId, rawId]
+        );
 
         if (rows.length === 0) {
             console.log(`❌ Student not found: ${studentId}`);

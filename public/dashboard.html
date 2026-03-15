@@ -2294,43 +2294,33 @@
 
         // Function to get campus information (DYNAMIC FROM TIDB SESSION)
         function getCampusInfoFromUserEmail(userEmail) {
-            // Priority: Check if we have a valid TiDB session in localStorage
+            if (!userEmail) return null;
+            
+            // Priority: Check if we have a valid session in localStorage
             const storedEmail = localStorage.getItem('userEmail');
             const storedCampus = localStorage.getItem('userCampus');
             
-            if (storedEmail && storedEmail.toLowerCase() === userEmail.toLowerCase() && storedCampus) {
-                const displayName = CAMPUS_DISPLAY_NAMES[storedCampus] || storedCampus.replace(/_/g, ' ');
+            // Allow if email matches (case insensitive) or if we have stored campus
+            if (storedCampus && (storedEmail && storedEmail.toLowerCase() === userEmail.toLowerCase())) {
+                const displayCampusName = CAMPUS_DISPLAY_NAMES[storedCampus] || storedCampus.replace(/_/g, ' ');
                 return {
-                    name: displayName,
-                    email: userEmail,
-                    campusId: storedCampus
+                    campusId: storedCampus,
+                    name: displayCampusName,
+                    email: userEmail
+                };
+            }
+            
+            // Fallback for HOD/Admin (who might not have a fixed campus)
+            if (localStorage.getItem('isPrincipal') === 'true') {
+                 return {
+                    campusId: storedCampus || 'ALL',
+                    name: CAMPUS_DISPLAY_NAMES[storedCampus] || 'ALL CAMPUSES',
+                    email: userEmail
                 };
             }
 
-            // Fallback: This should ideally not be hit in the new system
             console.error('❌ Unauthorized or unknown email:', userEmail);
-            alert('❌ Access Denied: This email is not authorized or session expired. Please login again.');
-            localStorage.clear();
-            sessionStorage.clear();
-            window.location.href = 'staff-login.html';
             return null;
-        }
-
-        function getCampusInfoFromStorage() {
-            const campusId = localStorage.getItem('userCampus');
-            const userEmail = localStorage.getItem('userEmail');
-
-            if (!campusId || !userEmail) {
-                window.location.href = 'staff-login.html';
-                return null;
-            }
-
-            const displayName = CAMPUS_DISPLAY_NAMES[campusId] || campusId.replace(/_/g, ' ');
-            return {
-                name: displayName,
-                email: userEmail,
-                campusId: campusId
-            };
         }
 
         // Function to generate sequential outpass number from Firestore
@@ -2416,47 +2406,42 @@
         }
 
         function initializeDashboardWithUser(user) {
+            if (authStateInitialized && user.email === document.getElementById('userEmail').textContent) return;
             authStateInitialized = true;
-            console.log('User logged in:', user.email);
+            
+            console.log('Initializing Dashboard for:', user.email);
             document.getElementById('userEmail').textContent = user.email;
 
-            // STRICT: Get campus information from user email (no fallback)
+            // Get campus information
             campusInfo = getCampusInfoFromUserEmail(user.email);
-            if (!campusInfo) return;
-
-            console.log('Campus Info:', campusInfo);
-
-            // STRICT: Verify email matches the campus in localStorage if it exists
-            const storedCampus = localStorage.getItem('userCampus');
-            if (storedCampus && storedCampus !== campusInfo.campusId) {
-                console.error('❌ Campus mismatch:', { email: user.email, storedCampus, actualCampus: campusInfo.campusId });
-                alert('❌ Access Denied: Campus mismatch detected. Please login again.');
-                auth.signOut().then(() => {
-                    localStorage.clear();
-                    window.location.href = 'staff-login.html';
-                });
+            
+            if (!campusInfo) {
+                console.warn('No campus info found for user, redirecting...');
+                document.body.style.display = 'block'; // Ensure body is visible to see alert
+                alert('Session expired or unauthorized. Please login again.');
+                window.location.href = 'staff-login.html';
                 return;
             }
 
             // Store in localStorage for consistency
             localStorage.setItem('userCampus', campusInfo.campusId);
-            localStorage.setItem('userEmail', campusInfo.email);
+            localStorage.setItem('userEmail', user.email);
 
             // Load security options for this campus
             loadSecurityOptions(campusInfo.campusId);
 
-            if (document.body.style.display === 'none') {
-                document.body.style.display = 'block';
+            // Show the page
+            document.body.style.display = 'block';
+            
+            // Set default dates if not already set
+            if (!document.getElementById('outDate').value) {
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                document.getElementById('outDate').valueAsDate = today;
+                document.getElementById('inDate').valueAsDate = tomorrow;
+                document.getElementById('mediDate').valueAsDate = today;
             }
-
-            // Set default dates
-            const today = new Date();
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-
-            document.getElementById('outDate').valueAsDate = today;
-            document.getElementById('inDate').valueAsDate = tomorrow;
-            document.getElementById('mediDate').valueAsDate = today;
 
             // Set default time to current time and +1 hour for end time
             const now = new Date();
@@ -2568,62 +2553,65 @@
         // Function to fetch student data from Firestore (campus-specific)
         async function fetchStudentData(studentId) {
             try {
-                // Accept 5, 6, or 7 digits after SCS (8, 9, or 10 characters total)
-                if (!studentId || studentId.length < 8) {
-                    return { error: 'INVALID_ID' };
-                }
-
+                if (!studentId) return { error: 'MISSING_ID', message: 'Enter Student ID' };
+                
+                // 1. Prepare ID variations (raw and with SCS prefix)
+                const rawId = studentId.replace(/SCS/gi, '').trim();
+                const prefixedId = 'SCS' + rawId;
+                
                 const userEmail = localStorage.getItem('userEmail');
-                if (!userEmail) {
-                    return { error: 'NOT_AUTHENTICATED' };
-                }
-
-                // Get campus from session
                 const campusId = localStorage.getItem('userCampus');
-                if (!campusId) {
-                    return { error: 'NO_CAMPUS' };
+                
+                if (!campusId) return { error: 'NO_CAMPUS', message: 'Campus session lost. Please re-login.' };
+
+                // 2. TRY FIRESTORE FIRST (Real Firebase)
+                const firestore = firebase.firestore();
+                console.log(`🔍 Searching Firestore for ${prefixedId} or ${rawId}...`);
+                
+                let studentDoc = await firestore.collection('students').doc(prefixedId).get();
+                if (!studentDoc.exists) {
+                    studentDoc = await firestore.collection('students').doc(rawId).get();
                 }
-
-                // First, check if there's any data for this campus
-                const campusDataCheck = await db.collection('students')
-                    .where('campus', '==', campusId)
-                    .limit(1)
-                    .get();
-
-                if (campusDataCheck.empty) {
-                    return {
-                        error: 'NO_CAMPUS_DATA',
-                        message: 'No student data available for your campus. Please ask admin to update the student data of your campus and try again.'
-                    };
-                }
-
-                // Query by document ID (studentId is the document ID)
-                const normalizedStudentId = studentId.toUpperCase();
-                const studentDoc = await db.collection('students').doc(normalizedStudentId).get();
 
                 if (studentDoc.exists) {
-                    const studentData = studentDoc.data();
-
-                    // Check if student belongs to this campus
-                    if (studentData.campus === campusId) {
-                        return studentData;
-                    } else {
-                        // Student exists but belongs to different campus - prevent cross-campus access
-                        return {
-                            error: 'MISSING_ID',
-                            message: 'This Student ID belongs to a different campus. You can only access students from your own campus (' + (CAMPUS_DISPLAY_NAMES[campusId] || campusId) + ').'
-                        };
+                    const data = studentDoc.data();
+                    if (data.campus === campusId || !data.campus) {
+                        console.log("✅ Student found in Firestore");
+                        return data;
                     }
                 }
 
-                // Student ID not found in database
+                // 3. FALLBACK TO TiDB (Via Proxy)
+                console.log("⚠️ Not in Firestore, checking TiDB...");
+                let tidbDoc = await window.db.collection('students').doc(prefixedId).get();
+                if (!tidbDoc.exists) {
+                    tidbDoc = await window.db.collection('students').doc(rawId).get();
+                }
+
+                if (tidbDoc.exists) {
+                    const data = tidbDoc.data();
+                    // TiDB data structure might be slightly different
+                    const normalizedData = {
+                        studentId: data.id || data.studentId,
+                        studentName: data.studentName || data.name,
+                        category: data.category,
+                        section: data.section,
+                        fatherName: data.fatherName || data.father_name,
+                        whatsappNumber: data.whatsappNumber || data.whatsapp_number,
+                        campus: data.campus
+                    };
+                    
+                    console.log("✅ Student found in TiDB");
+                    return normalizedData;
+                }
+
                 return {
                     error: 'MISSING_ID',
-                    message: 'This Student ID is missing in your campus data. Please contact admin to update the student data.'
+                    message: 'Student ID not found in either Firestore or TiDB for this campus.'
                 };
             } catch (error) {
                 console.error('Error fetching student data:', error);
-                return { error: 'FETCH_ERROR', message: 'Error fetching student data. Please try again.' };
+                return { error: 'FETCH_ERROR', message: 'Error connecting to student database.' };
             }
         }
 
