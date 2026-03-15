@@ -1,7 +1,6 @@
 {
   "projects": {
-    "default": "college-out-pass-system",
-    "college-out-pass-system": "college-out-pass-system-62552"
+    "default": "college-out-pass-system-62552"
   },
   "targets": {},
   "etags": {}
