@@ -2061,11 +2061,13 @@
 
                     setTimeout(() => {
                         html2canvas(pdfTemplate, {
-                            scale: 2,
+                            scale: 4,
                             useCORS: true,
                             allowTaint: false,
                             logging: false,
-                            backgroundColor: '#ffffff'
+                            backgroundColor: '#ffffff',
+                            imageTimeout: 15000,
+                            removeContainer: false
                         }).then(async (canvas) => {
                             console.log('Canvas captured, creating PDF...');
 
@@ -2083,7 +2085,7 @@
                             const pdfWidth = pdf.internal.pageSize.getWidth();
                             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-                            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
+                            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
                             // Add Page 2: Authorized Letter (if exists)
                             if (outpassData.authorizedLetterPhoto) {
@@ -2117,13 +2119,15 @@
 
                                 // Capture authorized letter page
                                 const authorizedLetterCanvas = await html2canvas(authorizedLetterTemplate, {
-                                    scale: 2,
+                                    scale: 4,
                                     useCORS: true,
                                     allowTaint: false,
                                     logging: false,
                                     backgroundColor: '#ffffff',
                                     width: 794,
-                                    height: 1123
+                                    height: 1123,
+                                    imageTimeout: 15000,
+                                    removeContainer: false
                                 });
 
                                 authorizedLetterTemplate.style.display = 'none';
@@ -2133,14 +2137,15 @@
                                 const authorizedLetterImgData = authorizedLetterCanvas.toDataURL('image/png', 1.0);
                                 const authorizedLetterPdfHeight = (authorizedLetterCanvas.height * pdfWidth) / authorizedLetterCanvas.width;
 
-                                pdf.addImage(authorizedLetterImgData, 'PNG', 0, 0, pdfWidth, authorizedLetterPdfHeight, '', 'FAST');
+                                pdf.addImage(authorizedLetterImgData, 'PNG', 0, 0, pdfWidth, authorizedLetterPdfHeight);
 
                                 console.log('Authorized Letter page added successfully');
                             }
 
                             // Save PDF using blob download (silent - no preview)
-                            // Correct filename pattern: OUTPASS_StudentName_PassID.pdf
-                            const filename = `OUTPASS_${outpassData.studentName}_${outpassData.passNumber}.pdf`;
+                            // Correct filename pattern: OUTPASS_StudentName_PassID.pdf - Sanitized for reliability
+                            const sanitizedName = outpassData.studentName.replace(/[^a-z0-9]/gi, '_');
+                            const filename = `OUTPASS_${sanitizedName}_${outpassData.passNumber}.pdf`;
 
                             console.log('Saving PDF using blob:', filename);
 
@@ -2231,7 +2236,7 @@
 
                     setTimeout(() => {
                         html2canvas(pdfTemplate, {
-                            scale: 2,
+                            scale: 4,
                             useCORS: true,
                             allowTaint: true,
                             logging: false,
@@ -2254,9 +2259,10 @@
                             const pdfWidth = pdf.internal.pageSize.getWidth();
                             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-                            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
+                            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
-                            const filename = `MEDISLIP_${mediSlipData.studentName}_${mediSlipData.mediSlipNumber}.pdf`;
+                            const sanitizedName = mediSlipData.studentName.replace(/[^a-z0-9]/gi, '_');
+                            const filename = `MEDISLIP_${sanitizedName}_${mediSlipData.mediSlipNumber}.pdf`;
 
                             console.log('Saving Medi Slip PDF using blob:', filename);
                             

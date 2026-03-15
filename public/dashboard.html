@@ -2597,6 +2597,11 @@
                 const db = firebase.firestore();
                 console.log(`🔍 Searching Firestore for ${prefixedId} or ${rawId}...`);
                 
+                // Get current user campus for verification
+                const userEmail = localStorage.getItem('userEmail');
+                const userCampus = localStorage.getItem('userCampus');
+                const isPrincipal = localStorage.getItem('isPrincipal') === 'true';
+
                 // Try prefixed ID first
                 let studentDoc = await db.collection('students').doc(prefixedId).get();
                 
@@ -2607,6 +2612,16 @@
 
                 if (studentDoc.exists) {
                     const data = studentDoc.data();
+                    
+                    // Campus validation (skip for principals)
+                    if (!isPrincipal && userCampus && data.campus && data.campus !== userCampus) {
+                        const studentCampusName = CAMPUS_DISPLAY_NAMES[data.campus] || data.campus.replace(/_/g, ' ');
+                        return {
+                            error: 'INVALID_CAMPUS',
+                            message: `This student belongs to ${studentCampusName}. Access is restricted to your campus students only.`
+                        };
+                    }
+
                     console.log("✅ Student found in Firestore");
                     return data;
                 }
@@ -3615,6 +3630,9 @@
 
                 const mediSlipNumber = await generateMediSlipNumber();
 
+                const currentCampusInfo = getCampusInfoFromUserEmail(user.email);
+                const campusId = currentCampusInfo ? currentCampusInfo.campusId : null;
+
                 const mediSlipData = {
                     studentId: fullStudentId,
                     studentName: studentName,
@@ -3631,6 +3649,7 @@
                     issuedDate: new Date().toLocaleDateString('en-IN'),
                     issuedTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
                     createdBy: user.email,
+                    campus: campusId, // Store campus ID for easier future lookups
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
@@ -3750,6 +3769,17 @@
                     reportingScheduledInDateDisplay.textContent = '-';
                     document.getElementById('reportingInDate').value = '';
                     showReportingStatusError('No outpass record found for this student ID');
+                    searchStudentBtn.disabled = false;
+                    searchStudentBtn.textContent = '🔍 Search Student';
+                    return;
+                }
+
+                // Campus validation (skip for principals)
+                const userCampus = localStorage.getItem('userCampus');
+                const isPrincipal = localStorage.getItem('isPrincipal') === 'true';
+                if (!isPrincipal && userCampus && latestOutpass.campus && latestOutpass.campus !== userCampus) {
+                    const studentCampusName = CAMPUS_DISPLAY_NAMES[latestOutpass.campus] || latestOutpass.campus.replace(/_/g, ' ');
+                    showReportingStatusError(`⚠️ This student record belongs to ${studentCampusName}. Access is restricted to your campus students only.`);
                     searchStudentBtn.disabled = false;
                     searchStudentBtn.textContent = '🔍 Search Student';
                     return;
@@ -4107,7 +4137,7 @@
 
                     setTimeout(() => {
                         html2canvas(pdfTemplate, {
-                            scale: 2,
+                            scale: 4,
                             useCORS: true,
                             allowTaint: false,
                             logging: true,
@@ -4163,7 +4193,7 @@
 
                                 // Capture authorized letter page
                                 const authorizedLetterCanvas = await html2canvas(authorizedLetterTemplate, {
-                                    scale: 2,
+                                    scale: 4,
                                     useCORS: true,
                                     allowTaint: false,
                                     logging: false,
@@ -4171,7 +4201,6 @@
                                     width: 794,
                                     height: 1123
                                 });
-
                                 authorizedLetterTemplate.style.display = 'none';
 
                                 // Add as new page
@@ -4179,13 +4208,14 @@
                                 const authorizedLetterImgData = authorizedLetterCanvas.toDataURL('image/png', 1.0);
                                 const authorizedLetterPdfHeight = (authorizedLetterCanvas.height * pdfWidth) / authorizedLetterCanvas.width;
 
-                                pdf.addImage(authorizedLetterImgData, 'PNG', 0, 0, pdfWidth, authorizedLetterPdfHeight, '', 'FAST');
+                                pdf.addImage(authorizedLetterImgData, 'PNG', 0, 0, pdfWidth, authorizedLetterPdfHeight, '');
 
                                 console.log('Authorized Letter page added successfully');
                             }
 
                             // Save PDF using blob download (silent - no preview)
-                            const filename = `OUTPASS_${outpassData.studentName}_${outpassData.passNumber}.pdf`;
+                            const sanitizedName = outpassData.studentName.replace(/[^a-z0-9]/gi, '_');
+                            const filename = `OUTPASS_${sanitizedName}_${outpassData.passNumber}.pdf`;
 
                             console.log('Saving PDF:', filename);
 
@@ -4285,7 +4315,7 @@
 
                     setTimeout(() => {
                         html2canvas(pdfTemplate, {
-                            scale: 2,
+                            scale: 4, // Increased scale for better quality
                             useCORS: true,
                             allowTaint: true,
                             logging: false,
