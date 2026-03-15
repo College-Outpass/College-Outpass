@@ -1268,7 +1268,7 @@
                 <select class="filter-select" id="typeFilter">
                     <option value="">All Types</option>
                     <option value="outpass">Outpass</option>
-                    <option value="MediSlip">Medi Slip</option>
+                    <option value="mediSlip">Medi Slip</option>
                 </select>
 
                 <select class="filter-select" id="statusFilter">
@@ -1409,18 +1409,18 @@
                     loadAllData();
                 }, 500);
             }
-
-            // Helper to map email to campus if field is missing (fixes "not defined" error)
-            window.getCampusFromEmail = function(email) {
-                if (!email) return 'UNKNOWN_CAMPUS';
-                const e = email.toLowerCase();
-                if (e.includes('school')) return 'ECITY_SCHOOL';
-                if (e.includes('boys')) return 'ECITY_NEET_BOYS';
-                if (e.includes('girls') && e.includes('residential') && !e.includes('engg')) return 'ECITY_GIRLS_RESIDENTIAL';
-                if (e.includes('engg') && e.includes('girls')) return 'ECITY_ENGG_GIRLS_RESIDENTIAL';
-                return 'ECITY_SCHOOL'; // Default fallback
-            };
         });
+
+        // Helper to map email to campus if field is missing (fixes "not defined" error)
+        function getCampusFromEmail(email) {
+            if (!email) return 'UNKNOWN_CAMPUS';
+            const e = email.toLowerCase();
+            if (e.includes('school')) return 'ECITY_SCHOOL';
+            if (e.includes('boys')) return 'ECITY_NEET_BOYS';
+            if (e.includes('girls') && e.includes('residential') && !e.includes('engg')) return 'ECITY_GIRLS_RESIDENTIAL';
+            if (e.includes('engg') && e.includes('girls')) return 'ECITY_ENGG_GIRLS_RESIDENTIAL';
+            return 'ECITY_SCHOOL'; // Default fallback
+        }
 
         function setupEventListeners() {
             document.getElementById('refreshBtn').addEventListener('click', function () {
@@ -1538,7 +1538,7 @@
 
                     mediSlips.push({
                         id: doc.id,
-                        type: 'MediSlip',
+                        type: 'mediSlip',
                         campus: campus,
                         passNumber: slipNumber,
                         studentName: data.studentName || 'N/A',
@@ -1649,7 +1649,7 @@
             }
 
             tableBody.innerHTML = filteredData.map(item => {
-                const typeClass = item.type === 'outpass' ? 'type-outpass' : 'type-Medislip';
+                const typeClass = item.type === 'outpass' ? 'type-outpass' : 'type-mediSlip';
                 const typeLabel = item.type === 'outpass' ? 'Outpass' : 'Medi Slip';
                 const statusClass = `status-${item.status}`;
                 const campusDisplay = CAMPUS_DISPLAY_NAMES[item.campus] || item.campus;

@@ -1229,6 +1229,17 @@
                 setupEventListeners();
             });
         });
+        
+        // Helper to map email to campus if field is missing
+        function getCampusFromEmail(email) {
+            if (!email) return 'UNKNOWN_CAMPUS';
+            const e = email.toLowerCase();
+            if (e.includes('school')) return 'ECITY_SCHOOL';
+            if (e.includes('boys')) return 'ECITY_NEET_BOYS';
+            if (e.includes('girls') && e.includes('residential') && !e.includes('engg')) return 'ECITY_GIRLS_RESIDENTIAL';
+            if (e.includes('engg') && e.includes('girls')) return 'ECITY_ENGG_GIRLS_RESIDENTIAL';
+            return 'ECITY_SCHOOL'; // Default fallback
+        }
 
         function updateCampusDisplay() {
             const displayName = CAMPUS_DISPLAY_NAMES[currentCampus] || currentCampus;
@@ -1249,20 +1260,10 @@
 
             console.log("🔍 Loading data for campus:", currentCampus);
 
-            // Fetch queries based on campus
-            let outpassQuery = db.collection('outpasses');
-            let mediSlipQuery = db.collection('mediSlips');
-
-            // If not 'ALL', filter by specific campus
-            if (currentCampus !== 'ALL') {
-                outpassQuery = outpassQuery.where('campus', '==', currentCampus);
-                mediSlipQuery = mediSlipQuery.where('campus', '==', currentCampus);
-            }
-
-            // Load all data filtered by CAMPUS directly from database
+            // Fetch all data and filter in JS to support legacy records without 'campus' field
             Promise.all([
-                outpassQuery.get(),
-                mediSlipQuery.get()
+                db.collection('outpasses').get(),
+                db.collection('mediSlips').get()
             ]).then(([outpassSnapshot, mediSlipSnapshot]) => {
                 const outpasses = [];
                 const mediSlips = [];
@@ -1270,14 +1271,21 @@
                 // Process outpasses
                 outpassSnapshot.forEach((doc) => {
                     const data = doc.data();
-                    // FIXED: Extract reportingTime and inDate properly
+                    // Resolve campus: use field if exists, otherwise map from email
+                    const resolvedCampus = data.campus || getCampusFromEmail(data.createdBy);
+                    
+                    // Security filter: only include if matches current campus (or if user is HOD/ALL)
+                    if (currentCampus !== 'ALL' && resolvedCampus !== currentCampus) {
+                        return;
+                    }
+
                     const reportingTime = data.reportingTime || '--';
                     const inDate = data.inDate || '--';
                     
                     outpasses.push({
                         id: doc.id,
                         type: 'outpass',
-                        campus: data.campus || 'UNKNOWN',
+                        campus: resolvedCampus,
                         passNumber: data.passNumber || `OUTPASS-${doc.id.substring(0, 8)}`,
                         studentName: data.studentName || 'N/A',
                         studentId: data.studentId || 'N/A',
@@ -1288,30 +1296,34 @@
                         createdBy: data.createdBy || 'Unknown',
                         issuedBy: data.issuedBy || data.IssuedBy || data.issuerRole || data.issuerName || data.issuedByRole || 'Staff',
                         createdAt: data.createdAt,
-                        // FIXED: Use the actual reportingTime and inDate fields
                         reportingTime: reportingTime,
                         inDate: inDate,
                         authorizedBy: data.authorizedBy || '--',
-                        // Store full data for PDF generation
                         fullData: data,
-                        // Security details
                         security: data.security || '--',
                         securityWhatsapp: data.securityWhatsapp || '--'
                     });
                 });
                 
-                // Process Medi slips - UPDATED WITH TEMPERATURE
+                // Process Medi slips
                 mediSlipSnapshot.forEach((doc) => {
                     const data = doc.data();
+                    // Resolve campus: use field if exists, otherwise map from email
+                    const resolvedCampus = data.campus || getCampusFromEmail(data.createdBy);
+                    
+                    // Security filter: only include if matches current campus (or if user is HOD/ALL)
+                    if (currentCampus !== 'ALL' && resolvedCampus !== currentCampus) {
+                        return;
+                    }
+
                     mediSlips.push({
                         id: doc.id,
                         type: 'mediSlip',
-                        campus: data.campus || 'UNKNOWN',
-                        passNumber: data.mediSlipNumber || `MEDSLIP-${doc.id.substring(0, 8)}`,
+                        campus: resolvedCampus,
+                        passNumber: data.mediSlipNumber || data.MediSlipNumber || `MEDSLIP-${doc.id.substring(0, 8)}`,
                         studentName: data.studentName || 'N/A',
                         studentId: data.studentId || 'N/A',
                         date: data.date || data.issuedDate || 'N/A',
-                        // FIXED: Ensure temperature shows with °F symbol
                         details: `Temp: ${data.temperature || 'None'}°F | ${formatTime(data.startTime)} - ${formatTime(data.endTime)}`,
                         reason: data.reason || 'N/A',
                         medicineGiven: data.medicineGiven || '--',
@@ -1326,7 +1338,7 @@
                 });
                 
                 allData = [...outpasses, ...mediSlips];
-                console.log("✅ Total data loaded:", allData.length, "(Outpasses:", outpasses.length, ", Medi Slips:", mediSlips.length + ")");
+                console.log("✅ Total data loaded for " + currentCampus + ":", allData.length);
                 
                 // Debug: Check if we have reporting data
                 console.log("🔍 Sample outpass data:", outpasses.length > 0 ? outpasses[0] : 'No outpasses');

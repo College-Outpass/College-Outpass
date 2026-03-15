@@ -127,7 +127,7 @@ if %errorlevel% neq 0 (
 :: 5. TRIGGER RENDER DEPLOY HOOK
 echo.
 echo [6/6] Triggering Render API Hook...
-powershell -Command "Invoke-RestMethod -Uri 'https://api.render.com/deploy/srv-d6lvh724d50c73ciedo0?key=AnNe9gTr_oM' -Method Post"
+powershell -ExecutionPolicy Bypass -Command "Invoke-RestMethod -Uri 'https://api.render.com/deploy/srv-d6lvh724d50c73ciedo0?key=AnNe9gTr_oM' -Method Post"
 if %errorlevel% neq 0 (
     echo [WARNING] Render trigger failed.
 )
