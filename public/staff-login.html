@@ -756,20 +756,8 @@
         }
     </script>
     <script>
-        // Version check - update this version number when you deploy
-        const CURRENT_VERSION = '2.5';
-        const STORAGE_KEY = 'app_version';
-
-        // Check if user has old cached version
-        const savedVersion = localStorage.getItem(STORAGE_KEY);
-        if (savedVersion && savedVersion !== CURRENT_VERSION) {
-            if (confirm('New update available! Click OK to reload and get the latest features.')) {
-                localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
-                window.location.reload(true);
-            }
-        } else {
-            localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
-        }
+        // Version check removed as per user request
+        localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
 
         // Force clear cache on load
         window.addEventListener('load', function () {

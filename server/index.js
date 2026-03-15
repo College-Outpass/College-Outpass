@@ -11,13 +11,22 @@ const admin = require('firebase-admin');
 const serviceAccountPath = path.join(__dirname, '../key.json');
 if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
     try {
-        const decodedKey = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_B64, 'base64').toString('utf8');
+        let b64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64.trim();
+        // Remove quotes if they exist (common when pasting env vars)
+        if (b64.startsWith('"') && b64.endsWith('"')) b64 = b64.substring(1, b64.length - 1);
+        if (b64.startsWith("'") && b64.endsWith("'")) b64 = b64.substring(1, b64.length - 1);
+        
+        const decodedKey = Buffer.from(b64, 'base64').toString('utf8');
         const serviceAccount = JSON.parse(decodedKey);
         
-        // Fix for common newline issues in PEM keys when passed via environment variables
         if (serviceAccount.private_key) {
+            // First replace literal \n if they exist
             serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+            // Then ensure it's trimmed and has proper PEM headers
+            serviceAccount.private_key = serviceAccount.private_key.trim();
         }
+
+        console.log(`🔑 Key check: ${serviceAccount.private_key ? serviceAccount.private_key.substring(0, 30) : 'MISSING'}...`);
 
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
