@@ -1493,8 +1493,8 @@
                 // Process outpasses - ALL DATA
                 outpassSnapshot.forEach((doc) => {
                     const data = doc.data();
-                    // Use campus field directly
-                    const campus = data.campus || 'UNKNOWN_CAMPUS';
+                    // Use email mapping to determine campus if field is missing
+                    const campus = data.campus || getCampusFromEmail(data.createdBy) || 'UNKNOWN_CAMPUS';
 
                     // Extract reportingTime and inDate properly
                     const reportingTime = data.reportingTime || '--';
@@ -1675,15 +1675,15 @@
                         // Student has NOT reported back yet - show "Not Reported"
                         reportingStatusHtml = `<span class="status-badge status-not-reported">Not Reported</span>`;
                     }
-                } else if (item.type === 'MediSlip') {
+                } else if (item.type === 'mediSlip') {
                     // For Medi Slip, show medicine provided if available
                     if (item.medicineGiven && item.medicineGiven !== '--' && item.medicineGiven.trim() !== '') {
                         reportingStatusHtml = `
-            <span class="status-badge status-approved">Medicine Provided</span>
-            <div class="authorized-by" style="margin-top: 4px; font-weight: bold; color: #333;">${item.medicineGiven}</div>
-        `;
+                            <div style="font-weight: 600; font-size: 11px; text-transform: uppercase; color: #666; margin-bottom: 2px;">Medicine:</div>
+                            <div style="font-weight: bold; color: #2e7d32;">${item.medicineGiven}</div>
+                        `;
                     } else {
-                        reportingStatusHtml = '--';
+                        reportingStatusHtml = '<span style="color: #999;">No medicine recorded</span>';
                     }
                 }
 
@@ -1693,7 +1693,7 @@
                     pdfButton = `<button class="btn-pdf" onclick="downloadOutpassPDF('${item.id}', event)" title="Download PDF">
                 📄 PDF
             </button>`;
-                } else if (item.type === 'MediSlip') {
+                } else if (item.type === 'mediSlip') {
                     pdfButton = `<button class="btn-pdf" onclick="downloadMediSlipPDF('${item.id}', event)" title="Download PDF">
                 📄 PDF
             </button>`;
