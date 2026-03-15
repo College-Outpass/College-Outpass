@@ -13,6 +13,12 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
     try {
         const decodedKey = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_B64, 'base64').toString('utf8');
         const serviceAccount = JSON.parse(decodedKey);
+        
+        // Fix for common newline issues in PEM keys when passed via environment variables
+        if (serviceAccount.private_key) {
+            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        }
+
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
         });
