@@ -2083,7 +2083,7 @@
                             const pdfWidth = pdf.internal.pageSize.getWidth();
                             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-                            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
 
                             // Add Page 2: Authorized Letter (if exists)
                             if (outpassData.authorizedLetterPhoto) {
@@ -2117,7 +2117,7 @@
 
                                 // Capture authorized letter page
                                 const authorizedLetterCanvas = await html2canvas(authorizedLetterTemplate, {
-                                    scale: 2, // Balanced scale for mobile stability
+                                    scale: 2,
                                     useCORS: true,
                                     allowTaint: false,
                                     logging: false,
@@ -2133,25 +2133,33 @@
                                 const authorizedLetterImgData = authorizedLetterCanvas.toDataURL('image/png', 1.0);
                                 const authorizedLetterPdfHeight = (authorizedLetterCanvas.height * pdfWidth) / authorizedLetterCanvas.width;
 
-                                pdf.addImage(authorizedLetterImgData, 'PNG', 0, 0, pdfWidth, authorizedLetterPdfHeight);
+                                pdf.addImage(authorizedLetterImgData, 'PNG', 0, 0, pdfWidth, authorizedLetterPdfHeight, '', 'FAST');
 
                                 console.log('Authorized Letter page added successfully');
                             }
 
-                            // Save PDF using original safe method
-                            const sanitizedName = outpassData.studentName.replace(/[^a-z0-9]/gi, '_');
-                            const filename = `OUTPASS_${sanitizedName}_${outpassData.passNumber}.pdf`;
+                            // Save PDF using blob download (silent - no preview)
+                            const filename = `${outpassData.passNumber}_${outpassData.studentName}.pdf`;
 
                             console.log('Saving PDF:', filename);
-                            
-                            // TRICK: Set document title for APK filename support
-                            const originalTitle = document.title;
-                            document.title = filename.replace('.pdf', '');
-                            
-                            pdf.save(filename);
-                            
-                            // Restore title
-                            setTimeout(() => { document.title = originalTitle; }, 1000);
+
+                            // Use blob method for silent download
+                            const pdfBlob = pdf.output('blob');
+                            const url = URL.createObjectURL(pdfBlob);
+
+                            // Create download link
+                            const downloadLink = document.createElement('a');
+                            downloadLink.href = url;
+                            downloadLink.download = filename;
+                            downloadLink.style.display = 'none';
+
+                            // Add to body, click, and remove
+                            document.body.appendChild(downloadLink);
+                            downloadLink.click();
+                            document.body.removeChild(downloadLink);
+
+                            // Clean up URL
+                            setTimeout(() => URL.revokeObjectURL(url), 100);
 
                             console.log('PDF download triggered successfully');
                             resolve();
@@ -2243,22 +2251,13 @@
                             const pdfWidth = pdf.internal.pageSize.getWidth();
                             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-                            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
 
-                            // Save Medi Slip PDF using original safe method
-                            const sanitizedStudentName = mediSlipData.studentName.replace(/[^a-z0-9]/gi, '_');
-                            const filename = `MEDISLIP_${sanitizedStudentName}_${mediSlipData.mediSlipNumber}.pdf`;
+                            // FIXED: Use the sequential medi slip number in filename
+                            const filename = `${mediSlipData.mediSlipNumber}_${mediSlipData.studentName}.pdf`;
 
                             console.log('Saving Medi Slip PDF:', filename);
-                            
-                            // TRICK: Set document title for APK filename support
-                            const originalTitle = document.title;
-                            document.title = filename.replace('.pdf', '');
-                            
                             pdf.save(filename);
-                            
-                            // Restore title
-                            setTimeout(() => { document.title = originalTitle; }, 1000);
 
                             console.log('Medi Slip PDF download triggered successfully');
                             resolve();
