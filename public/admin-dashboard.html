@@ -1409,6 +1409,17 @@
                     loadAllData();
                 }, 500);
             }
+
+            // Helper to map email to campus if field is missing (fixes "not defined" error)
+            window.getCampusFromEmail = function(email) {
+                if (!email) return 'UNKNOWN_CAMPUS';
+                const e = email.toLowerCase();
+                if (e.includes('school')) return 'ECITY_SCHOOL';
+                if (e.includes('boys')) return 'ECITY_NEET_BOYS';
+                if (e.includes('girls') && e.includes('residential') && !e.includes('engg')) return 'ECITY_GIRLS_RESIDENTIAL';
+                if (e.includes('engg') && e.includes('girls')) return 'ECITY_ENGG_GIRLS_RESIDENTIAL';
+                return 'ECITY_SCHOOL'; // Default fallback
+            };
         });
 
         function setupEventListeners() {
@@ -1523,11 +1534,13 @@
                     // Use email mapping to determine campus
                     const campus = data.campus || getCampusFromEmail(data.createdBy) || 'UNKNOWN_CAMPUS';
 
+                    const slipNumber = data.mediSlipNumber || data.MediSlipNumber || `MEDSLIP-${doc.id.substring(0, 8)}`;
+
                     mediSlips.push({
                         id: doc.id,
                         type: 'MediSlip',
                         campus: campus,
-                        passNumber: data.mediSlipNumber || data.MediSlipNumber || `MEDSLIP-${doc.id.substring(0, 8)}`,
+                        passNumber: slipNumber,
                         studentName: data.studentName || 'N/A',
                         studentId: data.studentId || 'N/A',
                         date: data.date || data.issuedDate || 'N/A',
@@ -1923,6 +1936,11 @@
                 }
 
                 const mediSlipData = mediSlipDoc.data();
+                
+                // Ensure mediSlipNumber exists for filename
+                if (!mediSlipData.mediSlipNumber) {
+                    mediSlipData.mediSlipNumber = mediSlipData.MediSlipNumber || `MEDSLIP-${mediSlipId.substring(0, 8)}`;
+                }
 
                 // Generate PDF silently (no button state changes)
                 await generateMediSlipPDFFromData(mediSlipData);

@@ -1137,7 +1137,7 @@
                     </thead>
                     <tbody id="tableBody">
                         <tr>
-                            <td colspan="11" class="no-data">
+                            <td colspan="12" class="no-data">
                                 <div class="loader"></div>
                                 <p>Loading data...</p>
                             </td>
@@ -1338,7 +1338,7 @@
                 console.error("❌ Error loading data:", error);
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="11" class="no-data">
+                        <td colspan="12" class="no-data">
                             ❌ Error loading data: ${error.message}
                             <br><br>
                             <button onclick="loadAllData()" class="btn-refresh">🔄 Retry</button>
@@ -1397,7 +1397,7 @@
             if (filteredData.length === 0) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="11" class="no-data">
+                    <td colspan="12" class="no-data">
                         📭 No applications found for ${CAMPUS_DISPLAY_NAMES[currentCampus]}
                     </td>
                 </tr>
