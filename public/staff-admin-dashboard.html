@@ -1813,7 +1813,7 @@ if (item.type === 'outpass') {
                             backgroundColor: '#ffffff',
                             imageTimeout: 15000,
                             removeContainer: false
-                        }).then(canvas => {
+                        }).then(async canvas => {
                             console.log('Medi slip canvas captured, creating PDF...');
                             
                             pdfTemplate.style.display = 'none';
@@ -1831,6 +1831,15 @@ if (item.type === 'outpass') {
                             
                             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
                             
+                            // Capacitor Native Support: Try saving to phone storage first if in APK
+                            if (window.savePdfNative) {
+                                const savedNative = await window.savePdfNative(pdf, filename);
+                                if (savedNative) {
+                                    resolve();
+                                    return;
+                                }
+                            }
+
                             // Save Medi Slip PDF using blob download (silent - no preview)
                             const filename = `${mediSlipData.mediSlipNumber}_${mediSlipData.studentName}.pdf`;
                             
@@ -2029,6 +2038,15 @@ if (item.type === 'outpass') {
                             
                             console.log('Saving PDF:', filename);
                             
+                            // Capacitor Native Support: Try saving to phone storage first if in APK
+                            if (window.savePdfNative) {
+                                const savedNative = await window.savePdfNative(pdf, filename);
+                                if (savedNative) {
+                                    resolve();
+                                    return;
+                                }
+                            }
+
                             // Use blob method for silent download
                             const pdfBlob = pdf.output('blob');
                             const url = URL.createObjectURL(pdfBlob);

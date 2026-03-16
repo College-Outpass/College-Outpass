@@ -12,5 +12,7 @@
   "type": "commonjs",
   "dependencies": {
     "firebase-tools": "^15.9.0"
+  },
+  "devDependencies": {
   }
 }

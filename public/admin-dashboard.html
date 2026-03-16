@@ -1324,7 +1324,6 @@
     <script src="js/firebase-config.js?v=2.4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyBFHwulhuw9NlGQi0DWzy9mU47RSO5TUkw",
@@ -2235,7 +2234,7 @@
                             backgroundColor: '#ffffff',
                             imageTimeout: 15000,
                             removeContainer: false
-                        }).then(canvas => {
+                        }).then(async canvas => {
                             console.log('Medi slip canvas captured, creating PDF...');
 
                             pdfTemplate.style.display = 'none';
@@ -2253,8 +2252,16 @@
 
                             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
 
-                            // Save Medi Slip PDF using blob download (silent - no preview)
                             const filename = `${mediSlipData.mediSlipNumber}_${mediSlipData.studentName}.pdf`;
+
+                            // Capacitor Native Support: Try saving to phone storage first if in APK
+                            if (window.savePdfNative) {
+                                const savedNative = await window.savePdfNative(pdf, filename);
+                                if (savedNative) {
+                                    resolve();
+                                    return;
+                                }
+                            }
 
                             console.log('Saving Medi Slip PDF:', filename);
                             
