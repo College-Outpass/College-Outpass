@@ -108,7 +108,7 @@ if %errorlevel% neq 0 (
 :: 4. FIREBASE DEPLOYMENT
 echo.
 echo [5/6] Deploying to Firebase Hosting...
-call %FIREBASE_CMD% deploy --only hosting
+call %FIREBASE_CMD% deploy --only hosting --project college-out-pass-system-62552
 if %errorlevel% neq 0 (
     echo.
     echo [ERROR] Firebase deploy failed! 
