@@ -2607,15 +2607,22 @@
                 if (studentDoc.exists) {
                     const data = studentDoc.data();
                     
-                    // Campus validation: Only allow if student belongs to user's campus
+                    // Strict Campus validation
                     const currentUserCampus = localStorage.getItem('userCampus');
-                    if (currentUserCampus && currentUserCampus !== 'ALL' && data.campus && data.campus !== currentUserCampus) {
-                        const campusName = CAMPUS_DISPLAY_NAMES[data.campus] || data.campus.replace(/_/g, ' ');
-                        console.warn(`⚠️ Student belongs to different campus: ${data.campus}. User campus: ${currentUserCampus}`);
-                        return {
-                            error: 'WRONG_CAMPUS',
-                            message: `This student belongs to the ${campusName} campus and cannot be processed here.`
-                        };
+                    
+                    const normalizeCampus = (val) => (val || '').toString().trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    const studentCampusNormalized = normalizeCampus(data.campus);
+                    const userCampusNormalized = normalizeCampus(currentUserCampus);
+
+                    if (userCampusNormalized && userCampusNormalized !== 'ALL') {
+                        if (studentCampusNormalized !== userCampusNormalized) {
+                            const campusName = CAMPUS_DISPLAY_NAMES[data.campus] || data.campus || 'a different';
+                            console.warn(`⚠️ Campus mismatch: Student(${studentCampusNormalized}) vs User(${userCampusNormalized})`);
+                            return {
+                                error: 'WRONG_CAMPUS',
+                                message: `This student belongs to the ${campusName} campus and cannot be processed here.`
+                            };
+                        }
                     }
 
                     console.log("✅ Student found in Firestore");
@@ -3792,14 +3799,21 @@
                     return;
                 }
 
-                // Campus validation: Only allow if record belongs to user's campus
+                // Strict Campus validation: Only allow if record belongs to user's campus
                 const currentUserCampus = localStorage.getItem('userCampus');
-                if (currentUserCampus && currentUserCampus !== 'ALL' && latestOutpass.campus && latestOutpass.campus !== currentUserCampus) {
-                    const campusName = CAMPUS_DISPLAY_NAMES[latestOutpass.campus] || latestOutpass.campus.replace(/_/g, ' ');
-                    showReportingStatusError(`⚠️ This record belongs to the ${campusName} campus and cannot be updated here.`);
-                    searchStudentBtn.disabled = false;
-                    searchStudentBtn.textContent = '🔍 Search Student';
-                    return;
+                
+                const normalizeCampus = (val) => (val || '').toString().trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                const studentCampusNormalized = normalizeCampus(latestOutpass.campus);
+                const userCampusNormalized = normalizeCampus(currentUserCampus);
+
+                if (userCampusNormalized && userCampusNormalized !== 'ALL') {
+                    if (studentCampusNormalized !== userCampusNormalized) {
+                        const campusName = CAMPUS_DISPLAY_NAMES[latestOutpass.campus] || latestOutpass.campus || 'a different';
+                        showReportingStatusError(`⚠️ This record belongs to the ${campusName} campus and cannot be updated here.`);
+                        searchStudentBtn.disabled = false;
+                        searchStudentBtn.textContent = '🔍 Search Student';
+                        return;
+                    }
                 }
 
                 // Store for potential editing

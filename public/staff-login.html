@@ -490,6 +490,13 @@
             }
         }
 
+        const CAMPUS_DISPLAY_NAMES = {
+            'ECITY_SCHOOL': 'Ecity - School',
+            'ECITY_NEET_BOYS': 'Ecity - NEET Boys Hostel',
+            'ECITY_GIRLS_RESIDENTIAL': 'Ecity - Girls Residential Campus',
+            'ECITY_ENGG_GIRLS_RESIDENTIAL': 'Ecity - Engg Girls Residential Campus'
+        };
+
         // Hardcoded mappings removed in favor of TiDB DB verification
 
         // CRITICAL FLAG: Prevent auto-redirect when user is actively trying to login
@@ -651,15 +658,18 @@
                     }
                 }
 
-                if (!userData) {
-                    throw new Error('User profile not found in Firebase. Please contact Admin.');
+                const role = userData.role || 'staff';
+                
+                // RESTRICTION: Only 'staff' role can login through the Staff Portal
+                if (role !== 'staff') {
+                   throw new Error('This account does not have Staff access. Please use the appropriate HOD or Principal portal.');
                 }
 
-                // Verify campus matches (unless it's an admin with ALL access)
+                // STRICT CAMPUS VALIDATION
                 if (userData.campus !== 'ALL' && userData.campus !== campus) {
-                   // throw new Error(`You are assigned to ${userData.campus.replace(/_/g, ' ')}, not ${campus.replace(/_/g, ' ')}`);
-                   // Relaxing for now as per "dont change original logic" but usually we check this
-                   console.warn('Campus mismatch, but allowing as per original logic flow...');
+                   const campusName = CAMPUS_DISPLAY_NAMES[userData.campus] || userData.campus.replace(/_/g, ' ');
+                   const selectedCampusName = CAMPUS_DISPLAY_NAMES[campus] || campus.replace(/_/g, ' ');
+                   throw new Error(`This staff belongs to the ${campusName} campus and cannot login with ${selectedCampusName}.`);
                 }
 
                 // Step 3: Set local storage
@@ -667,7 +677,6 @@
                 localStorage.setItem('userCampus', userData.campus || campus);
                 localStorage.setItem('userEmail', userData.email);
                 
-                const role = userData.role || 'staff';
                 localStorage.setItem('userRole', role);
                 localStorage.setItem('isHOD', role === 'hod' ? 'true' : 'false');
                 
@@ -761,6 +770,18 @@
                 
                 if (!isAdmin) {
                     throw new Error('This account does not have Principal/Admin access rights in Firebase.');
+                }
+                
+                // RESTRICTION: Only 'admin' role can login through the Principal Portal
+                if (userData.role !== 'admin') {
+                   throw new Error('This account does not have Principal access. Please use the Staff portal.');
+                }
+
+                // STRICT CAMPUS VALIDATION for Principals
+                if (userData.campus !== 'ALL' && userData.campus !== campus) {
+                   const campusName = CAMPUS_DISPLAY_NAMES[userData.campus] || userData.campus.replace(/_/g, ' ');
+                   const selectedCampusName = CAMPUS_DISPLAY_NAMES[campus] || campus.replace(/_/g, ' ');
+                   throw new Error(`This Principal belongs to the ${campusName} campus and cannot login with ${selectedCampusName}.`);
                 }
 
                 // TiDB LOGIN SUCCESS (Firebase equivalent)
