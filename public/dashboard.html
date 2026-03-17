@@ -1910,7 +1910,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="mediMedicineGiven">Medicine Given</label>
+                        <label for="mediMedicineGiven">Medicine Given(Enter the Medicine Name)</label>
                         <input type="text" id="mediMedicineGiven"
                             placeholder="Enter medicine name (e.g., DOLO, Paracetamol)" value="">
                     </div>
@@ -2606,6 +2606,18 @@
 
                 if (studentDoc.exists) {
                     const data = studentDoc.data();
+                    
+                    // Campus validation: Only allow if student belongs to user's campus
+                    const currentUserCampus = localStorage.getItem('userCampus');
+                    if (currentUserCampus && currentUserCampus !== 'ALL' && data.campus && data.campus !== currentUserCampus) {
+                        const campusName = CAMPUS_DISPLAY_NAMES[data.campus] || data.campus.replace(/_/g, ' ');
+                        console.warn(`⚠️ Student belongs to different campus: ${data.campus}. User campus: ${currentUserCampus}`);
+                        return {
+                            error: 'WRONG_CAMPUS',
+                            message: `This student belongs to the ${campusName} campus and cannot be processed here.`
+                        };
+                    }
+
                     console.log("✅ Student found in Firestore");
                     return data;
                 }
@@ -2677,7 +2689,7 @@
                 // Disable fields if data not found
                 clearStudentFields();
 
-                if (result.error === 'NO_CAMPUS_DATA') {
+                if (result.error === 'NO_CAMPUS_DATA' || result.error === 'WRONG_CAMPUS') {
                     showError('⚠️ ' + result.message);
                 } else if (result.error === 'MISSING_ID') {
                     showError('⚠️ ' + result.message);
@@ -2747,7 +2759,7 @@
                 // Disable field if data not found
                 clearMediSlipStudentField();
 
-                if (result.error === 'NO_CAMPUS_DATA') {
+                if (result.error === 'NO_CAMPUS_DATA' || result.error === 'WRONG_CAMPUS') {
                     showMediSlipError('⚠️ ' + result.message);
                 } else if (result.error === 'MISSING_ID') {
                     showMediSlipError('⚠️ ' + result.message);
@@ -3408,9 +3420,12 @@
 
                 // Get security info
                 let securityId = document.getElementById('security').value;
-                let securityOption = document.getElementById('security').options[document.getElementById('security').selectedIndex];
-                let securityName = securityOption ? securityOption.textContent : 'N/A';
-                let securityWhatsapp = securityOption ? (securityOption.dataset.whatsapp || '') : '';
+                let securityOption = document.getElementById('security').selectedIndex >= 0 ? 
+                                    document.getElementById('security').options[document.getElementById('security').selectedIndex] : null;
+                
+                // If no security selected or placeholder selected, use N/A
+                let securityName = (securityId && securityOption) ? securityOption.textContent : 'N/A';
+                let securityWhatsapp = (securityId && securityOption) ? (securityOption.dataset.whatsapp || '') : '';
 
                 // Get campus info from current user for storing in outpass data
                 const currentCampusInfo = getCampusInfoFromUserEmail(user.email);
@@ -3777,6 +3792,16 @@
                     return;
                 }
 
+                // Campus validation: Only allow if record belongs to user's campus
+                const currentUserCampus = localStorage.getItem('userCampus');
+                if (currentUserCampus && currentUserCampus !== 'ALL' && latestOutpass.campus && latestOutpass.campus !== currentUserCampus) {
+                    const campusName = CAMPUS_DISPLAY_NAMES[latestOutpass.campus] || latestOutpass.campus.replace(/_/g, ' ');
+                    showReportingStatusError(`⚠️ This record belongs to the ${campusName} campus and cannot be updated here.`);
+                    searchStudentBtn.disabled = false;
+                    searchStudentBtn.textContent = '🔍 Search Student';
+                    return;
+                }
+
                 // Store for potential editing
                 currentReportingOutpassId = latestOutpassId;
                 foundOutpassForReporting = latestOutpass;
@@ -3912,7 +3937,7 @@
             const fields = [
                 'studentName', 'category', 'section',
                 'fatherName', 'whatsappNumber', 'requestedBy', 'issuedBy',
-                'security', 'authorizedBy', 'status', 'outDate', 'inDate', 'reason'
+                'authorizedBy', 'status', 'outDate', 'inDate', 'reason'
             ];
 
             // For ECITY SCHOOL, skip security validation
