@@ -1764,7 +1764,7 @@
                     </div>
 
                     <div class="form-row">
-                        <div class="form-group">
+                        <div class="form-group" id="securityFieldGroup">
                             <label for="security">Security</label>
                             <select id="security">
                                 <option value="" disabled selected>Select Security</option>
@@ -2946,6 +2946,22 @@
         // Load security options from Firestore based on campus
         async function loadSecurityOptions(campusId) {
             try {
+                const securityFieldGroup = document.getElementById('securityFieldGroup');
+                
+                // Check if it's ECITY SCHOOL and hide the entire field group
+                if (campusId === 'ECITY_SCHOOL') {
+                    console.log('ECITY SCHOOL detected. Hiding security field.');
+                    if (securityFieldGroup) {
+                        securityFieldGroup.style.display = 'none';
+                    }
+                    return; // Stop further processing for this campus
+                } else {
+                    // Ensure it's visible for other campuses
+                    if (securityFieldGroup) {
+                        securityFieldGroup.style.display = 'block';
+                    }
+                }
+
                 // Clear existing options except the first one
                 securitySelect.innerHTML = '<option value="" disabled selected>Select Security</option>';
 
@@ -3391,14 +3407,21 @@
                 const fullStudentId = getFullStudentId(studentIdInput);
 
                 // Get security info
-                const securityId = document.getElementById('security').value;
-                const securityOption = document.getElementById('security').options[document.getElementById('security').selectedIndex];
-                const securityName = securityOption.textContent;
-                const securityWhatsapp = securityOption.dataset.whatsapp || '';
+                let securityId = document.getElementById('security').value;
+                let securityOption = document.getElementById('security').options[document.getElementById('security').selectedIndex];
+                let securityName = securityOption ? securityOption.textContent : 'N/A';
+                let securityWhatsapp = securityOption ? (securityOption.dataset.whatsapp || '') : '';
 
                 // Get campus info from current user for storing in outpass data
                 const currentCampusInfo = getCampusInfoFromUserEmail(user.email);
                 const campusId = currentCampusInfo ? currentCampusInfo.campusId : null;
+
+                // Override security for ECITY SCHOOL
+                if (campusId === 'ECITY_SCHOOL') {
+                    securityId = '';
+                    securityName = 'N/A';
+                    securityWhatsapp = '';
+                }
 
                 // Clean WhatsApp number (if not "NA")
                 let whatsappNumberValue = document.getElementById('whatsappNumber').value.trim();
@@ -4488,27 +4511,31 @@ For queries, contact hostel office.`;
                 // Get WhatsApp group link for this campus (for security button later)
                 const groupLink = await getWhatsAppGroupLink(campusId);
 
-                // Store security info for later use (button click only)
-                if (groupLink) {
-                    window.securityGroupLink = groupLink;
-                    // Show button to open security group WhatsApp (only when button is clicked)
-                    showSecurityGroupButton(groupLink);
-                } else if (outpassData.securityWhatsapp && outpassData.securityWhatsapp.trim()) {
-                    // Fallback to individual security number if group link not available
-                    let securityPhone = outpassData.securityWhatsapp.replace(/\D/g, '');
-                    if (securityPhone.length === 10) {
-                        securityPhone = '91' + securityPhone;
+                // Store security info and show buttons (Skip for ECITY SCHOOL)
+                if (campusId !== 'ECITY_SCHOOL') {
+                    if (groupLink) {
+                        window.securityGroupLink = groupLink;
+                        // Show button to open security group WhatsApp (only when button is clicked)
+                        showSecurityGroupButton(groupLink);
+                    } else if (outpassData.securityWhatsapp && outpassData.securityWhatsapp.trim()) {
+                        // Fallback to individual security number if group link not available
+                        let securityPhone = outpassData.securityWhatsapp.replace(/\D/g, '');
+                        if (securityPhone.length === 10) {
+                            securityPhone = '91' + securityPhone;
+                        }
+
+                        // For security: Store URL WITHOUT message (just the chat) - only open on button click
+                        const securityWhatsappUrl = `https://api.whatsapp.com/send?phone=${securityPhone}`;
+
+                        // Store security WhatsApp URL for later use (button click only)
+                        window.securityWhatsappUrl = securityWhatsappUrl;
+                        window.securityPhone = securityPhone;
+
+                        // Show button to open security WhatsApp (only when button is clicked)
+                        showSecurityButton(securityPhone);
                     }
-
-                    // For security: Store URL WITHOUT message (just the chat) - only open on button click
-                    const securityWhatsappUrl = `https://api.whatsapp.com/send?phone=${securityPhone}`;
-
-                    // Store security WhatsApp URL for later use (button click only)
-                    window.securityWhatsappUrl = securityWhatsappUrl;
-                    window.securityPhone = securityPhone;
-
-                    // Show button to open security WhatsApp (only when button is clicked)
-                    showSecurityButton(securityPhone);
+                } else {
+                    console.log('ECITY SCHOOL detected. Skipping security WhatsApp buttons.');
                 }
 
                 // Open parent WhatsApp ONCE with prefilled message (works even if contact not saved)
