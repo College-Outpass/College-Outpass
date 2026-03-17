@@ -2620,7 +2620,7 @@
                             console.warn(`⚠️ Campus mismatch: Student(${studentCampusNormalized}) vs User(${userCampusNormalized})`);
                             return {
                                 error: 'WRONG_CAMPUS',
-                                message: `This student belongs to the ${campusName} campus and cannot be processed here.`
+                                message: `This student is registered under the ${campusName} campus. Access is restricted to your current campus.`
                             };
                         }
                     }
@@ -3809,7 +3809,7 @@
                 if (userCampusNormalized && userCampusNormalized !== 'ALL') {
                     if (studentCampusNormalized !== userCampusNormalized) {
                         const campusName = CAMPUS_DISPLAY_NAMES[latestOutpass.campus] || latestOutpass.campus || 'a different';
-                        showReportingStatusError(`⚠️ This record belongs to the ${campusName} campus and cannot be updated here.`);
+                        showReportingStatusError(`⚠️ This record belongs to the ${campusName} campus. It can only be updated by staff from that campus.`);
                         searchStudentBtn.disabled = false;
                         searchStudentBtn.textContent = '🔍 Search Student';
                         return;

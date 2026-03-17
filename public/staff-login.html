@@ -668,8 +668,7 @@
                 // STRICT CAMPUS VALIDATION
                 if (userData.campus !== 'ALL' && userData.campus !== campus) {
                    const campusName = CAMPUS_DISPLAY_NAMES[userData.campus] || userData.campus.replace(/_/g, ' ');
-                   const selectedCampusName = CAMPUS_DISPLAY_NAMES[campus] || campus.replace(/_/g, ' ');
-                   throw new Error(`This staff belongs to the ${campusName} campus and cannot login with ${selectedCampusName}.`);
+                   throw new Error(`This staff ID belongs to the ${campusName} campus. Kindly select the correct campus to login.`);
                 }
 
                 // Step 3: Set local storage
@@ -780,8 +779,7 @@
                 // STRICT CAMPUS VALIDATION for Principals
                 if (userData.campus !== 'ALL' && userData.campus !== campus) {
                    const campusName = CAMPUS_DISPLAY_NAMES[userData.campus] || userData.campus.replace(/_/g, ' ');
-                   const selectedCampusName = CAMPUS_DISPLAY_NAMES[campus] || campus.replace(/_/g, ' ');
-                   throw new Error(`This Principal belongs to the ${campusName} campus and cannot login with ${selectedCampusName}.`);
+                   throw new Error(`This Principal account belongs to the ${campusName} campus. Kindly select the correct campus to login.`);
                 }
 
                 // TiDB LOGIN SUCCESS (Firebase equivalent)
@@ -826,8 +824,8 @@
             }
 
             // Fallback for non-Firebase errors
-            if (message && (message.includes('profile not found') || message.includes('access rights'))) {
-                return "Your access profile could not be found or you lack required permissions. Please notify the administration.";
+            if (message && (message.includes('belongs to') || message.includes('does not have') || message.includes('profile not found') || message.includes('access rights'))) {
+                return message;
             }
 
             return "An unexpected error occurred. Please try again or contact support if the issue persists.";
