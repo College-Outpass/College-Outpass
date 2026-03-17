@@ -3915,7 +3915,20 @@
                 'security', 'authorizedBy', 'status', 'outDate', 'inDate', 'reason'
             ];
 
+            // For ECITY SCHOOL, skip security validation
+            let isSchoolWithoutSecurity = false;
+            if (typeof campusInfo !== 'undefined' && campusInfo) {
+                if (campusInfo.campusId === 'ECITY_SCHOOL' || (campusInfo.name && campusInfo.name.toUpperCase().includes('ECITY SCHOOL'))) {
+                    isSchoolWithoutSecurity = true;
+                }
+            }
+
             for (let field of fields) {
+                // Skip security validation if it's a school without security
+                if (field === 'security' && isSchoolWithoutSecurity) {
+                    continue;
+                }
+                
                 const element = document.getElementById(field);
                 if (!element.value.trim()) {
                     const label = element.previousElementSibling;
