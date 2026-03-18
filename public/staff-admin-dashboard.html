@@ -469,6 +469,132 @@
             font-weight: bold;
         }
 
+        /* PDF Preview Modal */
+        #pdfViewerModal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(30, 60, 114, 0.85);
+            backdrop-filter: blur(8px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        #pdfViewerModal .modal-content {
+            background: white;
+            margin: 2% auto; /* Reduced margin for more space */
+            padding: 25px;
+            width: 90%;
+            max-width: 1000px;
+            height: 94vh;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            animation: modalSlide 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes modalSlide {
+            from { transform: translateY(50px) scale(0.9); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        #pdfViewerModal .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #f0f4ff;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        #pdfViewerModal .modal-header h2 {
+            color: #1e3c72;
+            font-size: 22px;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        #pdfViewerModal .close-modal {
+            font-size: 32px;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #pdfViewerModal .close-modal:hover {
+            color: #dc3545;
+            transform: scale(1.1);
+        }
+
+        #pdfViewerModal .modal-body {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #e1e5eb;
+            border-radius: 12px;
+            background: #f8f9fa;
+        }
+
+        #pdfViewerModal iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        #pdfViewerModal .modal-footer {
+            display: flex;
+            justify-content: center;
+            padding-top: 15px;
+            gap: 15px;
+        }
+
+        #pdfViewerModal .btn-download {
+            background: linear-gradient(135deg, #2a5298, #1e3c72);
+            color: white;
+            border: none;
+            padding: 12px 35px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #pdfViewerModal .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(30, 60, 114, 0.4);
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+        }
+
+        #pdfViewerModal .btn-close {
+            background: #f4f7fa;
+            color: #6c757d;
+            border: 1px solid #e1e5eb;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #pdfViewerModal .btn-close:hover {
+            background: #eceff2;
+        }
+
         /* ==================== PDF TEMPLATE STYLES (Same as dashboard.html) ==================== */
         
         #pdfTemplate {
@@ -1182,6 +1308,37 @@
         let currentCampus = "";
         let currentUserEmail = "";
         let campusStaffEmails = []; // Staff emails belonging to this campus
+        
+        let currentPdfBlob = null;
+        let currentPdfUrl = null;
+        let currentPdfFilename = "";
+
+        function showPDFPreview(pdfBlob, filename) {
+            if (currentPdfUrl) {
+                URL.revokeObjectURL(currentPdfUrl);
+            }
+            
+            currentPdfBlob = pdfBlob;
+            currentPdfFilename = filename;
+            currentPdfUrl = URL.createObjectURL(pdfBlob);
+            
+            const modal = document.getElementById('pdfViewerModal');
+            const frame = document.getElementById('pdfPreviewFrame');
+            
+            frame.src = currentPdfUrl;
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            
+            console.log("Showing PDF Preview:", filename);
+        }
+
+        function closePDFModal() {
+            const modal = document.getElementById('pdfViewerModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            const frame = document.getElementById('pdfPreviewFrame');
+            frame.src = "";
+        }
 
         // [TiDB MODE] First check for our database token
         document.addEventListener('DOMContentLoaded', function() {
@@ -1338,6 +1495,13 @@
                 });
                 
                 allData = [...outpasses, ...mediSlips];
+                
+                // FIXED: Sort by latest first
+                allData.sort((a, b) => {
+                    const timeA = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : (a.date ? new Date(a.date).getTime() : 0);
+                    const timeB = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : (b.date ? new Date(b.date).getTime() : 0);
+                    return timeB - timeA;
+                });
                 console.log("✅ Total data loaded for " + currentCampus + ":", allData.length);
                 
                 // Debug: Check if we have reporting data
@@ -1841,29 +2005,10 @@ if (item.type === 'outpass') {
                             }
 
                             // Save Medi Slip PDF using blob download (silent - no preview)
-                            const filename = `${mediSlipData.mediSlipNumber}_${mediSlipData.studentName}.pdf`;
-                            
-                            console.log('Saving Medi Slip PDF:', filename);
-                            
-                            // Use blob method for silent download
+                            // Use preview modal instead of direct download
                             const pdfBlob = pdf.output('blob');
-                            const url = URL.createObjectURL(pdfBlob);
+                            showPDFPreview(pdfBlob, filename);
                             
-                            // Create download link
-                            const downloadLink = document.createElement('a');
-                            downloadLink.href = url;
-                            downloadLink.download = filename;
-                            downloadLink.style.display = 'none';
-                            
-                            // Add to body, click, and remove
-                            document.body.appendChild(downloadLink);
-                            downloadLink.click();
-                            document.body.removeChild(downloadLink);
-                            
-                            // Clean up URL
-                            setTimeout(() => URL.revokeObjectURL(url), 100);
-                            
-                            console.log('Medi Slip PDF download triggered successfully');
                             resolve();
                             
                         }).catch(error => {
@@ -2047,25 +2192,10 @@ if (item.type === 'outpass') {
                                 }
                             }
 
-                            // Use blob method for silent download
+                            // Use preview modal instead of direct download
                             const pdfBlob = pdf.output('blob');
-                            const url = URL.createObjectURL(pdfBlob);
+                            showPDFPreview(pdfBlob, filename);
                             
-                            // Create download link
-                            const downloadLink = document.createElement('a');
-                            downloadLink.href = url;
-                            downloadLink.download = filename;
-                            downloadLink.style.display = 'none';
-                            
-                            // Add to body, click, and remove
-                            document.body.appendChild(downloadLink);
-                            downloadLink.click();
-                            document.body.removeChild(downloadLink);
-                            
-                            // Clean up URL
-                            setTimeout(() => URL.revokeObjectURL(url), 100);
-                            
-                            console.log('PDF download triggered successfully');
                             resolve();
                             
                         }).catch(error => {
@@ -2108,6 +2238,34 @@ if (item.type === 'outpass') {
             document.getElementById('endDate').addEventListener('change', applyFilters);
             document.getElementById('clearDateBtn').addEventListener('click', clearDateFilters);
             document.getElementById('downloadExcelBtn').addEventListener('click', downloadExcel);
+            
+            // PDF Modal Event Listeners
+            const pdfModal = document.getElementById('pdfViewerModal');
+            const closeBtn = pdfModal.querySelector('.close-modal');
+            const closeBtnFooter = pdfModal.querySelector('.btn-close');
+            const downloadBtn = pdfModal.querySelector('.btn-download');
+
+            closeBtn.onclick = closePDFModal;
+            closeBtnFooter.onclick = closePDFModal;
+            
+            window.onclick = function(event) {
+                if (event.target == pdfModal) {
+                    closePDFModal();
+                }
+            };
+
+            downloadBtn.onclick = function() {
+                if (currentPdfBlob && currentPdfFilename) {
+                    const url = URL.createObjectURL(currentPdfBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = currentPdfFilename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                }
+            };
             
             // ==================== STUDENT DATA UPLOAD FUNCTIONALITY ====================
             
@@ -2805,6 +2963,24 @@ if (item.type === 'outpass') {
             
             <div class="medi-slip-footer">
                 Sri Chaitanya Educational Institutions - Medical Department | Valid for today only
+            </div>
+        </div>
+    </div>
+    <!-- PDF Preview Modal -->
+    <div id="pdfViewerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📄 PDF Document Preview</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <iframe id="pdfPreviewFrame" src=""></iframe>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-close">Close</button>
+                <button class="btn-download">
+                    <span>📥 Download PDF</span>
+                </button>
             </div>
         </div>
     </div>
