@@ -1355,57 +1355,63 @@
 
         let currentZoom = 80; // Start at 80% width like NEET Analysis
 
-        function showPDFPreview(pdfBlob, filename) {
-            // Using datauristring (Base64) is more reliable for in-app previews 
-            // than blob URLs in certain browser configurations
-            const pdfDataUri = pdfBlob; // In case we pass the jspdf object directly 
-            // OR if it's already a blob, we convert to base64 below
+        function showPDFPreview(images, filename, originalBlob) {
+            // Using image-based preview is 100% reliable as it doesn't depend 
+            // on unstable browser PDF plugins or iframe security settings.
             
             const modal = document.getElementById('pdfViewerModal');
-            const frame = document.getElementById('pdfPreviewFrame');
+            const previewWrap = document.getElementById('pdfPreviewWrap');
             const loader = document.getElementById('pdfLoader');
             const zoomValDisplay = document.getElementById('zoomValue');
-            const previewWrap = document.getElementById('pdfPreviewWrap');
             const modalTitle = document.getElementById('pdfModalTitle');
             
             currentZoom = 80;
             zoomValDisplay.textContent = currentZoom + '%';
             previewWrap.style.width = currentZoom + '%';
-            modalTitle.textContent = filename || "PDF Document Preview";
+            modalTitle.textContent = filename || "Document Preview";
+            
+            // Clear previous content
+            previewWrap.innerHTML = "";
             
             if (loader) loader.style.display = 'block';
             
-            // If it's a blob, we need to convert or just use the blob URL but better
-            // Let's try the absolute most compatible way: Data URI
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64Data = e.target.result;
-                frame.src = base64Data;
-                modal.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-            };
-            reader.readAsDataURL(pdfBlob);
+            // Loop through images and add to viewer
+            images.forEach((imgData, index) => {
+                const img = document.createElement('img');
+                img.src = imgData;
+                img.style.width = '100%';
+                img.style.display = 'block';
+                img.style.marginBottom = '20px';
+                img.style.boxShadow = '0 5px 15px rgba(0,0,0,0.2)';
+                img.style.backgroundColor = 'white';
+                previewWrap.appendChild(img);
+                
+                if (index === images.length - 1) {
+                    img.onload = () => { 
+                        if (loader) loader.style.display = 'none'; 
+                    };
+                }
+            });
             
-            currentPdfBlob = pdfBlob;
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            currentPdfBlob = originalBlob;
             currentPdfFilename = filename;
-
-            frame.onload = function() {
-                if (loader) loader.style.display = 'none';
-            };
             
             setTimeout(() => {
                 if (loader) loader.style.display = 'none';
             }, 3000);
             
-            console.log("Showing NEET Style Data-URI PDF Preview:", filename);
+            console.log("Showing Image-Based Preview:", filename);
         }
 
         function closePDFModal() {
             const modal = document.getElementById('pdfViewerModal');
             modal.style.display = 'none';
             document.body.style.overflow = 'auto';
-            const frame = document.getElementById('pdfPreviewFrame');
-            frame.src = "";
+            const previewWrap = document.getElementById('pdfPreviewWrap');
+            previewWrap.innerHTML = "";
         }
         
         function updateZoom(delta) {
@@ -2078,10 +2084,9 @@ if (item.type === 'outpass') {
                                 }
                             }
 
-                            // Save Medi Slip PDF using blob download (silent - no preview)
-                            // Use preview modal instead of direct download
+                            // Instead of direct download, show the image we already generated
                             const pdfBlob = pdf.output('blob');
-                            showPDFPreview(pdfBlob, filename);
+                            showPDFPreview([imgData], filename, pdfBlob);
                             
                             resolve();
                             
@@ -2261,14 +2266,32 @@ if (item.type === 'outpass') {
                             if (window.savePdfNative) {
                                 const savedNative = await window.savePdfNative(pdf, filename);
                                 if (savedNative) {
+                                    // Instead of direct download, show the images we already generated
+                                    const pdfPreviewImages = [imgData];
+                                    if (outpassData.authorizedLetterPhoto) {
+                                        // Add authorized letter if it was generated
+                                        if (typeof authorizedLetterImgData !== 'undefined') {
+                                            pdfPreviewImages.push(authorizedLetterImgData);
+                                        }
+                                    }
+
+                                    const pdfBlob = pdf.output('blob');
+                                    showPDFPreview(pdfPreviewImages, filename, pdfBlob);
+                                    
                                     resolve();
                                     return;
                                 }
                             }
 
                             // Use preview modal instead of direct download
+                            const pdfPreviewImages = [imgData];
+                            if (outpassData.authorizedLetterPhoto) {
+                                if (typeof authorizedLetterImgData !== 'undefined') {
+                                    pdfPreviewImages.push(authorizedLetterImgData);
+                                }
+                            }
                             const pdfBlob = pdf.output('blob');
-                            showPDFPreview(pdfBlob, filename);
+                            showPDFPreview(pdfPreviewImages, filename, pdfBlob);
                             
                             resolve();
                             
@@ -3071,10 +3094,10 @@ if (item.type === 'outpass') {
             <div class="modal-content-area" id="pdfModalContent">
                 <div id="pdfLoader" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white;">
                     <div class="loader" style="border-top-color: white;"></div>
-                    <p style="margin-top: 10px; font-weight: 600;">Loading Document Viewer...</p>
+                    <p style="margin-top: 10px; font-weight: 600;">Loading Preview...</p>
                 </div>
                 <div class="preview-wrap" id="pdfPreviewWrap" style="width: 80%;">
-                    <iframe id="pdfPreviewFrame" src="" class="full-iframe"></iframe>
+                    <!-- Images will be injected here for preview -->
                 </div>
             </div>
         </div>
