@@ -2359,6 +2359,8 @@
 
                             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
 
+                            let authorizedLetterImgData = null;
+
                             // Add Page 2: Authorized Letter (if exists)
                             if (outpassData.authorizedLetterPhoto) {
                                 console.log('Adding Authorized Letter page...');
@@ -2404,7 +2406,7 @@
 
                                 // Add as new page
                                 pdf.addPage();
-                                const authorizedLetterImgData = authorizedLetterCanvas.toDataURL('image/png', 1.0);
+                                authorizedLetterImgData = authorizedLetterCanvas.toDataURL('image/png', 1.0);
                                 const authorizedLetterPdfHeight = (authorizedLetterCanvas.height * pdfWidth) / authorizedLetterCanvas.width;
 
                                 pdf.addImage(authorizedLetterImgData, 'PNG', 0, 0, pdfWidth, authorizedLetterPdfHeight, '', 'FAST');
@@ -2415,10 +2417,8 @@
                             // Instead of direct download, show the images we already generated
                              const filename = `${outpassData.passNumber}_${outpassData.studentName}.pdf`;
                              const pdfPreviewImages = [imgData];
-                             if (outpassData.authorizedLetterPhoto) {
-                                 if (typeof authorizedLetterImgData !== 'undefined') {
-                                     pdfPreviewImages.push(authorizedLetterImgData);
-                                 }
+                             if (outpassData.authorizedLetterPhoto && authorizedLetterImgData) {
+                                 pdfPreviewImages.push(authorizedLetterImgData);
                              }
                              
                              const pdfBlob = pdf.output('blob');
