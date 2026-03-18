@@ -511,9 +511,9 @@
             border: 1px solid #bbdefb;
         }
 
-        .type-Medislip {
-            background: #fff3e0;
-            color: #f57c00;
+        .type-mediSlip {
+            background: #fff3e0; 
+            color: #f57c00; 
             border: 1px solid #ffe0b2;
         }
 
@@ -1699,12 +1699,6 @@
                 }
             };
 
-            document.getElementById('modalNewTabBtn').onclick = function() {
-                if (currentPdfUrl) {
-                    window.open(currentPdfUrl, '_blank');
-                }
-            };
-            
             window.onclick = function(event) {
                 const modal = document.getElementById('pdfViewerModal');
                 if (event.target == modal) {
@@ -2829,7 +2823,6 @@
 
                 <div class="flex-items-center-gap2">
                     <button id="modalDownloadBtn" class="modal-action-btn" style="padding: 8px 15px; font-weight: 700;">Download PDF</button>
-                    <button id="modalNewTabBtn" class="modal-action-btn" style="padding: 8px 15px; font-weight: 700;">Open in Tab</button>
                     <button id="modalCloseBtn" class="modal-close-btn-top">✕</button>
                 </div>
             </div>
