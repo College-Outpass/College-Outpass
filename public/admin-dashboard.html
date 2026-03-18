@@ -1488,14 +1488,36 @@
             
             currentPdfBlob = pdfBlob;
             currentPdfFilename = filename;
-            currentPdfUrl = URL.createObjectURL(pdfBlob);
+            
+            // Add options to PDF URL to suggest viewer behavior
+            currentPdfUrl = URL.createObjectURL(pdfBlob) + "#toolbar=0&navpanes=0&view=FitH";
             
             const modal = document.getElementById('pdfViewerModal');
-            const frame = document.getElementById('pdfPreviewFrame');
+            const body = modal.querySelector('.modal-body');
             
-            frame.src = currentPdfUrl;
+            // Re-create the viewer element to ensure it reloads
+            body.innerHTML = `
+                <div id="pdfLoader" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                    <div class="loader" style="border: 4px solid #f3f3f3; border-top: 4px solid #1e3c72; border-radius: 50%; width: 30px; height: 30px; animation: spin 2s linear infinite; margin: 0 auto;"></div>
+                    <p style="margin-top: 10px; color: #1e3c72; font-weight: 600;">Opening Document Preview...</p>
+                </div>
+                <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+                <embed id="pdfPreviewFrame" src="${currentPdfUrl}" type="application/pdf" width="100%" height="100%" style="display: none; border: none; border-radius: 8px;">
+            `;
+            
             modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
+            
+            const frame = document.getElementById('pdfPreviewFrame');
+            const loader = document.getElementById('pdfLoader');
+            
+            // Show frame after short delay to let browser initialize viewer
+            setTimeout(() => {
+                if (frame) {
+                    frame.style.display = 'block';
+                    if (loader) loader.style.display = 'none';
+                }
+            }, 500);
             
             console.log("Showing PDF Preview:", filename);
         }
@@ -1504,8 +1526,8 @@
             const modal = document.getElementById('pdfViewerModal');
             modal.style.display = 'none';
             document.body.style.overflow = 'auto';
-            const frame = document.getElementById('pdfPreviewFrame');
-            frame.src = "";
+            const body = modal.querySelector('.modal-body');
+            body.innerHTML = "";
         }
 
         // Allowed admin email (only one admin)
