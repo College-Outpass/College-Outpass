@@ -1524,14 +1524,8 @@
         let currentZoom = 80; // Start at 80% width like NEET Analysis
 
         function showPDFPreview(pdfBlob, filename) {
-            if (currentPdfUrl) {
-                URL.revokeObjectURL(currentPdfUrl);
-            }
-            
-            const viewBlob = new Blob([pdfBlob], { type: 'application/pdf' });
-            currentPdfBlob = viewBlob;
-            currentPdfFilename = filename;
-            currentPdfUrl = URL.createObjectURL(viewBlob);
+            // Using datauristring (Base64) is more reliable for in-app previews 
+            // than blob URLs in certain browser configurations
             
             const modal = document.getElementById('pdfViewerModal');
             const frame = document.getElementById('pdfPreviewFrame');
@@ -1547,10 +1541,19 @@
             
             if (loader) loader.style.display = 'block';
             
-            frame.src = currentPdfUrl;
-            modal.style.display = 'flex'; // Use flex for overlay
-            document.body.style.overflow = 'hidden';
+            // Convert blob to Data URI
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Data = e.target.result;
+                frame.src = base64Data;
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            };
+            reader.readAsDataURL(pdfBlob);
             
+            currentPdfBlob = pdfBlob;
+            currentPdfFilename = filename;
+
             frame.onload = function() {
                 if (loader) loader.style.display = 'none';
             };
@@ -1559,7 +1562,7 @@
                 if (loader) loader.style.display = 'none';
             }, 3000);
             
-            console.log("Showing NEET Style PDF Preview (HOD):", filename);
+            console.log("Showing NEET Style Data-URI PDF Preview (HOD):", filename);
         }
 
         function closePDFModal() {
@@ -2802,15 +2805,15 @@
                 
                 <div class="preview-toolbar">
                     <div class="toolbar-section">
-                        <button id="zoomOutBtn" class="tool-btn" title="Zoom Out">−</button>
+                        <button id="zoomOutBtn" class="tool-btn" title="Zoom Out" style="width: auto; padding: 0 10px;">Zoom Out</button>
                         <span id="zoomValue" class="zoom-value">100%</span>
-                        <button id="zoomInBtn" class="tool-btn" title="Zoom In">+</button>
+                        <button id="zoomInBtn" class="tool-btn" title="Zoom In" style="width: auto; padding: 0 10px;">Zoom In</button>
                     </div>
                 </div>
 
                 <div class="flex-items-center-gap2">
-                    <button id="modalDownloadBtn" class="modal-action-btn" title="Download PDF">📥</button>
-                    <button id="modalNewTabBtn" class="modal-action-btn" title="Open in New Tab">👁️</button>
+                    <button id="modalDownloadBtn" class="modal-action-btn" style="padding: 8px 15px; font-weight: 700;">Download PDF</button>
+                    <button id="modalNewTabBtn" class="modal-action-btn" style="padding: 8px 15px; font-weight: 700;">Open in Tab</button>
                     <button id="modalCloseBtn" class="modal-close-btn-top">✕</button>
                 </div>
             </div>
