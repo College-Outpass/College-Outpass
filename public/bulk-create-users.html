@@ -50,7 +50,7 @@
                 <label>Account Role</label>
                 <select id="role" onchange="updateFields()">
                     <option value="staff">Staff</option>
-                    <option value="hod">HOD</option>
+                    <option value="hod">AGM</option>
                     <option value="admin">Principal (Admin)</option>
                     <option value="security">Security Personnel</option>
                 </select>
@@ -140,10 +140,10 @@
                 document.getElementById('csvData').placeholder = "John Doe,john@edu,ECITY_SCHOOL,Outpass@123";
             }
 
-            // Campus override hint for HOD
+            // Campus override hint for AGM
             const campusSelect = document.getElementById('campus');
             if (role === 'hod') {
-                addLog('ℹ️ Note: HOD role automatically grants access to ALL campuses.');
+                addLog('ℹ️ Note: AGM role automatically grants access to ALL campuses.');
                 campusSelect.style.opacity = '0.5';
             } else {
                 campusSelect.style.opacity = '1';
@@ -211,7 +211,7 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Account creation failed');
-                addLog(`✅ Account: "${name}" (${role}) Created${role === 'hod' ? ' [ALL Campuses]' : ''}`);
+                addLog(`✅ Account: "${name}" (${role === 'hod' ? 'AGM' : role}) Created${role === 'hod' ? ' [ALL Campuses]' : ''}`);
             }
             document.getElementById('uForm').reset();
             updateFields();

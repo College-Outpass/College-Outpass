@@ -1511,7 +1511,7 @@
                     // Resolve campus: use field if exists, otherwise map from email
                     const resolvedCampus = data.campus || getCampusFromEmail(data.createdBy);
                     
-                    // Security filter: only include if matches current campus (or if user is HOD/ALL)
+                    // Security filter: only include if matches current campus (or if user is AGM/ALL)
                     if (currentCampus !== 'ALL' && resolvedCampus !== currentCampus) {
                         return;
                     }
@@ -1548,7 +1548,7 @@
                     // Resolve campus: use field if exists, otherwise map from email
                     const resolvedCampus = data.campus || getCampusFromEmail(data.createdBy);
                     
-                    // Security filter: only include if matches current campus (or if user is HOD/ALL)
+                    // Security filter: only include if matches current campus (or if user is AGM/ALL)
                     if (currentCampus !== 'ALL' && resolvedCampus !== currentCampus) {
                         return;
                     }
@@ -2075,6 +2075,11 @@ if (item.type === 'outpass') {
                             
                             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
                             
+                            // Save PDF using blob download (silent - no preview)
+                            const filename = `${mediSlipData.mediSlipNumber || 'MEDSLIP'}_${mediSlipData.studentName}.pdf`;
+                            
+                            console.log('Saving Medi Slip PDF:', filename);
+
                             // Capacitor Native Support: Try saving to phone storage first if in APK
                             if (window.savePdfNative) {
                                 const savedNative = await window.savePdfNative(pdf, filename);

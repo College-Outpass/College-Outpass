@@ -18,7 +18,7 @@
                 const email = 'srinivasnaidu.m@srichaitanyaschool.net';
                 const password = 'Kal@48233';
                 
-                console.log('Creating HOD admin account...');
+                console.log('Creating AGM admin account...');
                 console.log('Email:', email);
                 
                 // Try to create user in Firebase Auth
@@ -42,7 +42,7 @@
                 
                 // Create or update admin document in Firestore
                 await db.collection('admins').doc(user.uid).set({
-                    name: 'Head of Department',
+                    name: 'AGM',
                     email: email,
                     role: 'HOD',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -60,7 +60,7 @@
                 console.log('Password: ' + password);
                 console.log('You can now login at admin-login.html');
                 
-                alert('✅ HOD Admin account created successfully!\n\nEmail: ' + email + '\nPassword: ' + password + '\n\nYou can now login at admin-login.html');
+                alert('✅ AGM account created successfully!\n\nEmail: ' + email + '\nPassword: ' + password + '\n\nYou can now login at admin-login.html');
                 
             } catch (error) {
                 console.error('❌ Error creating admin:', error);

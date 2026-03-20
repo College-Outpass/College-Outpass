@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1e3c72">
-    <title>HOD Dashboard - Sri Chaitanya Hostel System</title>
+    <title>AGM Dashboard - Sri Chaitanya Hostel System</title>
     <style>
         * {
             margin: 0;
@@ -1631,8 +1631,8 @@
 
             function initializeDashboard(adminData) {
                 // Set user email
-                document.getElementById('userEmail').textContent = adminData.email || 'HOD Administrator';
-                console.log('✅ HOD Dashboard initialized for:', adminData.email);
+                document.getElementById('userEmail').textContent = adminData.email || 'AGM Administrator';
+                console.log('✅ AGM Dashboard initialized for:', adminData.email);
                 console.log('🚀 SYSTEM VERSION: 3.0.5 - Staff Management Active');
 
 
@@ -2209,9 +2209,12 @@
                 if (!mediSlipData.mediSlipNumber) {
                     mediSlipData.mediSlipNumber = mediSlipData.MediSlipNumber || `MEDSLIP-${mediSlipId.substring(0, 8)}`;
                 }
+                
+                // Define filename
+                const filename = `${mediSlipData.mediSlipNumber}_${mediSlipData.studentName}.pdf`;
 
                 // Generate PDF silently (no button state changes)
-                await generateMediSlipPDFFromData(mediSlipData);
+                await generateMediSlipPDFFromData(mediSlipData, filename);
 
                 // PDF will download automatically - no feedback needed
 
@@ -2435,7 +2438,7 @@
         }
 
         // Generate Medi Slip PDF from data
-        async function generateMediSlipPDFFromData(mediSlipData) {
+        async function generateMediSlipPDFFromData(mediSlipData, filename) {
             return new Promise((resolve, reject) => {
                 try {
                     console.log('Updating Medi Slip PDF template with data...');
@@ -2511,7 +2514,7 @@
 
                             // Use preview modal instead of direct download
                             const pdfBlob = pdf.output('blob');
-                            showPDFPreview(pdfBlob, filename);
+                            showPDFPreview([imgData], filename, pdfBlob);
                             resolve();
 
                         }).catch(error => {
@@ -2810,7 +2813,7 @@
                 <div class="flex-items-center-gap3">
                     <span style="font-size: 20px;">📄</span>
                     <h2 class="modal-title" id="pdfModalTitle">PDF Document Preview</h2>
-                    <span class="file-badge-mini">PDF</span>
+                    <span>AGM Portal - Main Page</span>
                 </div>
                 
                 <div class="preview-toolbar">

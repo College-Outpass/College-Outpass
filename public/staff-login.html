@@ -398,7 +398,7 @@
 
             <button type="button" class="btn-main-portal" id="mainPortalBtn">
                 <span>👨‍💼</span>
-                <span>ADMIN (HOD) Portal - Main Page</span>
+                <span>AGM Portal - Main Page</span>
             </button>
 
             <p class="footer-text">© 2024 Sri Chaitanya Educational Institutions</p>
@@ -662,7 +662,7 @@
                 
                 // RESTRICTION: Only 'staff' role can login through the Staff Portal
                 if (role !== 'staff') {
-                   throw new Error('This account does not have Staff access. Please use the appropriate HOD or Principal portal.');
+                   throw new Error('This account does not have Staff access. Please use the appropriate AGM or Principal portal.');
                 }
 
                 // STRICT CAMPUS VALIDATION
@@ -853,7 +853,7 @@
     </script>
     <script>
         // Version check removed as per user request
-        localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
+        // localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
 
         // Force clear cache on load
         window.addEventListener('load', function () {

@@ -128,12 +128,23 @@ function displayOutpasses(outpasses) {
     }
     
     tableBody.innerHTML = outpasses.map(outpass => {
-        const date = outpass.timestamp ? new Date(outpass.timestamp).toLocaleString('en-IN') : 'N/A';
+        // Extract date from createdAt (Firestore Timestamp) or legacy timestamp or issuedDate
+        let dateObj = null;
+        if (outpass.createdAt && typeof outpass.createdAt.toDate === 'function') {
+            dateObj = outpass.createdAt.toDate();
+        } else if (outpass.timestamp) {
+            dateObj = new Date(outpass.timestamp);
+        } else if (outpass.issuedDate) {
+            // For records with issuedDate string like "DD/MM/YYYY" or similar
+            dateObj = new Date(outpass.issuedDate);
+        }
+        
+        const dateStr = dateObj && !isNaN(dateObj) ? dateObj.toLocaleString('en-IN') : 'N/A';
         
         return `
             <tr>
                 <td><strong>${outpass.passNumber || 'N/A'}</strong></td>
-                <td>${date}</td>
+                <td>${dateStr}</td>
                 <td>${outpass.studentId || 'N/A'}</td>
                 <td><strong>${outpass.studentName || 'N/A'}</strong></td>
                 <td>${outpass.category || 'N/A'}</td>
@@ -157,18 +168,18 @@ function calculateStats(outpasses) {
     const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     
     const todayCount = outpasses.filter(o => {
-        const date = new Date(o.timestamp);
-        return date >= today;
+        const date = o.createdAt && typeof o.createdAt.toDate === 'function' ? o.createdAt.toDate() : (o.timestamp ? new Date(o.timestamp) : null);
+        return date && date >= today;
     }).length;
     
     const weekCount = outpasses.filter(o => {
-        const date = new Date(o.timestamp);
-        return date >= weekAgo;
+        const date = o.createdAt && typeof o.createdAt.toDate === 'function' ? o.createdAt.toDate() : (o.timestamp ? new Date(o.timestamp) : null);
+        return date && date >= weekAgo;
     }).length;
     
     const monthCount = outpasses.filter(o => {
-        const date = new Date(o.timestamp);
-        return date >= monthAgo;
+        const date = o.createdAt && typeof o.createdAt.toDate === 'function' ? o.createdAt.toDate() : (o.timestamp ? new Date(o.timestamp) : null);
+        return date && date >= monthAgo;
     }).length;
     
     updateStats(outpasses.length, todayCount, weekCount, monthCount);
