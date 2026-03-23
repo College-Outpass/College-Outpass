@@ -393,6 +393,8 @@
         }
 
         .table-wrapper {
+            max-height: 600px;
+            overflow-y: auto;
             overflow-x: auto;
             border-radius: 10px;
             border: 1px solid #e6eeff;
@@ -407,6 +409,9 @@
         .data-table thead {
             background: linear-gradient(135deg, #1e3c72, #2a5298);
             color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .data-table th {
