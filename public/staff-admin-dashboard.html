@@ -2409,7 +2409,7 @@ if (item.type === 'outpass') {
                     }
                     
                     // Get campus from current user
-                    const campusId = EMAIL_CAMPUS_MAPPING[user.email];
+                    const campusId = currentCampus;
                     if (!campusId) {
                         throw new Error('Campus not found for this user');
                     }
