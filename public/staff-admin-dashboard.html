@@ -137,6 +137,7 @@
             border: 1px solid rgba(255, 255, 255, 0.8);
             position: relative;
             overflow: hidden;
+            cursor: pointer;
         }
 
         .stat-card::before {
@@ -1175,22 +1176,22 @@
         </div>
 
         <div class="stats-grid">
-            <div class="stat-card total">
+            <div class="stat-card total" id="cardTotal">
                 <div class="stat-icon">📋</div>
                 <div class="stat-label">Total Records</div>
                 <div class="stat-value" id="totalCount">0</div>
             </div>
-            <div class="stat-card today">
+            <div class="stat-card today" id="cardToday">
                 <div class="stat-icon">📅</div>
                 <div class="stat-label">Today's Records</div>
                 <div class="stat-value" id="todayCount">0</div>
             </div>
-            <div class="stat-card week">
+            <div class="stat-card week" id="cardWeek">
                 <div class="stat-icon">📆</div>
                 <div class="stat-label">This Week</div>
                 <div class="stat-value" id="weekCount">0</div>
             </div>
-            <div class="stat-card month">
+            <div class="stat-card month" id="cardMonth">
                 <div class="stat-icon">🗓️</div>
                 <div class="stat-label">This Month</div>
                 <div class="stat-value" id="monthCount">0</div>
@@ -2342,6 +2343,48 @@ if (item.type === 'outpass') {
             document.getElementById('endDate').addEventListener('change', applyFilters);
             document.getElementById('clearDateBtn').addEventListener('click', clearDateFilters);
             document.getElementById('downloadExcelBtn').addEventListener('click', downloadExcel);
+            
+            // Stats cards click events
+            document.getElementById('cardTotal').addEventListener('click', () => {
+                document.getElementById('startDate').value = '';
+                document.getElementById('endDate').value = '';
+                applyFilters();
+                scrollToTable();
+            });
+
+            document.getElementById('cardToday').addEventListener('click', () => {
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('startDate').value = today;
+                document.getElementById('endDate').value = today;
+                applyFilters();
+                scrollToTable();
+            });
+
+            document.getElementById('cardWeek').addEventListener('click', () => {
+                const today = new Date();
+                const lastWeek = new Date(today);
+                lastWeek.setDate(today.getDate() - 7);
+                
+                document.getElementById('startDate').value = lastWeek.toISOString().split('T')[0];
+                document.getElementById('endDate').value = today.toISOString().split('T')[0];
+                applyFilters();
+                scrollToTable();
+            });
+
+            document.getElementById('cardMonth').addEventListener('click', () => {
+                const today = new Date();
+                const lastMonth = new Date(today);
+                lastMonth.setMonth(today.getMonth() - 1);
+                
+                document.getElementById('startDate').value = lastMonth.toISOString().split('T')[0];
+                document.getElementById('endDate').value = today.toISOString().split('T')[0];
+                applyFilters();
+                scrollToTable();
+            });
+
+            function scrollToTable() {
+                document.querySelector('.data-table-section').scrollIntoView({ behavior: 'smooth' });
+            }
             
             // PDF Modal Event Listeners (NEET Style)
             document.getElementById('zoomInBtn').onclick = () => updateZoom(10);
