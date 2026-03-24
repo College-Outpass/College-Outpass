@@ -1468,6 +1468,7 @@
                             <th>Pass/Slip #</th>
                             <th>Student Name</th>
                             <th>Student ID</th>
+                            <th>Category</th>
                             <th>Date & Time</th>
                             <th>Details</th>
                             <th>Reason</th>
@@ -1479,7 +1480,7 @@
                     </thead>
                     <tbody id="tableBody">
                         <tr>
-                            <td colspan="12" class="no-data">
+                            <td colspan="13" class="no-data">
                                 <div class="loader"></div>
                                 <p>Loading data from all campuses...</p>
                             </td>
@@ -1783,7 +1784,7 @@
 
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="12" class="no-data">
+                    <td colspan="13" class="no-data">
                         <div class="loader"></div>
                         <p>Loading data from all campuses...</p>
                     </td>
@@ -1819,6 +1820,7 @@
                         passNumber: data.passNumber || `OUTPASS-${doc.id.substring(0, 8)}`,
                         studentName: data.studentName || 'N/A',
                         studentId: data.studentId || 'N/A',
+                        category: data.category || '--',
                         date: data.outDate || data.issuedDate || 'N/A',
                         details: `Out: ${formatDate(data.outDate)} | In: ${formatDate(data.inDate)}`,
                         reason: data.reason || 'N/A',
@@ -1855,6 +1857,7 @@
                         passNumber: slipNumber,
                         studentName: data.studentName || 'N/A',
                         studentId: data.studentId || 'N/A',
+                        category: data.category || '--',
                         date: data.date || data.issuedDate || 'N/A',
                         // Ensure temperature shows with °F symbol
                         details: `Temp: ${data.temperature || 'None'}°F | ${formatTime(data.startTime)} - ${formatTime(data.endTime)}`,
@@ -1895,7 +1898,7 @@
                 console.error("❌ HOD: Error loading data:", error);
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="12" class="no-data">
+                        <td colspan="13" class="no-data">
                             ❌ Error loading data: ${error.message}
                             <br><br>
                             <button onclick="loadAllData()" class="btn-refresh">🔄 Retry</button>
@@ -1959,7 +1962,7 @@
             if (filteredData.length === 0) {
                 tableBody.innerHTML = `
             <tr>
-                <td colspan="12" class="no-data">
+                <td colspan="13" class="no-data">
                     📭 No applications found for selected filters
                 </td>
             </tr>
@@ -2025,6 +2028,7 @@
             <td>${item.passNumber}</td>
             <td>${item.studentName}</td>
             <td>${item.studentId}</td>
+            <td>${item.category || '--'}</td>
             <td>
                 <div>${formatDate(item.date)}</div>
                 <div class="reporting-time">${formatTimeFromCreatedAt(item.createdAt)}</div>
@@ -2162,7 +2166,7 @@
                 return;
             }
 
-            let csvContent = "Campus,Type,Pass/Slip Number,Student Name,Student ID,Date,Time,Details,Reason,Medicine Given,Status,Authorized By,Issued By,Security,Security WhatsApp,Created By,Reporting Date,Reporting Time\n";
+            let csvContent = "Campus,Type,Pass/Slip Number,Student Name,Student ID,Category,Date,Time,Details,Reason,Medicine Given,Status,Authorized By,Issued By,Security,Security WhatsApp,Created By,Reporting Date,Reporting Time\n";
 
             filteredData.forEach(item => {
                 // For outpass, show reporting status in Excel
@@ -2186,6 +2190,7 @@
                     item.passNumber,
                     item.studentName,
                     item.studentId,
+                    item.category || '--',
                     formatDate(item.date),
                     formatTimeFromCreatedAt(item.createdAt),
                     item.details,
