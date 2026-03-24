@@ -1852,6 +1852,20 @@
 
                     <div class="form-row">
                         <div class="form-group">
+                            <label for="mediCategory">Category *</label>
+                            <input type="text" id="mediCategory" placeholder="Enter Student ID first to load data" required
+                                readonly disabled style="background-color: #e9ecef; cursor: not-allowed;">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="mediSection">Section *</label>
+                            <input type="text" id="mediSection" placeholder="Enter Student ID first to load data" required
+                                disabled style="background-color: #e9ecef; cursor: not-allowed;">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
                             <label for="mediDate">Issued Date *</label>
                             <input type="date" id="mediDate" required>
                         </div>
@@ -2200,6 +2214,10 @@
                     <div class="medi-slip-info-item">
                         <div class="info-label">Student Name</div>
                         <div class="info-value" id="mediSlipStudentName">Student Name</div>
+                    </div>
+                    <div class="medi-slip-info-item">
+                        <div class="info-label">Category</div>
+                        <div class="info-value" id="mediSlipCategory">Junior</div>
                     </div>
                     <div class="medi-slip-info-item">
                         <div class="info-label">Date</div>
@@ -2744,22 +2762,33 @@
 
         // Function to enable/disable medical slip student name field
         function setMediSlipStudentFieldEnabled(enabled) {
-            const field = document.getElementById('mediStudentName');
-            if (field) {
-                field.disabled = !enabled;
-                if (enabled) {
-                    field.style.backgroundColor = '#ffffff';
-                    field.style.cursor = 'text';
-                } else {
-                    field.style.backgroundColor = '#e9ecef';
-                    field.style.cursor = 'not-allowed';
+            const fields = ['mediStudentName', 'mediCategory', 'mediSection'];
+            fields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.disabled = !enabled;
+                    if (enabled) {
+                        field.style.backgroundColor = '#ffffff';
+                        field.style.cursor = 'text';
+                        if (fieldId !== 'mediCategory') {
+                            field.removeAttribute('readonly');
+                        }
+                    } else {
+                        field.style.backgroundColor = '#e9ecef';
+                        field.style.cursor = 'not-allowed';
+                        if (fieldId === 'mediCategory') {
+                            field.setAttribute('readonly', 'readonly');
+                        }
+                    }
                 }
-            }
+            });
         }
 
-        // Function to clear medical slip student field
+        // Function to clear medical slip student fields
         function clearMediSlipStudentField() {
             document.getElementById('mediStudentName').value = '';
+            document.getElementById('mediCategory').value = '';
+            document.getElementById('mediSection').value = '';
             setMediSlipStudentFieldEnabled(false);
         }
 
@@ -2789,11 +2818,17 @@
 
             if (result.studentName) {
                 document.getElementById('mediStudentName').value = result.studentName;
-
-                // Show success message
-                showMediSlipSuccess('✅ Student name loaded automatically! Field is now enabled.');
-                setTimeout(() => hideMessages(), 2000);
             }
+            if (result.category) {
+                document.getElementById('mediCategory').value = result.category;
+            }
+            if (result.section) {
+                document.getElementById('mediSection').value = result.section;
+            }
+
+            // Show success message
+            showMediSlipSuccess('✅ Student data loaded automatically! Fields are now enabled.');
+            setTimeout(() => hideMessages(), 2000);
         }
 
         // Function to save student data to Firestore
@@ -3621,6 +3656,8 @@
                 const fullStudentId = getFullStudentId(mediStudentIdInput);
 
                 const studentName = document.getElementById('mediStudentName').value.trim();
+                const category = document.getElementById('mediCategory').value.trim();
+                const section = document.getElementById('mediSection').value.trim();
                 const date = document.getElementById('mediDate').value;
                 const startTime = document.getElementById('mediStartTime').value;
                 const endTime = document.getElementById('mediEndTime').value;
@@ -3667,6 +3704,8 @@
                 const mediSlipData = {
                     studentId: fullStudentId,
                     studentName: studentName,
+                    category: category,
+                    section: section,
                     date: date,
                     startTime: startTime,
                     endTime: endTime,
@@ -4321,6 +4360,7 @@
                     document.getElementById('mediSlipNumber').textContent = mediSlipData.mediSlipNumber;
                     document.getElementById('mediSlipStudentId').textContent = mediSlipData.studentId;
                     document.getElementById('mediSlipStudentName').textContent = mediSlipData.studentName;
+                    document.getElementById('mediSlipCategory').textContent = mediSlipData.category || '--';
                     document.getElementById('mediSlipDate').textContent = formatDateForPDF(mediSlipData.date);
                     document.getElementById('mediSlipTemperature').textContent = (mediSlipData.temperature || 'None') + '°F';
                     document.getElementById('mediSlipStartTime').textContent = formatTimeForPDF(mediSlipData.startTime || mediSlipData.time);
