@@ -1482,8 +1482,12 @@
             <div>
                 <h1 class="page-title">📊 HOD Analytics Dashboard</h1>
                 <p class="page-subtitle">Sri Chaitanya Educational Institutions - All Campuses Overview</p>
-                <div class="campus-info">
+                <div class="campus-info" style="display: flex; justify-content: space-between; align-items: center;">
                     <div class="campus-name" id="currentCampus">All Campuses - HOD AGM Access</div>
+                    <div id="serverHealth" style="font-size: 11px; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.5); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(0,0,0,0.05);">
+                        <span id="serverHealthIcon" style="font-size: 10px; color: #95a5a6;">●</span>
+                        <span id="serverHealthStatus" style="font-weight: 600; color: #7f8c8d;">Checking Cloud Server...</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1749,7 +1753,42 @@
                 // Then load data from Firebase - ALL CAMPUSES
                 setTimeout(() => {
                     loadAllData();
+                    checkServerHealth(); // Start waking up the Render API
                 }, 500);
+            }
+
+            // --- SELF-HEALING: Wake up Render API and monitor health ---
+            async function checkServerHealth() {
+                const healthStatusEl = document.getElementById('serverHealthStatus');
+                const healthIconEl = document.getElementById('serverHealthIcon');
+                // Use the base API URL to wake up the instance
+                const API_URL = 'https://college-outpass-api.onrender.com/api';
+
+                try {
+                    const startTime = Date.now();
+                    // We don't care about the response content, just that it returns
+                    // Using no-cors and ignoring errors for a simple ping
+                    await fetch(API_URL, { mode: 'no-cors' }).catch(() => {});
+                    
+                    const duration = (Date.now() - startTime) / 1000;
+                    
+                    if (duration > 15) {
+                        // If it took > 15s, it was definitely waking up from sleep
+                        healthIconEl.style.color = "#f1c40f";
+                        healthStatusEl.textContent = "Cloud Active (Woke up from sleep)";
+                        console.log(`🚀 Server was sleeping. Wake-up took ${duration.toFixed(1)}s`);
+                    } else {
+                        healthIconEl.style.color = "#2ecc71";
+                        healthStatusEl.textContent = "Cloud Server Online";
+                    }
+                    
+                    // Keep alive: Ping every 5 minutes while dashboard is open (prevent sleep)
+                    setTimeout(checkServerHealth, 300000);
+                } catch (e) {
+                    healthIconEl.style.color = "#e74c3c";
+                    healthStatusEl.textContent = "Cloud Server Offline";
+                    console.error("Health check failed:", e);
+                }
             }
         });
 

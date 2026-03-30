@@ -280,9 +280,15 @@
             Back to Dashboard
         </a>
 
-        <div class="header">
-            <h1>Manage Staff</h1>
-            <p>Add and manage system access for department staff and campus administrators.</p>
+        <div class="header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+                <h1>Manage Staff</h1>
+                <p>Add and manage system access for department staff and campus administrators.</p>
+            </div>
+            <div id="apiStatus" style="margin-bottom: 5px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; padding: 8px 15px; background: white; border-radius: 10px; border: 1px solid #e2e8f0; color: #64748b;">
+                <span id="statusDot" style="width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; display: inline-block;"></span>
+                <span id="statusText">Cloud Server Ping...</span>
+            </div>
         </div>
 
         <div class="grid">
@@ -522,11 +528,40 @@
             }
         }
 
+        // Wake up API and monitor status
+        async function wakeUpAPI() {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            
+            try {
+                const start = Date.now();
+                // Simple ping to wake up Render Free Tier
+                await fetch(API_URL.replace('/api', ''), { mode: 'no-cors' }).catch(() => {});
+                const end = Date.now();
+                const wakeTime = (end - start) / 1000;
+                
+                if (wakeTime > 10) {
+                    dot.style.background = '#f59e0b';
+                    dot.style.boxShadow = '0 0 8px #f59e0b';
+                    text.textContent = 'Server Online (Woke up from Sleep)';
+                    console.log('Server was asleep, woke up in ' + wakeTime.toFixed(1) + 's');
+                } else {
+                    dot.style.background = '#10b981';
+                    dot.style.boxShadow = '0 0 8px #10b981';
+                    text.textContent = 'Server Online & Ready';
+                }
+            } catch (e) {
+                dot.style.background = '#ef4444';
+                text.textContent = 'Server Connection Issue';
+            }
+        }
+
         // Check auth on load
         if (!localStorage.getItem('tidb_token') && !sessionStorage.getItem('tidb_token')) {
             window.location.href = 'admin-login.html';
         } else {
             fetchUsers();
+            wakeUpAPI(); // Start wake-up process immediately
         }
     </script>
     <script>
