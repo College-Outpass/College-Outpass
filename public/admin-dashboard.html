@@ -256,6 +256,99 @@
             box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
         }
 
+        /* Database Usage Card Styling */
+        .stat-card.usage::before {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+        
+        .stat-card.usage:hover {
+            background: #f0f7ff;
+        }
+
+        /* Modal for Database Info */
+        .usage-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .usage-modal-content {
+            background: white;
+            padding: 35px;
+            border-radius: 16px;
+            max-width: 550px;
+            width: 90%;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            position: relative;
+            animation: modalSlide 0.3s ease-out;
+        }
+
+        @keyframes modalSlide {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .usage-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f4f8;
+            padding-bottom: 15px;
+        }
+
+        .usage-modal-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: #1e3c72;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-usage-modal {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ccc;
+            cursor: pointer;
+            line-height: normal;
+        }
+
+        .close-usage-modal:hover {
+            color: #e74c3c;
+        }
+
+        .usage-detail-row {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .usage-alert-box {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #856404;
+        }
+
+        .usage-alert-box strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 15px;
+        }
+
         .btn-excel:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
@@ -1416,6 +1509,12 @@
                 <div class="stat-label">This Month</div>
                 <div class="stat-value" id="monthCount">0</div>
             </div>
+            <div class="stat-card usage" id="cardUsage" style="cursor: help;">
+                <div class="stat-icon">🔋</div>
+                <div class="stat-label">Storage Usage</div>
+                <div class="stat-value" id="usagePercent">0%</div>
+                <div style="font-size: 11px; margin-top: 5px; color: #666;" id="usageLabel">Checking capacity...</div>
+            </div>
         </div>
 
         <div class="data-table-section">
@@ -1944,6 +2043,49 @@
             document.getElementById('todayCount').textContent = todayCount;
             document.getElementById('weekCount').textContent = weekCount;
             document.getElementById('monthCount').textContent = monthCount;
+
+            // --- DATABASE USAGE ESTIMATION (HOD EXCLUSIVE) ---
+            try {
+                // Calculate size of loaded data in memory as a proxy for Firestore storage
+                // Firestore docs are slightly larger due to metadata and indexes.
+                // We multiply by ~1.2 to 1.5 to account for this.
+                const dataString = JSON.stringify(allData);
+                const bytes = dataString.length;
+                const megabytes = bytes / (1024 * 1024);
+                
+                // Estimate total storage (including indexes and estimated student records)
+                // Firestore Free Tier is 1024 MB (1.0 GiB)
+                const estimatedTotalMB = (megabytes * 1.5) + (total * 0.01); // Docs + Indexes + Overhead
+                const limitMB = 1024;
+                const percentage = Math.min((estimatedTotalMB / limitMB) * 1024, 100); // Scale to 1GB
+                
+                // Note: Firestore counts bytes differently, this is a safe heuristic
+                // The actual free tier is 1GiB. We show as percentage of 1000MB for safety.
+                const usagePercent = Math.min((estimatedTotalMB / 1000) * 100, 100);
+                
+                const usageLabel = document.getElementById('usageLabel');
+                const usagePercentEl = document.getElementById('usagePercent');
+                
+                usagePercentEl.textContent = usagePercent.toFixed(1) + '%';
+                usageLabel.textContent = `${estimatedTotalMB.toFixed(1)}MB of 1GB Free Tier Used`;
+                
+                // Color coding based on usage
+                const cardUsage = document.getElementById('cardUsage');
+                if (usagePercent > 80) {
+                    cardUsage.style.borderTop = '4px solid #dc3545';
+                    usagePercentEl.style.color = '#dc3545';
+                    usageLabel.innerHTML = '⚠️ <strong>CRITICAL: Near 1GB Limit</strong>';
+                } else if (usagePercent > 50) {
+                    cardUsage.style.borderTop = '4px solid #fd7e14';
+                    usagePercentEl.style.color = '#fd7e14';
+                } else {
+                    cardUsage.style.borderTop = '4px solid #28a745';
+                    usagePercentEl.style.color = '#28a745';
+                }
+            } catch (e) {
+                console.error("Error calculating storage usage:", e);
+                document.getElementById('usagePercent').textContent = 'N/A';
+            }
         }
 
         function getItemDate(item) {
@@ -2855,15 +2997,70 @@
         const STORAGE_KEY = 'app_version_dashboard';
 
         // Check if user has old cached version
-        const savedVersion = localStorage.getItem(STORAGE_KEY);
-        if (savedVersion && savedVersion !== CURRENT_VERSION) {
-            localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
-            // Force reload from server bypassing cache
-            window.location.reload(true);
-        } else {
-            localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
+        // Database Usage Modal Functionality
+        const usageCard = document.getElementById('cardUsage');
+        const usageModal = document.getElementById('usageModal');
+        const closeUsageModal = document.querySelector('.close-usage-modal');
+        
+        if (usageCard) {
+            usageCard.addEventListener('click', () => {
+                // Update modal details before showing
+                const usagePercent = document.getElementById('usagePercent').textContent;
+                const usageLabelText = document.getElementById('usageLabel').textContent;
+                
+                document.getElementById('modalUsedMB').textContent = usageLabelText.split(' of')[0];
+                document.getElementById('modalTotalRecords').textContent = document.getElementById('totalCount').textContent;
+                
+                usageModal.style.display = 'flex';
+            });
         }
+        
+        if (closeUsageModal) {
+            closeUsageModal.addEventListener('click', () => {
+                usageModal.style.display = 'none';
+            });
+        }
+        
+        window.addEventListener('click', (event) => {
+            if (event.target == usageModal) {
+                usageModal.style.display = 'none';
+            }
+        });
     </script>
+
+    <!-- Usage Modal Container (Added for HOD Storage Monitoring) -->
+    <div id="usageModal" class="usage-modal">
+        <div class="usage-modal-content">
+            <div class="usage-modal-header">
+                <div class="usage-modal-title">🔋 Database Storage Health</div>
+                <span class="close-usage-modal">&times;</span>
+            </div>
+            <div class="usage-detail-row">
+                Your Sri Chaitanya Hostel System currently uses <strong>Firebase Free Tier</strong> data storage. 
+                Google provides <strong>1.0 GiB (Approx. 1,024 MB)</strong> of free storage per project.
+            </div>
+            
+            <div class="usage-alert-box" id="usageAlertBox">
+                <strong>💡 Why does storage fill up?</strong>
+                The main source of storage usage is the <b>high-resolution photos</b> (Student, Parent, and Permission Letters) saved with each Outpass. Each record uses approximately 0.2MB to 0.5MB.
+            </div>
+
+            <div class="usage-detail-row">
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
+                    <strong>Total Capacity:</strong> 1,024 MB (1GB)<br>
+                    <strong>Estimated Used:</strong> <span id="modalUsedMB" style="font-weight: bold; color: #2a5298;">0MB</span><br>
+                    <strong>Records Stored:</strong> <span id="modalTotalRecords" style="font-weight: bold; color: #2a5298;">0</span> Applications
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; font-size: 13px; color: #666; border-top: 1px solid #eee; padding-top: 15px;">
+                <p style="margin-bottom: 10px; font-weight: 700; color: #333;">Action required if usage exceeds 80%:</p>
+                <p style="margin-bottom: 5px;">1. Export all data to Excel and archive a local copy.</p>
+                <p style="margin-bottom: 5px;">2. Request a database "Flush" to clear old records (e.g., from previous semesters).</p>
+                <p>3. Consider upgrading the Firebase project to "Pay-As-You-Go" for unlimited storage.</p>
+            </div>
+        </div>
+    </div>
     <!-- NEET Style PDF Preview Modal -->
     <div id="pdfViewerModal" class="modal-overlay">
         <div class="modal-body">
