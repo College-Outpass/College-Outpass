@@ -1984,8 +1984,8 @@ if (item.type === 'outpass') {
 
         // Get campus info from outpass data
         function getCampusInfoFromOutpass(outpassData) {
-            // STRICT: Always use authenticated principal's campus 
-            const campusId = currentCampus;
+            // Resolve campus from record data or creator's email
+            const campusId = outpassData.campus || getCampusFromEmail(outpassData.createdBy) || currentCampus;
             const campusName = CAMPUS_DISPLAY_NAMES[campusId] || campusId.replace(/_/g, ' ');
             
             // Show original staff member's email who created the outpass
@@ -2000,7 +2000,8 @@ if (item.type === 'outpass') {
 
         // Get campus info from medi slip data
         function getCampusInfoFromMediSlip(mediSlipData) {
-            const campusId = currentCampus;
+            // Resolve campus from record data or creator's email
+            const campusId = mediSlipData.campus || getCampusFromEmail(mediSlipData.createdBy) || currentCampus;
             const campusName = CAMPUS_DISPLAY_NAMES[campusId] || campusId.replace(/_/g, ' ');
             const staffEmail = mediSlipData.createdBy || currentUserEmail;
             

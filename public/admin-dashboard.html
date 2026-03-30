@@ -2306,7 +2306,8 @@
         }
         // Get campus info from outpass data
         function getCampusInfoFromOutpass(outpassData) {
-            const campusId = outpassData.campus || 'ECITY_NEET_BOYS';
+            // Resolve campus from record data or creator's email
+            const campusId = outpassData.campus || getCampusFromEmail(outpassData.createdBy) || 'ECITY_SCHOOL';
             const campusName = CAMPUS_DISPLAY_NAMES[campusId] || campusId.replace(/_/g, ' ');
             const campusEmail = outpassData.createdBy || 'staff.ecityneetboys@srichaitanya.edu';
 
@@ -2589,7 +2590,8 @@
 
         // Get campus info from medi slip data
         function getCampusInfoFromMediSlip(mediSlipData) {
-            const campusId = mediSlipData.campus || 'ECITY_NEET_BOYS';
+            // Resolve campus from record data or creator's email
+            const campusId = mediSlipData.campus || getCampusFromEmail(mediSlipData.createdBy) || 'ECITY_SCHOOL';
             const campusName = CAMPUS_DISPLAY_NAMES[campusId] || campusId.replace(/_/g, ' ');
             const campusEmail = mediSlipData.createdBy || 'staff.ecityneetboys@srichaitanya.edu';
 

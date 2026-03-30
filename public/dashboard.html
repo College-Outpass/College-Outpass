@@ -2373,7 +2373,7 @@
             }
             
             // Fallback for HOD/Admin (who might not have a fixed campus)
-            if (localStorage.getItem('isPrincipal') === 'true') {
+            if (localStorage.getItem('isPrincipal') === 'true' || localStorage.getItem('isHOD') === 'true') {
                  return {
                     campusId: storedCampus || 'ALL',
                     name: CAMPUS_DISPLAY_NAMES[storedCampus] || 'ALL CAMPUSES',
@@ -2381,8 +2381,29 @@
                 };
             }
 
+            // Fallback to email detection
+            const detectedCampus = getCampusFromEmail(userEmail);
+            if (detectedCampus) {
+                return {
+                    campusId: detectedCampus,
+                    name: CAMPUS_DISPLAY_NAMES[detectedCampus] || detectedCampus.replace(/_/g, ' '),
+                    email: userEmail
+                };
+            }
+
             console.error('❌ Unauthorized or unknown email:', userEmail);
             return null;
+        }
+
+        // Helper to map email to campus if field is missing
+        function getCampusFromEmail(email) {
+            if (!email) return 'ECITY_SCHOOL';
+            const e = email.toLowerCase();
+            if (e.includes('school')) return 'ECITY_SCHOOL';
+            if (e.includes('boys')) return 'ECITY_NEET_BOYS';
+            if (e.includes('ecitygirls') || (e.includes('girls') && e.includes('residential') && !e.includes('engg'))) return 'ECITY_GIRLS_RESIDENTIAL';
+            if (e.includes('engg') && e.includes('girls')) return 'ECITY_ENGG_GIRLS_RESIDENTIAL';
+            return 'ECITY_SCHOOL'; // Default fallback
         }
 
         // Function to generate sequential outpass number from Firestore
@@ -4169,23 +4190,13 @@
                     // Update Authorized By name dynamically
                     document.getElementById('pdfAuthorizedByName').textContent = outpassData.authorizedBy;
 
-                    // Update campus information dynamically - Get fresh from current user to ensure correctness
-                    const currentUser = auth.currentUser || (localStorage.getItem('userEmail') ? { email: localStorage.getItem('userEmail') } : null);
-                    if (currentUser) {
-                        const freshCampusInfo = getCampusInfoFromUserEmail(currentUser.email);
-                        if (freshCampusInfo) {
-                            document.getElementById('pdfCampusName').textContent = freshCampusInfo.name;
-                            document.getElementById('pdfCampusEmail').textContent = freshCampusInfo.email;
-                        } else {
-                            // Fallback to global campusInfo if fresh lookup fails
-                            document.getElementById('pdfCampusName').textContent = campusInfo.name;
-                            document.getElementById('pdfCampusEmail').textContent = campusInfo.email;
-                        }
-                    } else {
-                        // Fallback to global campusInfo if no user
-                        document.getElementById('pdfCampusName').textContent = campusInfo.name;
-                        document.getElementById('pdfCampusEmail').textContent = campusInfo.email;
-                    }
+                    // Update campus information dynamically - Use record data if available, fallback to creator email
+                    const recordCampusId = outpassData.campus || getCampusFromEmail(outpassData.createdBy);
+                    const recordCampusName = CAMPUS_DISPLAY_NAMES[recordCampusId] || recordCampusId.replace(/_/g, ' ');
+                    const creatorEmail = outpassData.createdBy || (auth.currentUser ? auth.currentUser.email : localStorage.getItem('userEmail'));
+
+                    document.getElementById('pdfCampusName').textContent = recordCampusName;
+                    document.getElementById('pdfCampusEmail').textContent = creatorEmail;
 
                     const statusElement = document.getElementById('pdfStatus');
                     statusElement.className = '';
@@ -4378,23 +4389,13 @@
                     statusElement.textContent = mediSlipData.status;
                     statusElement.className = 'medi-slip-status-box';
 
-                    // Update campus information dynamically - Get fresh from current user to ensure correctness
-                    const currentUser = auth.currentUser || (localStorage.getItem('userEmail') ? { email: localStorage.getItem('userEmail') } : null);
-                    if (currentUser) {
-                        const freshCampusInfo = getCampusInfoFromUserEmail(currentUser.email);
-                        if (freshCampusInfo) {
-                            document.getElementById('mediSlipCampusName').textContent = freshCampusInfo.name;
-                            document.getElementById('mediSlipCampusEmail').textContent = freshCampusInfo.email;
-                        } else {
-                            // Fallback to global campusInfo if fresh lookup fails
-                            document.getElementById('mediSlipCampusName').textContent = campusInfo.name;
-                            document.getElementById('mediSlipCampusEmail').textContent = campusInfo.email;
-                        }
-                    } else {
-                        // Fallback to global campusInfo if no user
-                        document.getElementById('mediSlipCampusName').textContent = campusInfo.name;
-                        document.getElementById('mediSlipCampusEmail').textContent = campusInfo.email;
-                    }
+                    // Update campus information dynamically - Use record data if available, fallback to creator email
+                    const mediCampusId = mediSlipData.campus || getCampusFromEmail(mediSlipData.createdBy);
+                    const mediCampusName = CAMPUS_DISPLAY_NAMES[mediCampusId] || mediCampusId.replace(/_/g, ' ');
+                    const mediCreatorEmail = mediSlipData.createdBy || (auth.currentUser ? auth.currentUser.email : localStorage.getItem('userEmail'));
+
+                    document.getElementById('mediSlipCampusName').textContent = mediCampusName;
+                    document.getElementById('mediSlipCampusEmail').textContent = mediCreatorEmail;
 
                     if (mediSlipData.status === 'APPROVED') {
                         statusElement.classList.add('status-approved');
