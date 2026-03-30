@@ -128,7 +128,38 @@ async function authenticateToken(req, res, next) {
     }
 }
 
-// Routes
+// --- STABILITY & RECOVERY SYSTEM (PERMANENT SOLUTION) ---
+// 1. Robotic Health Check: Dedicated endpoint for UptimeRobot
+app.get('/api/health', (req, res) => {
+    const memoryUsage = process.memoryUsage();
+    res.status(200).json({
+        service: 'Outpass API',
+        status: 'Online',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        firebase: admin.apps.length > 0 ? 'connected' : 'error',
+        memory: {
+            rss: `${Math.round(memoryUsage.rss / 1024 / 1024)} MB`,
+            heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)} MB`
+        }
+    });
+});
+
+// 2. Active Self-Ping System: Prevents Render from sleeping
+const SELF_URL = process.env.RENDER_EXTERNAL_URL || 'https://college-outpass-api.onrender.com';
+setInterval(() => {
+    const http = require('http');
+    const https = require('https');
+    const client = SELF_URL.startsWith('https') ? https : http;
+    
+    client.get(`${SELF_URL}/api/health`, (res) => {
+        console.log(`💓 Self-ping (Health Check): ${res.statusCode}`);
+    }).on('error', (err) => {
+        console.error('❌ Self-ping failed:', err.message);
+    });
+}, 300000); // Every 5 minutes
+
+// 3. Main Routes
 app.get('/', (req, res) => res.json({ service: 'Outpass API', status: 'Online', mode: 'Firebase-Only' }));
 
 app.get('/diag/db', async (req, res) => {
