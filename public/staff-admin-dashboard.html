@@ -2030,7 +2030,6 @@ if (item.type === 'outpass') {
                     document.getElementById('mediSlipStartTime').textContent = formatTimeForPDF(mediSlipData.startTime);
                     document.getElementById('mediSlipEndTime').textContent = formatTimeForPDF(mediSlipData.endTime);
                     document.getElementById('mediSlipMedicineGiven').textContent = mediSlipData.medicineGiven || '--';
-                    document.getElementById('mediSlipRequestedBy').textContent = mediSlipData.requestedBy || '--';
                     document.getElementById('mediSlipReason').textContent = mediSlipData.reason;
                     
                     // Update Issued By name dynamically
@@ -3057,10 +3056,6 @@ if (item.type === 'outpass') {
                     <div class="medi-slip-info-item">
                         <div class="info-label">Student Name</div>
                         <div class="info-value" id="mediSlipStudentName">Student Name</div>
-                    </div>
-                    <div class="medi-slip-info-item">
-                        <div class="info-label">Requested By</div>
-                        <div class="info-value" id="mediSlipRequestedBy">Father</div>
                     </div>
                     <div class="medi-slip-info-item">
                         <div class="info-label">Date</div>

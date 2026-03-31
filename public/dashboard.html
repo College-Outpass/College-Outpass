@@ -1921,17 +1921,6 @@
                                 <option value="Vice Principal">Vice Principal</option>
                             </select>
                         </div>
-
-                        <div class="form-group">
-                            <label for="mediRequestedBy">Requested By *</label>
-                            <select id="mediRequestedBy" required>
-                                <option value="" disabled selected>Select</option>
-                                <option value="Father">Father</option>
-                                <option value="Mother">Mother</option>
-                                <option value="Guardian">Guardian</option>
-                                <option value="Self Outing">Self Outing</option>
-                            </select>
-                        </div>
                     </div>
 
                     <div class="form-group">
@@ -2230,10 +2219,6 @@
                     <div class="medi-slip-info-item">
                         <div class="info-label">Category</div>
                         <div class="info-value" id="mediSlipCategory">Junior</div>
-                    </div>
-                    <div class="medi-slip-info-item">
-                        <div class="info-label">Requested By</div>
-                        <div class="info-value" id="mediSlipRequestedBy">Father</div>
                     </div>
                     <div class="medi-slip-info-item">
                         <div class="info-label">Date</div>
@@ -3702,7 +3687,6 @@
                 const status = document.getElementById('mediStatus').value;
                 const issuedBy = document.getElementById('mediIssuedBy').value;
                 const authorizedBy = document.getElementById('mediAuthorizedBy').value;
-                const requestedBy = document.getElementById('mediRequestedBy').value;
                 const temperature = document.getElementById('mediTemperature').value.trim();
                 const medicineGiven = document.getElementById('mediMedicineGiven').value.trim();
 
@@ -3752,7 +3736,6 @@
                     status: status,
                     issuedBy: issuedBy,
                     authorizedBy: authorizedBy,
-                    requestedBy: requestedBy,
                     medicineGiven: medicineGiven || '',
                     mediSlipNumber: mediSlipNumber,
                     issuedDate: new Date().toLocaleDateString('en-IN'),
@@ -4097,7 +4080,7 @@
 
             const fields = [
                 'mediStudentName', 'mediDate', 'mediStartTime',
-                'mediEndTime', 'mediTemperature', 'mediReason', 'mediStatus', 'mediIssuedBy', 'mediAuthorizedBy', 'mediRequestedBy'
+                'mediEndTime', 'mediTemperature', 'mediReason', 'mediStatus', 'mediIssuedBy', 'mediAuthorizedBy'
             ];
 
             for (let field of fields) {
@@ -4395,7 +4378,6 @@
                     document.getElementById('mediSlipStartTime').textContent = formatTimeForPDF(mediSlipData.startTime || mediSlipData.time);
                     document.getElementById('mediSlipEndTime').textContent = formatTimeForPDF(mediSlipData.endTime || mediSlipData.time);
                     document.getElementById('mediSlipMedicineGiven').textContent = mediSlipData.medicineGiven || '--';
-                    document.getElementById('mediSlipRequestedBy').textContent = mediSlipData.requestedBy || '--';
                     document.getElementById('mediSlipReason').textContent = mediSlipData.reason;
 
                     // Update Issued By name dynamically
