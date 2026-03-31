@@ -1851,7 +1851,7 @@ if (item.type === 'outpass') {
         return;
     }
 
-    let csvContent = "Campus,Type,Pass/Slip Number,Student Name,Student ID,Category,Date,Time,Details,Reason,Medicine Given,Status,Authorized By,Issued By,Security,Security WhatsApp,Created By,Reporting Date,Reporting Time\n";
+    let csvContent = "Campus,Type,Pass/Slip Number,Student Name,Student ID,Category,Requested By,Date,Time,Details,Reason,Medicine Given,Status,Authorized By,Issued By,Security,Security WhatsApp,Created By,Reporting Date,Reporting Time\n";
     
     filteredData.forEach(item => {
         // FIXED: For outpass, show reporting status in Excel
@@ -1876,6 +1876,7 @@ if (item.type === 'outpass') {
             item.studentName,
             item.studentId,
             item.category || '--',
+            item.fullData ? (item.fullData.requestedBy || '--') : (item.requestedBy || '--'),
             formatDate(item.date),
             formatTimeFromCreatedAt(item.createdAt),
             item.details,
@@ -2029,6 +2030,7 @@ if (item.type === 'outpass') {
                     document.getElementById('mediSlipStartTime').textContent = formatTimeForPDF(mediSlipData.startTime);
                     document.getElementById('mediSlipEndTime').textContent = formatTimeForPDF(mediSlipData.endTime);
                     document.getElementById('mediSlipMedicineGiven').textContent = mediSlipData.medicineGiven || '--';
+                    document.getElementById('mediSlipRequestedBy').textContent = mediSlipData.requestedBy || '--';
                     document.getElementById('mediSlipReason').textContent = mediSlipData.reason;
                     
                     // Update Issued By name dynamically
@@ -3055,6 +3057,10 @@ if (item.type === 'outpass') {
                     <div class="medi-slip-info-item">
                         <div class="info-label">Student Name</div>
                         <div class="info-value" id="mediSlipStudentName">Student Name</div>
+                    </div>
+                    <div class="medi-slip-info-item">
+                        <div class="info-label">Requested By</div>
+                        <div class="info-value" id="mediSlipRequestedBy">Father</div>
                     </div>
                     <div class="medi-slip-info-item">
                         <div class="info-label">Date</div>
