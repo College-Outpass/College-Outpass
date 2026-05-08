@@ -1815,6 +1815,9 @@
             }
         });
 
+        // Define API Base URL for all server communication
+        const BASE_API_URL = 'https://college-outpass-api.onrender.com/api';
+
         // Helper to map email to campus if field is missing (fixes "not defined" error)
         function getCampusFromEmail(email) {
             if (!email) return 'UNKNOWN_CAMPUS';
@@ -1919,7 +1922,7 @@
 
                 try {
                     const idToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
-                    const response = await fetch('/api/admin/cleanup', {
+                    const response = await fetch(`${BASE_API_URL}/admin/cleanup`, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${idToken}`,
@@ -3154,7 +3157,7 @@
 
             try {
                 const idToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
-                const response = await fetch('/api/admin/backups', {
+                const response = await fetch(`${BASE_API_URL}/admin/backups`, {
                     headers: { 'Authorization': `Bearer ${idToken}` }
                 });
                 const result = await response.json();
@@ -3209,7 +3212,7 @@
 
             try {
                 const idToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
-                const response = await fetch(`/api/admin/backups/download?file=${fileName}`, {
+                const response = await fetch(`${BASE_API_URL}/admin/backups/download?file=${fileName}`, {
                     headers: { 'Authorization': `Bearer ${idToken}` }
                 });
                 
