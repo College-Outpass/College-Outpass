@@ -1575,8 +1575,11 @@
                         </p>
                     </div>
                     <button class="btn-refresh" id="cleanupBtn" style="background: linear-gradient(135deg, #fd7e14, #ff8e3c); border: none; box-shadow: 0 4px 12px rgba(253, 126, 20, 0.3); padding: 12px 20px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">
-                        <span id="cleanupText">🧹 Cleanup Oldest Records</span>
+                        <span id="cleanupText">🧹 Manual Cleanup</span>
                         <span id="cleanupLoader" class="loader" style="display: none; width: 15px; height: 15px; border-width: 2px; margin-left: 8px;"></span>
+                    </button>
+                    <button class="btn-excel" id="viewBackupsBtn" style="background: linear-gradient(135deg, #2e7d32, #4caf50); border: none; box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3); padding: 12px 20px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">
+                        📦 View Archive Vault
                     </button>
                 </div>
                 <div id="cleanupStatus" style="margin-top: 10px; font-size: 13px; font-weight: 600; text-align: center; display: none;"></div>
@@ -1944,6 +1947,9 @@
                     cleanupLoader.style.display = 'none';
                 }
             });
+
+            // View Backups Logic
+            document.getElementById('viewBackupsBtn').addEventListener('click', openBackupsModal);
 
             document.getElementById('modalDownloadBtn').onclick = function() {
                 if (currentPdfBlob && currentPdfFilename) {
@@ -3134,8 +3140,115 @@
             if (event.target == usageModal) {
                 usageModal.style.display = 'none';
             }
+            if (event.target == document.getElementById('backupsModal')) {
+                document.getElementById('backupsModal').style.display = 'none';
+            }
         });
+
+        // --- BACKUPS MODAL LOGIC ---
+        async function openBackupsModal() {
+            const modal = document.getElementById('backupsModal');
+            const list = document.getElementById('backupsList');
+            modal.style.display = 'flex';
+            list.innerHTML = '<div class="loader" style="margin: 20px auto;"></div>';
+
+            try {
+                const idToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+                const response = await fetch('/api/admin/backups', {
+                    headers: { 'Authorization': `Bearer ${idToken}` }
+                });
+                const result = await response.json();
+
+                if (result.success && result.backups.length > 0) {
+                    list.innerHTML = result.backups.map(b => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border: 1px solid #eee;">
+                            <div>
+                                <div style="font-weight: 700; color: #2a5298;">${b.name}</div>
+                                <div style="font-size: 11px; color: #666;">
+                                    Size: ${(b.size / 1024).toFixed(1)} KB | Created: ${new Date(b.updated).toLocaleString()}
+                                </div>
+                            </div>
+                            <button onclick="downloadArchiveFile('${b.name}')" style="background: #1e3c72; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                                📥 Download
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No backups found in the archive vault.</div>';
+                }
+            } catch (error) {
+                list.innerHTML = `<div style="text-align: center; color: #dc3545; padding: 20px;">❌ Error loading archives: ${error.message}</div>`;
+            }
+        }
+
+        async function downloadArchiveFile(fileName) {
+            try {
+                const idToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+                window.location.href = `/api/admin/backups/download?file=${fileName}&authorization=${idToken}`;
+                
+                // Note: Direct href with token in query is a simple way, 
+                // but since we already have the endpoint, we can use it.
+                // For better security with Bearer, we'd use fetch + blob, but href is easier for downloads.
+                // Let's use fetch to keep the token in header.
+                
+                /*
+                const response = await fetch(`/api/admin/backups/download?file=${fileName}`, {
+                    headers: { 'Authorization': `Bearer ${idToken}` }
+                });
+                const blob = await response.json(); // Wait, it returns a file
+                */
+            } catch (e) { alert('Download failed'); }
+        }
+        
+        // Revised Download to support Bearer token
+        async function downloadArchiveFile(fileName) {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '⏳ ...';
+            btn.disabled = true;
+
+            try {
+                const idToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+                const response = await fetch(`/api/admin/backups/download?file=${fileName}`, {
+                    headers: { 'Authorization': `Bearer ${idToken}` }
+                });
+                
+                if (!response.ok) throw new Error('Download failed');
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                alert('❌ Error downloading file: ' + error.message);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
     </script>
+
+    <!-- Archive Vault Modal -->
+    <div id="backupsModal" class="usage-modal">
+        <div class="usage-modal-content">
+            <div class="usage-modal-header">
+                <div class="usage-modal-title">📦 Archive Vault (Excel Backups)</div>
+                <span class="close-usage-modal" onclick="document.getElementById('backupsModal').style.display='none'">&times;</span>
+            </div>
+            <div style="margin-bottom: 15px; font-size: 13px; color: #666;">
+                These are automated backups created during the nightly database cleanup. 
+                Records are archived here before being deleted from the live system.
+            </div>
+            <div id="backupsList" style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                <!-- Backup items will be injected here -->
+            </div>
+        </div>
+    </div>
 
     <!-- Usage Modal Container (Added for HOD Storage Monitoring) -->
     <div id="usageModal" class="usage-modal">

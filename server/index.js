@@ -5,6 +5,7 @@ const path = require('path');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const XLSX = require('xlsx');
+const cron = require('node-cron');
 
 // Firebase Admin Setup
 const admin = require('firebase-admin');
@@ -55,7 +56,10 @@ function initializeFirebase() {
                 serviceAccount.private_key = `-----BEGIN PRIVATE KEY-----\n${formatted}-----END PRIVATE KEY-----\n`;
             }
 
-            admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+            admin.initializeApp({ 
+                credential: admin.credential.cert(serviceAccount),
+                storageBucket: pId ? `${pId}.firebasestorage.app` : 'college-out-pass-system-62552.firebasestorage.app'
+            });
             console.log('✅ Firebase Admin initialized successfully');
             return true;
         }
@@ -305,12 +309,11 @@ app.post('/api/migrate/security-batch', async (req, res) => {
 });
 
 // --- DATABASE MAINTENANCE (CLEANUP & BACKUP) ---
-app.post('/api/admin/cleanup', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
-    
+async function performCleanup() {
     try {
         const db = admin.firestore();
-        console.log('🧹 Starting Database Cleanup...');
+        const bucket = admin.storage().bucket();
+        console.log('🧹 [CRON] Starting Automated Database Cleanup...');
 
         // 1. Fetch all outpasses and mediSlips
         const [outpassSnap, mediSnap] = await Promise.all([
@@ -323,30 +326,31 @@ app.post('/api/admin/cleanup', authenticateToken, async (req, res) => {
         mediSnap.forEach(doc => allRecords.push({ id: doc.id, collection: 'mediSlips', ...doc.data() }));
 
         if (allRecords.length === 0) {
-            return res.json({ success: true, message: 'No records found to clean up.' });
+            console.log('✨ [CRON] No records found to clean up.');
+            return { success: true, message: 'No records found to clean up.' };
         }
 
         // 2. Identify the oldest date
-        // Note: Using createdAt or issuedDate/outDate
         const dates = allRecords.map(r => {
             if (r.createdAt && r.createdAt.toDate) return r.createdAt.toDate().toISOString().split('T')[0];
-            if (r.date) return r.date;
+            if (r.date && r.date !== 'N/A') return r.date;
             if (r.outDate) return r.outDate;
             if (r.issuedDate) return r.issuedDate;
             return null;
         }).filter(d => d !== null);
 
         if (dates.length === 0) {
-            return res.status(400).json({ error: 'Could not determine record dates for cleanup.' });
+            console.log('⚠️ [CRON] Could not determine record dates.');
+            return { success: false, error: 'Could not determine record dates.' };
         }
 
         const sortedDates = [...new Set(dates)].sort();
         const oldestDate = sortedDates[0];
         
-        // If there's only one date (today), maybe we don't want to delete it yet?
-        // But the user said "if next day is coming the old first date want to delete"
+        // Don't delete today's only records
         if (sortedDates.length <= 1) {
-            return res.json({ success: true, message: `Only records for ${oldestDate} found. Keeping them for now.` });
+            console.log(`✨ [CRON] Only records for ${oldestDate} found. Skipping deletion.`);
+            return { success: true, message: `Only records for ${oldestDate} found. Keeping them.` };
         }
 
         // 3. Filter records for the oldest date
@@ -355,9 +359,9 @@ app.post('/api/admin/cleanup', authenticateToken, async (req, res) => {
             return rDate === oldestDate;
         });
 
-        console.log(`📦 Found ${recordsToDelete.length} records for ${oldestDate}. Exporting...`);
+        console.log(`📦 [CRON] Archiving ${recordsToDelete.length} records from ${oldestDate}...`);
 
-        // 4. Generate Excel/CSV data
+        // 4. Generate Excel data
         const excelData = recordsToDelete.map(r => ({
             ID: r.id,
             Type: r.collection,
@@ -375,16 +379,20 @@ app.post('/api/admin/cleanup', authenticateToken, async (req, res) => {
         const ws = XLSX.utils.json_to_sheet(excelData);
         XLSX.utils.book_append_sheet(wb, ws, "Backup");
 
-        // 5. Save to local folder
-        const backupDir = path.join(__dirname, '../backups');
-        if (!fs.existsSync(backupDir)) {
-            fs.mkdirSync(backupDir, { recursive: true });
-        }
+        // 5. Save to local temp and upload to Firebase Storage (Persistent)
+        const fileName = `backups/backup_${oldestDate}_${Date.now()}.xlsx`;
+        const tempPath = path.join(__dirname, `temp_backup_${Date.now()}.xlsx`);
+        XLSX.writeFile(wb, tempPath);
 
-        const fileName = `backup_${oldestDate}_${Date.now()}.xlsx`;
-        const filePath = path.join(backupDir, fileName);
-        XLSX.writeFile(wb, filePath);
-        console.log(`✅ Backup saved to ${filePath}`);
+        // Upload to Storage
+        await bucket.upload(tempPath, {
+            destination: fileName,
+            metadata: { contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
+        });
+
+        // Delete temp file
+        if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+        console.log(`✅ [CRON] Backup uploaded to Firebase Storage: ${fileName}`);
 
         // 6. Delete from Firestore in batches
         const batch = db.batch();
@@ -394,18 +402,77 @@ app.post('/api/admin/cleanup', authenticateToken, async (req, res) => {
         });
 
         await batch.commit();
-        console.log(`🗑️ Deleted ${recordsToDelete.length} records from Firestore.`);
+        console.log(`🗑️ [CRON] Deleted ${recordsToDelete.length} records from ${oldestDate}.`);
 
-        res.json({
+        return {
             success: true,
-            message: `Successfully backed up and deleted ${recordsToDelete.length} records from ${oldestDate}.`,
-            backupFile: fileName,
+            message: `Successfully archived and deleted ${recordsToDelete.length} records from ${oldestDate}.`,
             count: recordsToDelete.length,
             date: oldestDate
-        });
+        };
 
     } catch (err) {
-        console.error('❌ Cleanup Error:', err);
+        console.error('❌ [CRON] Cleanup Error:', err);
+        return { success: false, error: err.message };
+    }
+}
+
+// Scheduled Task: Run every day at 00:00 (Midnight)
+cron.schedule('0 0 * * *', () => {
+    performCleanup().then(res => {
+        if (res.success) console.log('✅ Automated Daily Cleanup Finished:', res.message);
+        else console.log('❌ Automated Daily Cleanup Failed:', res.error);
+    });
+});
+
+app.post('/api/admin/cleanup', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+    const result = await performCleanup();
+    if (result.success) res.json(result);
+    else res.status(500).json(result);
+});
+
+// --- LIST BACKUPS FOR HOD ---
+app.get('/api/admin/backups', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+    
+    try {
+        const bucket = admin.storage().bucket();
+        const [files] = await bucket.getFiles({ prefix: 'backups/' });
+        
+        const backupList = files.map(file => ({
+            name: file.name.replace('backups/', ''),
+            path: file.name,
+            size: file.metadata.size,
+            updated: file.metadata.updated
+        }));
+
+        res.json({ success: true, backups: backupList.sort((a, b) => new Date(b.updated) - new Date(a.updated)) });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- DOWNLOAD BACKUP ---
+app.get('/api/admin/backups/download', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+    
+    const fileName = req.query.file;
+    if (!fileName) return res.status(400).json({ error: 'File name required' });
+
+    try {
+        const bucket = admin.storage().bucket();
+        const file = bucket.file(`backups/${fileName}`);
+        
+        const [exists] = await file.exists();
+        if (!exists) return res.status(404).json({ error: 'Backup file not found' });
+
+        // Download to buffer and send
+        const [content] = await file.download();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+        res.send(content);
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
