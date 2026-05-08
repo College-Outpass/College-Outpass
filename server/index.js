@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const XLSX = require('xlsx');
 
 // Firebase Admin Setup
 const admin = require('firebase-admin');
@@ -301,6 +302,112 @@ app.post('/api/migrate/security-batch', async (req, res) => {
         await batch.commit();
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- DATABASE MAINTENANCE (CLEANUP & BACKUP) ---
+app.post('/api/admin/cleanup', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+    
+    try {
+        const db = admin.firestore();
+        console.log('🧹 Starting Database Cleanup...');
+
+        // 1. Fetch all outpasses and mediSlips
+        const [outpassSnap, mediSnap] = await Promise.all([
+            db.collection('outpasses').get(),
+            db.collection('mediSlips').get()
+        ]);
+
+        const allRecords = [];
+        outpassSnap.forEach(doc => allRecords.push({ id: doc.id, collection: 'outpasses', ...doc.data() }));
+        mediSnap.forEach(doc => allRecords.push({ id: doc.id, collection: 'mediSlips', ...doc.data() }));
+
+        if (allRecords.length === 0) {
+            return res.json({ success: true, message: 'No records found to clean up.' });
+        }
+
+        // 2. Identify the oldest date
+        // Note: Using createdAt or issuedDate/outDate
+        const dates = allRecords.map(r => {
+            if (r.createdAt && r.createdAt.toDate) return r.createdAt.toDate().toISOString().split('T')[0];
+            if (r.date) return r.date;
+            if (r.outDate) return r.outDate;
+            if (r.issuedDate) return r.issuedDate;
+            return null;
+        }).filter(d => d !== null);
+
+        if (dates.length === 0) {
+            return res.status(400).json({ error: 'Could not determine record dates for cleanup.' });
+        }
+
+        const sortedDates = [...new Set(dates)].sort();
+        const oldestDate = sortedDates[0];
+        
+        // If there's only one date (today), maybe we don't want to delete it yet?
+        // But the user said "if next day is coming the old first date want to delete"
+        if (sortedDates.length <= 1) {
+            return res.json({ success: true, message: `Only records for ${oldestDate} found. Keeping them for now.` });
+        }
+
+        // 3. Filter records for the oldest date
+        const recordsToDelete = allRecords.filter(r => {
+            const rDate = (r.createdAt && r.createdAt.toDate) ? r.createdAt.toDate().toISOString().split('T')[0] : (r.date || r.outDate || r.issuedDate);
+            return rDate === oldestDate;
+        });
+
+        console.log(`📦 Found ${recordsToDelete.length} records for ${oldestDate}. Exporting...`);
+
+        // 4. Generate Excel/CSV data
+        const excelData = recordsToDelete.map(r => ({
+            ID: r.id,
+            Type: r.collection,
+            PassNumber: r.passNumber || r.mediSlipNumber || '--',
+            StudentName: r.studentName || '--',
+            StudentID: r.studentId || '--',
+            Date: oldestDate,
+            Reason: r.reason || '--',
+            Campus: r.campus || '--',
+            CreatedBy: r.createdBy || '--',
+            Status: r.status || '--'
+        }));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        XLSX.utils.book_append_sheet(wb, ws, "Backup");
+
+        // 5. Save to local folder
+        const backupDir = path.join(__dirname, '../backups');
+        if (!fs.existsSync(backupDir)) {
+            fs.mkdirSync(backupDir, { recursive: true });
+        }
+
+        const fileName = `backup_${oldestDate}_${Date.now()}.xlsx`;
+        const filePath = path.join(backupDir, fileName);
+        XLSX.writeFile(wb, filePath);
+        console.log(`✅ Backup saved to ${filePath}`);
+
+        // 6. Delete from Firestore in batches
+        const batch = db.batch();
+        recordsToDelete.forEach(r => {
+            const ref = db.collection(r.collection).doc(r.id);
+            batch.delete(ref);
+        });
+
+        await batch.commit();
+        console.log(`🗑️ Deleted ${recordsToDelete.length} records from Firestore.`);
+
+        res.json({
+            success: true,
+            message: `Successfully backed up and deleted ${recordsToDelete.length} records from ${oldestDate}.`,
+            backupFile: fileName,
+            count: recordsToDelete.length,
+            date: oldestDate
+        });
+
+    } catch (err) {
+        console.error('❌ Cleanup Error:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Final fallback for static files
