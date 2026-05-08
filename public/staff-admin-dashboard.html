@@ -1197,12 +1197,6 @@
                 <div class="stat-label">This Month</div>
                 <div class="stat-value" id="monthCount">0</div>
             </div>
-            <div class="stat-card storage" id="cardStorage">
-                <div class="stat-icon">🔋</div>
-                <div class="stat-label">Storage Usage</div>
-                <div class="stat-value" id="storagePercent">--%</div>
-                <div style="font-size: 11px; color: #666; margin-top: 5px;" id="storageDetail">Calculating...</div>
-            </div>
         </div>
 
         <div class="data-table-section">
@@ -1276,26 +1270,7 @@
                 </div>
             </div>
             
-            <!-- Database Maintenance Section -->
-            <div class="data-table-section" style="margin-top: 20px; border-left: 5px solid #ffc107;">
-                <div class="table-header">
-                    <h3>⚙️ Database Maintenance</h3>
-                </div>
-                <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; background: #fffdf5; padding: 15px; border-radius: 10px;">
-                    <div style="flex: 1; min-width: 300px;">
-                        <p style="margin-bottom: 5px; font-weight: 700; color: #856404;">🧹 Storage Cleanup (Archive & Delete)</p>
-                        <p style="font-size: 13px; color: #666;">
-                            This will find the <strong>oldest date</strong> with records, save them to a local Excel backup on the server, and then delete them from Firebase to free up storage. 
-                            Use this when storage usage is high.
-                        </p>
-                    </div>
-                    <button class="btn-refresh" id="cleanupBtn" style="background: linear-gradient(135deg, #fd7e14, #ff8e3c); border: none; box-shadow: 0 4px 12px rgba(253, 126, 20, 0.3); padding: 12px 20px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">
-                        <span id="cleanupText">🧹 Cleanup Oldest Records</span>
-                        <span id="cleanupLoader" class="loader" style="display: none; width: 15px; height: 15px; border-width: 2px; margin-left: 8px;"></span>
-                    </button>
-                </div>
-                <div id="cleanupStatus" style="margin-top: 10px; font-size: 13px; font-weight: 600; text-align: center; display: none;"></div>
-            </div>
+
 
             <div class="filter-container">
                 <select class="filter-select" id="typeFilter">
@@ -2955,54 +2930,7 @@ if (item.type === 'outpass') {
                 uploadStatusMessage.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
             }
             
-            // ==================== STORAGE CLEANUP LOGIC ====================
-            document.getElementById('cleanupBtn').addEventListener('click', async function() {
-                if (!confirm('⚠️ Are you sure you want to cleanup oldest records? This will archive them to an Excel file on the server and delete them from the database to save storage.')) {
-                    return;
-                }
 
-                const cleanupBtn = document.getElementById('cleanupBtn');
-                const cleanupText = document.getElementById('cleanupText');
-                const cleanupLoader = document.getElementById('cleanupLoader');
-                const statusDiv = document.getElementById('cleanupStatus');
-
-                cleanupBtn.disabled = true;
-                cleanupText.style.display = 'none';
-                cleanupLoader.style.display = 'inline-block';
-                statusDiv.style.display = 'block';
-                statusDiv.style.color = '#856404';
-                statusDiv.textContent = '⏳ Processing cleanup... Please wait.';
-
-                try {
-                    const idToken = localStorage.getItem('tidb_token');
-                    const response = await fetch('/api/admin/cleanup', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${idToken}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        statusDiv.style.color = '#155724';
-                        statusDiv.textContent = `✅ ${result.message}`;
-                        // Refresh dashboard statistics after cleanup
-                        loadAllData();
-                    } else {
-                        throw new Error(result.error || result.message || 'Cleanup failed');
-                    }
-                } catch (error) {
-                    console.error('Cleanup Error:', error);
-                    statusDiv.style.color = '#dc3545';
-                    statusDiv.textContent = `❌ Error: ${error.message}`;
-                } finally {
-                    cleanupBtn.disabled = false;
-                    cleanupText.style.display = 'inline';
-                    cleanupLoader.style.display = 'none';
-                }
-            });
 
             // SINGLE logout event listener
             document.getElementById('logoutBtn').addEventListener('click', async () => {
