@@ -3206,15 +3206,16 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border: 1px solid #eee;">
                             <div>
                                 <div style="font-weight: 700; color: #2a5298;">${b.name}</div>
-                                <div style="font-size: 11px; color: #666;">
+                                <div style="font-size: 12px; font-weight: 600; color: #555; margin-top: 2px;">🏫 Campus: ${b.campus}</div>
+                                <div style="font-size: 11px; color: #666; margin-top: 2px;">
                                     Size: ${(b.size / 1024).toFixed(1)} KB | Created: ${new Date(b.updated).toLocaleString()}
                                 </div>
                             </div>
                             <div style="display: flex; gap: 8px;">
-                                <button onclick="viewBackupDetails('${b.name}')" style="background: #0288d1; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                                <button onclick="viewBackupDetails('${b.path}')" style="background: #0288d1; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;">
                                     👁️ View Records
                                 </button>
-                                <button onclick="downloadArchiveFile('${b.name}')" style="background: #1e3c72; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                                <button onclick="downloadArchiveFile('${b.path}')" style="background: #1e3c72; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;">
                                     📥 Excel
                                 </button>
                             </div>
@@ -3234,7 +3235,8 @@
             const loader = document.getElementById('backupDetailsLoader');
             const title = document.getElementById('backupDetailsTitle');
 
-            title.textContent = `👁️ Archived Records: ${fileName}`;
+            const displayName = fileName.split('/').pop();
+            title.textContent = `👁️ Archived Records: ${displayName}`;
             detailsContent.innerHTML = '';
             loader.style.display = 'block';
             detailsModal.style.display = 'flex';
@@ -3342,7 +3344,8 @@
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = fileName;
+                const baseDownloadName = fileName.split('/').pop();
+                a.download = baseDownloadName;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);

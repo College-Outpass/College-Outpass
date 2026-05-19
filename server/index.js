@@ -419,38 +419,51 @@ async function performCleanup() {
 
         console.log(`📦 [CRON] Loaded ${recordsToDelete.length} full documents. Generating backup...`);
 
-        // 5. Generate Excel data
-        const excelData = recordsToDelete.map(r => ({
-            ID: r.id,
-            Type: r.collection,
-            PassNumber: r.passNumber || r.mediSlipNumber || '--',
-            StudentName: r.studentName || '--',
-            StudentID: r.studentId || '--',
-            Date: oldestDate,
-            Reason: r.reason || '--',
-            Campus: r.campus || '--',
-            CreatedBy: r.createdBy || '--',
-            Status: r.status || '--'
-        }));
+        // Group records by campus name
+        const recordsByCampus = {};
+        recordsToDelete.forEach(r => {
+            const rawCampus = r.campus || 'Unknown_Campus';
+            const sanitizedCampus = rawCampus.trim().replace(/[^a-zA-Z0-9\s-_]/g, '');
+            if (!recordsByCampus[sanitizedCampus]) {
+                recordsByCampus[sanitizedCampus] = [];
+            }
+            recordsByCampus[sanitizedCampus].push(r);
+        });
 
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(excelData);
-        XLSX.utils.book_append_sheet(wb, ws, "Backup");
-
-        // 6. Save directly to local Backup folder
         const timestamp = Date.now();
-        const baseBackupName = `backup_${oldestDate}_${timestamp}`;
-        const excelPath = path.join(localBackupDir, `${baseBackupName}.xlsx`);
-        const jsonPath = path.join(localBackupDir, `${baseBackupName}.json`);
-        
-        if (!fs.existsSync(localBackupDir)) {
-            fs.mkdirSync(localBackupDir, { recursive: true });
+
+        // Save Excel and JSON for each campus group
+        for (const [campusName, campusRecords] of Object.entries(recordsByCampus)) {
+            const campusFolder = path.join(localBackupDir, campusName);
+            if (!fs.existsSync(campusFolder)) {
+                fs.mkdirSync(campusFolder, { recursive: true });
+            }
+
+            const excelData = campusRecords.map(r => ({
+                ID: r.id,
+                Type: r.collection,
+                PassNumber: r.passNumber || r.mediSlipNumber || '--',
+                StudentName: r.studentName || '--',
+                StudentID: r.studentId || '--',
+                Date: oldestDate,
+                Reason: r.reason || '--',
+                Campus: r.campus || '--',
+                CreatedBy: r.createdBy || '--',
+                Status: r.status || '--'
+            }));
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            XLSX.utils.book_append_sheet(wb, ws, "Backup");
+
+            const baseBackupName = `backup_${oldestDate}_${timestamp}`;
+            const excelPath = path.join(campusFolder, `${baseBackupName}.xlsx`);
+            const jsonPath = path.join(campusFolder, `${baseBackupName}.json`);
+
+            XLSX.writeFile(wb, excelPath);
+            fs.writeFileSync(jsonPath, JSON.stringify(campusRecords, null, 2));
+            console.log(`✅ [CRON] Campus "${campusName}" Backup saved locally.`);
         }
-
-        XLSX.writeFile(wb, excelPath);
-        fs.writeFileSync(jsonPath, JSON.stringify(recordsToDelete, null, 2));
-
-        console.log(`✅ [CRON] Backup Excel and JSON saved locally to: ${localBackupDir}`);
 
         // 7. Delete from Firestore in batches
         const batch = db.batch();
@@ -499,21 +512,30 @@ app.get('/api/admin/backups', authenticateToken, async (req, res) => {
             fs.mkdirSync(localBackupDir, { recursive: true });
         }
         
-        const files = fs.readdirSync(localBackupDir);
-        // Filter to only include .xlsx files to get a single entry per backup
-        const xlsxFiles = files.filter(file => file.endsWith('.xlsx'));
+        const backupList = [];
         
-        const backupList = xlsxFiles.map(file => {
-            const baseName = file.replace('.xlsx', '');
-            const filePath = path.join(localBackupDir, file);
-            const stats = fs.statSync(filePath);
-            return {
-                name: baseName,
-                path: file,
-                size: stats.size,
-                updated: stats.mtime.toISOString()
-            };
-        });
+        const getBackupsFromFolder = (dir, campusName = '') => {
+            const items = fs.readdirSync(dir);
+            items.forEach(item => {
+                const itemPath = path.join(dir, item);
+                const stat = fs.statSync(itemPath);
+                
+                if (stat.isDirectory()) {
+                    getBackupsFromFolder(itemPath, item);
+                } else if (item.endsWith('.xlsx')) {
+                    const baseName = item.replace('.xlsx', '');
+                    backupList.push({
+                        name: baseName,
+                        path: campusName ? `${campusName}/${item}` : item,
+                        campus: campusName || 'All Campuses',
+                        size: stat.size,
+                        updated: stat.mtime.toISOString()
+                    });
+                }
+            });
+        };
+        
+        getBackupsFromFolder(localBackupDir);
 
         res.json({ success: true, backups: backupList.sort((a, b) => new Date(b.updated) - new Date(a.updated)) });
     } catch (err) {
