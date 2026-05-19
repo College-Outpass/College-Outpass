@@ -347,10 +347,8 @@ async function getWorkingBucket() {
         }
     }
 
-    // Default fallback
-    console.log(`⚠️ [STORAGE] Falling back to default storage bucket.`);
-    cachedBucket = storage.bucket();
-    return cachedBucket;
+    // Both candidates returned exists = false, meaning Storage is not initialized in Firebase Console
+    throw new Error(`Cloud Storage has not been enabled for your Firebase project (${pId}). Please go to your Firebase Console, click on 'Storage' in the left menu, and click 'Get Started' to activate it.`);
 }
 
 // --- DATABASE MAINTENANCE (CLEANUP & BACKUP) ---
