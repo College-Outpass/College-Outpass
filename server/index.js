@@ -324,23 +324,27 @@ async function performCleanup() {
         const bucket = admin.storage().bucket();
         console.log('🧹 [CRON] Starting Automated Database Cleanup...');
 
-        // 1. Fetch all outpasses and mediSlips
+        // 1. Fetch only metadata (no photos/large fields) to determine the oldest date
         const [outpassSnap, mediSnap] = await Promise.all([
-            db.collection('outpasses').get(),
-            db.collection('mediSlips').get()
+            db.collection('outpasses').select('createdAt', 'date', 'outDate').get(),
+            db.collection('mediSlips').select('createdAt', 'date', 'issuedDate').get()
         ]);
 
-        const allRecords = [];
-        outpassSnap.forEach(doc => allRecords.push({ id: doc.id, collection: 'outpasses', ...doc.data() }));
-        mediSnap.forEach(doc => allRecords.push({ id: doc.id, collection: 'mediSlips', ...doc.data() }));
+        const recordsMetadata = [];
+        outpassSnap.forEach(doc => {
+            recordsMetadata.push({ id: doc.id, collection: 'outpasses', ...doc.data() });
+        });
+        mediSnap.forEach(doc => {
+            recordsMetadata.push({ id: doc.id, collection: 'mediSlips', ...doc.data() });
+        });
 
-        if (allRecords.length === 0) {
+        if (recordsMetadata.length === 0) {
             console.log('✨ [CRON] No records found to clean up.');
             return { success: true, message: 'No records found to clean up.' };
         }
 
         // 2. Identify the oldest date
-        const dates = allRecords.map(r => {
+        const dates = recordsMetadata.map(r => {
             if (r.createdAt && r.createdAt.toDate) return r.createdAt.toDate().toISOString().split('T')[0];
             if (r.date && r.date !== 'N/A') return r.date;
             if (r.outDate) return r.outDate;
@@ -362,15 +366,59 @@ async function performCleanup() {
             return { success: true, message: `Only records for ${oldestDate} found. Keeping them.` };
         }
 
-        // 3. Filter records for the oldest date
-        const recordsToDelete = allRecords.filter(r => {
+        // 3. Filter metadata for oldest date to find IDs to fetch in full
+        const outpassIdsToDelete = [];
+        const mediIdsToDelete = [];
+        
+        recordsMetadata.forEach(r => {
             const rDate = (r.createdAt && r.createdAt.toDate) ? r.createdAt.toDate().toISOString().split('T')[0] : (r.date || r.outDate || r.issuedDate);
-            return rDate === oldestDate;
+            if (rDate === oldestDate) {
+                if (r.collection === 'outpasses') outpassIdsToDelete.push(r.id);
+                else if (r.collection === 'mediSlips') mediIdsToDelete.push(r.id);
+            }
         });
 
-        console.log(`📦 [CRON] Archiving ${recordsToDelete.length} records from ${oldestDate}...`);
+        const totalToDelete = outpassIdsToDelete.length + mediIdsToDelete.length;
+        console.log(`📦 [CRON] Found ${totalToDelete} records from ${oldestDate} to archive.`);
 
-        // 4. Generate Excel data
+        if (totalToDelete === 0) {
+            return { success: true, message: 'No records matched the oldest date.' };
+        }
+
+        // 4. Fetch the full documents (including base64 photos) ONLY for the records to delete
+        const recordsToDelete = [];
+        
+        if (outpassIdsToDelete.length > 0) {
+            const chunkSize = 30;
+            for (let i = 0; i < outpassIdsToDelete.length; i += chunkSize) {
+                const chunk = outpassIdsToDelete.slice(i, i + chunkSize);
+                const promises = chunk.map(id => db.collection('outpasses').doc(id).get());
+                const snaps = await Promise.all(promises);
+                snaps.forEach(snap => {
+                    if (snap.exists) {
+                        recordsToDelete.push({ id: snap.id, collection: 'outpasses', ...snap.data() });
+                    }
+                });
+            }
+        }
+
+        if (mediIdsToDelete.length > 0) {
+            const chunkSize = 30;
+            for (let i = 0; i < mediIdsToDelete.length; i += chunkSize) {
+                const chunk = mediIdsToDelete.slice(i, i + chunkSize);
+                const promises = chunk.map(id => db.collection('mediSlips').doc(id).get());
+                const snaps = await Promise.all(promises);
+                snaps.forEach(snap => {
+                    if (snap.exists) {
+                        recordsToDelete.push({ id: snap.id, collection: 'mediSlips', ...snap.data() });
+                    }
+                });
+            }
+        }
+
+        console.log(`📦 [CRON] Loaded ${recordsToDelete.length} full documents. Generating backup...`);
+
+        // 5. Generate Excel data
         const excelData = recordsToDelete.map(r => ({
             ID: r.id,
             Type: r.collection,
@@ -388,7 +436,7 @@ async function performCleanup() {
         const ws = XLSX.utils.json_to_sheet(excelData);
         XLSX.utils.book_append_sheet(wb, ws, "Backup");
 
-        // 5. Save to local temp and upload to Firebase Storage (Persistent)
+        // 6. Save to local temp and upload to Firebase Storage (Persistent)
         const timestamp = Date.now();
         const baseBackupName = `backup_${oldestDate}_${timestamp}`;
         const excelFileName = `backups/${baseBackupName}.xlsx`;
@@ -414,7 +462,7 @@ async function performCleanup() {
 
         console.log(`✅ [CRON] Backup Excel and JSON uploaded to Firebase Storage: ${baseBackupName}`);
 
-        // 6. Delete from Firestore in batches
+        // 7. Delete from Firestore in batches
         const batch = db.batch();
         recordsToDelete.forEach(r => {
             const ref = db.collection(r.collection).doc(r.id);
