@@ -3182,6 +3182,9 @@
             if (event.target == document.getElementById('backupsModal')) {
                 document.getElementById('backupsModal').style.display = 'none';
             }
+            if (event.target == document.getElementById('backupDetailsModal')) {
+                document.getElementById('backupDetailsModal').style.display = 'none';
+            }
         });
 
         // --- BACKUPS MODAL LOGIC ---
@@ -3207,9 +3210,14 @@
                                     Size: ${(b.size / 1024).toFixed(1)} KB | Created: ${new Date(b.updated).toLocaleString()}
                                 </div>
                             </div>
-                            <button onclick="downloadArchiveFile('${b.name}')" style="background: #1e3c72; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px;">
-                                📥 Download
-                            </button>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="viewBackupDetails('${b.name}')" style="background: #0288d1; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                                    👁️ View Records
+                                </button>
+                                <button onclick="downloadArchiveFile('${b.name}')" style="background: #1e3c72; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                                    📥 Excel
+                                </button>
+                            </div>
                         </div>
                     `).join('');
                 } else {
@@ -3220,26 +3228,99 @@
             }
         }
 
-        async function downloadArchiveFile(fileName) {
+        async function viewBackupDetails(fileName) {
+            const detailsModal = document.getElementById('backupDetailsModal');
+            const detailsContent = document.getElementById('backupDetailsContent');
+            const loader = document.getElementById('backupDetailsLoader');
+            const title = document.getElementById('backupDetailsTitle');
+
+            title.textContent = `👁️ Archived Records: ${fileName}`;
+            detailsContent.innerHTML = '';
+            loader.style.display = 'block';
+            detailsModal.style.display = 'flex';
+
             try {
-                let idToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
-                if (!idToken && auth && auth.currentUser) {
-                    idToken = await auth.currentUser.getIdToken();
-                }
-                window.location.href = `/api/admin/backups/download?file=${fileName}&authorization=${idToken}`;
-                
-                // Note: Direct href with token in query is a simple way, 
-                // but since we already have the endpoint, we can use it.
-                // For better security with Bearer, we'd use fetch + blob, but href is easier for downloads.
-                // Let's use fetch to keep the token in header.
-                
-                /*
-                const response = await fetch(`/api/admin/backups/download?file=${fileName}`, {
+                const idToken = await getFreshToken();
+                const response = await fetch(`${BASE_API_URL}/admin/backups/json?file=${fileName}`, {
                     headers: { 'Authorization': `Bearer ${idToken}` }
                 });
-                const blob = await response.json(); // Wait, it returns a file
-                */
-            } catch (e) { alert('Download failed'); }
+                const records = await response.json();
+
+                if (Array.isArray(records) && records.length > 0) {
+                    let tableRowsHtml = records.map(item => {
+                        const typeLabel = item.collection === 'outpasses' ? 'Outpass' : 'Medical Slip';
+                        const typeClass = item.collection === 'outpasses' ? 'badge-outpass' : 'badge-medislip';
+                        
+                        const campusDisplay = CAMPUS_DISPLAY_NAMES[item.campus] || item.campus || 'ALL';
+                        const passNum = item.passNumber || item.mediSlipNumber || `--`;
+                        const dateVal = item.date || item.outDate || item.issuedDate || '--';
+
+                        // Encode the whole item into base64 to pass it safely
+                        const jsonStr = JSON.stringify(item);
+                        const base64Data = btoa(unescape(encodeURIComponent(jsonStr)));
+
+                        const pdfBtn = `<button class="btn-pdf" onclick="downloadArchivedPDF('${base64Data}', event)" title="Download PDF" style="cursor: pointer; padding: 4px 8px; font-size: 11px;">📄 PDF</button>`;
+
+                        return `
+                            <tr>
+                                <td><strong>${campusDisplay}</strong></td>
+                                <td><span class="type-badge ${typeClass}" style="padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${item.collection === 'outpasses' ? '#e3f2fd' : '#e8f5e9'}; color: ${item.collection === 'outpasses' ? '#1565c0' : '#2e7d32'};">${typeLabel}</span></td>
+                                <td>${passNum}</td>
+                                <td>${item.studentName || '--'}</td>
+                                <td>${item.studentId || '--'}</td>
+                                <td>${dateVal}</td>
+                                <td title="${item.reason || ''}">${(item.reason || '--').substring(0, 40)}${(item.reason || '').length > 40 ? '...' : ''}</td>
+                                <td style="text-align: center;">${pdfBtn}</td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                    detailsContent.innerHTML = `
+                        <table class="data-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                            <thead>
+                                <tr style="background: #1e3c72; color: white;">
+                                    <th style="padding: 10px; text-align: left;">Campus</th>
+                                    <th style="padding: 10px; text-align: left;">Type</th>
+                                    <th style="padding: 10px; text-align: left;">Pass #</th>
+                                    <th style="padding: 10px; text-align: left;">Student Name</th>
+                                    <th style="padding: 10px; text-align: left;">Student ID</th>
+                                    <th style="padding: 10px; text-align: left;">Date</th>
+                                    <th style="padding: 10px; text-align: left;">Reason</th>
+                                    <th style="padding: 10px; text-align: center;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRowsHtml}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    detailsContent.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No records found in this backup.</div>';
+                }
+            } catch (error) {
+                console.error('Error fetching backup details:', error);
+                detailsContent.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc3545; font-weight: bold;">Error: ${error.message}</div>`;
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        async function downloadArchivedPDF(recordJsonBase64, event) {
+            if (event) event.stopPropagation();
+            try {
+                const record = JSON.parse(decodeURIComponent(escape(atob(recordJsonBase64))));
+                if (record.collection === 'outpasses') {
+                    await generatePDFFromOutpassData(record);
+                } else if (record.collection === 'mediSlips') {
+                    if (!record.mediSlipNumber) {
+                        record.mediSlipNumber = record.MediSlipNumber || `MEDSLIP-${record.id.substring(0, 8)}`;
+                    }
+                    await generateMediSlipPDFFromData(record);
+                }
+            } catch (err) {
+                console.error("Error generating archived PDF:", err);
+                alert("❌ Failed to generate PDF: " + err.message);
+            }
         }
         
         // Revised Download to support Bearer token
@@ -3279,15 +3360,40 @@
     <div id="backupsModal" class="usage-modal">
         <div class="usage-modal-content">
             <div class="usage-modal-header">
-                <div class="usage-modal-title">📦 Archive Vault (Excel Backups)</div>
+                <div class="usage-modal-title">📦 Archive Vault</div>
                 <span class="close-usage-modal" onclick="document.getElementById('backupsModal').style.display='none'">&times;</span>
             </div>
             <div style="margin-bottom: 15px; font-size: 13px; color: #666;">
-                These are automated backups created during the nightly database cleanup. 
-                Records are archived here before being deleted from the live system.
+                These are automated backups created during database cleanup. 
+                You can download the Excel sheet or view the records to generate PDFs.
             </div>
             <div id="backupsList" style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
                 <!-- Backup items will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup Details Modal -->
+    <div id="backupDetailsModal" class="usage-modal" style="display: none; z-index: 2100;">
+        <div class="usage-modal-content" style="max-width: 950px; width: 95%; padding: 25px;">
+            <div class="usage-modal-header" style="margin-bottom: 15px; padding-bottom: 10px;">
+                <div class="usage-modal-title" id="backupDetailsTitle">👁️ Archived Records Detail</div>
+                <span class="close-usage-modal" onclick="document.getElementById('backupDetailsModal').style.display='none'">&times;</span>
+            </div>
+            <div style="margin-bottom: 15px; font-size: 13px; color: #666; display: flex; justify-content: space-between; align-items: center;">
+                <span>View and generate PDFs for records archived in this session.</span>
+                <button onclick="document.getElementById('backupDetailsModal').style.display='none'" style="background: #f0f0f0; color: #333; border: 1px solid #ccc; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                    ⬅️ Back to Vault
+                </button>
+            </div>
+            
+            <div id="backupDetailsLoader" style="display: none; text-align: center; padding: 40px;">
+                <div class="loader" style="margin: 0 auto;"></div>
+                <div style="margin-top: 15px; font-size: 14px; color: #555; font-weight: 600;">Fetching archived data...</div>
+            </div>
+
+            <div id="backupDetailsContent" style="max-height: 450px; overflow-y: auto; overflow-x: auto; margin-top: 10px;">
+                <!-- Table will be dynamically generated here -->
             </div>
         </div>
     </div>
