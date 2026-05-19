@@ -317,45 +317,12 @@ app.post('/api/migrate/security-batch', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Cache the working bucket reference so we don't do exists() check on every single request
-let cachedBucket = null;
-
-async function getWorkingBucket() {
-    if (cachedBucket) return cachedBucket;
-
-    const storage = admin.storage();
-    const pId = admin.apps[0]?.options?.projectId || 'college-out-pass-system-62552';
-    
-    // Suffix candidates
-    const bucketNames = [
-        `${pId}.appspot.com`,
-        `${pId}.firebasestorage.app`
-    ];
-
-    for (const name of bucketNames) {
-        try {
-            console.log(`🔍 [STORAGE] Testing bucket: ${name}...`);
-            const b = storage.bucket(name);
-            const [exists] = await b.exists();
-            if (exists) {
-                console.log(`✅ [STORAGE] Successfully connected to bucket: ${name}`);
-                cachedBucket = b;
-                return b;
-            }
-        } catch (err) {
-            console.log(`⚠️ [STORAGE] Bucket ${name} check failed: ${err.message}`);
-        }
-    }
-
-    // Both candidates returned exists = false, meaning Storage is not initialized in Firebase Console
-    throw new Error(`Cloud Storage has not been enabled for your Firebase project (${pId}). Please go to your Firebase Console, click on 'Storage' in the left menu, and click 'Get Started' to activate it.`);
-}
-
 // --- DATABASE MAINTENANCE (CLEANUP & BACKUP) ---
+const localBackupDir = path.join(__dirname, '../Backup');
+
 async function performCleanup() {
     try {
         const db = admin.firestore();
-        const bucket = await getWorkingBucket();
         console.log('🧹 [CRON] Starting Automated Database Cleanup...');
 
         // 1. Fetch only metadata (no photos/large fields) to determine the oldest date
@@ -470,31 +437,20 @@ async function performCleanup() {
         const ws = XLSX.utils.json_to_sheet(excelData);
         XLSX.utils.book_append_sheet(wb, ws, "Backup");
 
-        // 6. Save to local temp and upload to Firebase Storage (Persistent)
+        // 6. Save directly to local Backup folder
         const timestamp = Date.now();
         const baseBackupName = `backup_${oldestDate}_${timestamp}`;
-        const excelFileName = `backups/${baseBackupName}.xlsx`;
-        const jsonFileName = `backups/${baseBackupName}.json`;
+        const excelPath = path.join(localBackupDir, `${baseBackupName}.xlsx`);
+        const jsonPath = path.join(localBackupDir, `${baseBackupName}.json`);
         
-        // A. Generate and upload Excel
-        const tempExcelPath = path.join(__dirname, `temp_${baseBackupName}.xlsx`);
-        XLSX.writeFile(wb, tempExcelPath);
-        await bucket.upload(tempExcelPath, {
-            destination: excelFileName,
-            metadata: { contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
-        });
-        if (fs.existsSync(tempExcelPath)) fs.unlinkSync(tempExcelPath);
+        if (!fs.existsSync(localBackupDir)) {
+            fs.mkdirSync(localBackupDir, { recursive: true });
+        }
 
-        // B. Generate and upload JSON containing the full Firestore documents
-        const tempJsonPath = path.join(__dirname, `temp_${baseBackupName}.json`);
-        fs.writeFileSync(tempJsonPath, JSON.stringify(recordsToDelete, null, 2));
-        await bucket.upload(tempJsonPath, {
-            destination: jsonFileName,
-            metadata: { contentType: 'application/json' }
-        });
-        if (fs.existsSync(tempJsonPath)) fs.unlinkSync(tempJsonPath);
+        XLSX.writeFile(wb, excelPath);
+        fs.writeFileSync(jsonPath, JSON.stringify(recordsToDelete, null, 2));
 
-        console.log(`✅ [CRON] Backup Excel and JSON uploaded to Firebase Storage: ${baseBackupName}`);
+        console.log(`✅ [CRON] Backup Excel and JSON saved locally to: ${localBackupDir}`);
 
         // 7. Delete from Firestore in batches
         const batch = db.batch();
@@ -539,19 +495,23 @@ app.get('/api/admin/backups', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin' && req.user.role !== 'hod') return res.status(403).json({ error: 'Unauthorized' });
     
     try {
-        const bucket = await getWorkingBucket();
-        const [files] = await bucket.getFiles({ prefix: 'backups/' });
+        if (!fs.existsSync(localBackupDir)) {
+            fs.mkdirSync(localBackupDir, { recursive: true });
+        }
         
+        const files = fs.readdirSync(localBackupDir);
         // Filter to only include .xlsx files to get a single entry per backup
-        const xlsxFiles = files.filter(file => file.name.endsWith('.xlsx'));
+        const xlsxFiles = files.filter(file => file.endsWith('.xlsx'));
         
         const backupList = xlsxFiles.map(file => {
-            const baseName = file.name.replace('backups/', '').replace('.xlsx', '');
+            const baseName = file.replace('.xlsx', '');
+            const filePath = path.join(localBackupDir, file);
+            const stats = fs.statSync(filePath);
             return {
                 name: baseName,
-                path: file.name,
-                size: file.metadata.size,
-                updated: file.metadata.updated
+                path: file,
+                size: stats.size,
+                updated: stats.mtime.toISOString()
             };
         });
 
@@ -569,14 +529,13 @@ app.get('/api/admin/backups/json', authenticateToken, async (req, res) => {
     if (!fileName) return res.status(400).json({ error: 'File name required' });
 
     try {
-        const bucket = await getWorkingBucket();
-        const fileKey = fileName.endsWith('.json') ? fileName : `${fileName}.json`;
-        const file = bucket.file(`backups/${fileKey}`);
+        const cleanName = fileName.replace('backups/', '');
+        const fileKey = cleanName.endsWith('.json') ? cleanName : `${cleanName}.json`;
+        const filePath = path.join(localBackupDir, fileKey);
         
-        const [exists] = await file.exists();
-        if (!exists) return res.status(404).json({ error: 'JSON backup file not found' });
+        if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'JSON backup file not found' });
 
-        const [content] = await file.download();
+        const content = fs.readFileSync(filePath);
         res.setHeader('Content-Type', 'application/json');
         res.send(content);
     } catch (err) {
@@ -592,16 +551,13 @@ app.get('/api/admin/backups/download', authenticateToken, async (req, res) => {
     if (!fileName) return res.status(400).json({ error: 'File name required' });
 
     try {
-        const bucket = await getWorkingBucket();
-        // Ensure extension is appended if missing
-        const fileKey = fileName.indexOf('.') === -1 ? `${fileName}.xlsx` : fileName;
-        const file = bucket.file(`backups/${fileKey}`);
+        const cleanName = fileName.replace('backups/', '');
+        const fileKey = cleanName.indexOf('.') === -1 ? `${cleanName}.xlsx` : cleanName;
+        const filePath = path.join(localBackupDir, fileKey);
         
-        const [exists] = await file.exists();
-        if (!exists) return res.status(404).json({ error: 'Backup file not found' });
+        if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Backup file not found' });
 
-        // Download to buffer and send
-        const [content] = await file.download();
+        const content = fs.readFileSync(filePath);
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename=${fileKey}`);
         res.send(content);
