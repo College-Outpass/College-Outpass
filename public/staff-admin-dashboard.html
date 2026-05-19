@@ -2495,59 +2495,6 @@ if (item.type === 'outpass') {
                         jsonData = XLSX.utils.sheet_to_json(worksheet);
                     }
                     
-                    if (processedData.length === 0) {
-                        throw new Error('No valid data found. Please check your file format.');
-                    }
-                    
-                    // ==================== STORAGE CLEANUP LOGIC ====================
-                    document.getElementById('cleanupBtn').addEventListener('click', async function() {
-                        if (!confirm('⚠️ Are you sure you want to cleanup oldest records? This will archive them to an Excel file on the server and delete them from the database to save storage.')) {
-                            return;
-                        }
-
-                        const cleanupBtn = document.getElementById('cleanupBtn');
-                        const cleanupText = document.getElementById('cleanupText');
-                        const cleanupLoader = document.getElementById('cleanupLoader');
-                        const statusDiv = document.getElementById('cleanupStatus');
-
-                        cleanupBtn.disabled = true;
-                        cleanupText.style.display = 'none';
-                        cleanupLoader.style.display = 'inline-block';
-                        statusDiv.style.display = 'block';
-                        statusDiv.style.color = '#856404';
-                        statusDiv.textContent = '⏳ Processing cleanup... Please wait.';
-
-                        try {
-                            const idToken = localStorage.getItem('tidb_token');
-                            const response = await fetch('/api/admin/cleanup', {
-                                method: 'POST',
-                                headers: {
-                                    'Authorization': `Bearer ${idToken}`,
-                                    'Content-Type': 'application/json'
-                                }
-                            });
-
-                            const result = await response.json();
-
-                            if (result.success) {
-                                statusDiv.style.color = '#155724';
-                                statusDiv.textContent = `✅ ${result.message}`;
-                                // Refresh dashboard statistics after cleanup
-                                loadAllData();
-                            } else {
-                                throw new Error(result.error || result.message || 'Cleanup failed');
-                            }
-                        } catch (error) {
-                            console.error('Cleanup Error:', error);
-                            statusDiv.style.color = '#dc3545';
-                            statusDiv.textContent = `❌ Error: ${error.message}`;
-                        } finally {
-                            cleanupBtn.disabled = false;
-                            cleanupText.style.display = 'inline';
-                            cleanupLoader.style.display = 'none';
-                        }
-                    });
-                    
                     // Validate and process data
                     const processedData = [];
                     const errors = [];

@@ -1633,9 +1633,45 @@
             appId: "1:71169367861:web:7105b401d52c049476f67c"
         };
 
-        // Use the Bridge or Initialize fresh
         const auth = window.auth || firebase.auth();
         const db = window.db || firebase.firestore();
+
+        // Helper to get a fresh Firebase ID Token, ensuring it is never expired
+        async function getFreshToken() {
+            return new Promise((resolve) => {
+                const user = auth.currentUser;
+                if (user) {
+                    user.getIdToken(true)
+                        .then(token => {
+                            localStorage.setItem('tidb_token', token);
+                            resolve(token);
+                        })
+                        .catch(err => {
+                            console.warn("Error refreshing token from currentUser:", err);
+                            resolve(localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token'));
+                        });
+                } else {
+                    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+                        unsubscribe();
+                        if (user) {
+                            try {
+                                const token = await user.getIdToken(true);
+                                localStorage.setItem('tidb_token', token);
+                                resolve(token);
+                            } catch (err) {
+                                console.warn("Error refreshing token in onAuthStateChanged:", err);
+                                resolve(localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token'));
+                            }
+                        } else {
+                            resolve(localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token'));
+                        }
+                    });
+                    setTimeout(() => {
+                        resolve(localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token'));
+                    }, 2000);
+                }
+            });
+        }
 
         const CAMPUS_DISPLAY_NAMES = {
             "ALL_CAMPUSES": "All Campuses",
@@ -1921,7 +1957,7 @@
                 statusDiv.textContent = '⏳ Processing cleanup... Please wait.';
 
                 try {
-                    const idToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+                    const idToken = await getFreshToken();
                     const response = await fetch(`${BASE_API_URL}/admin/cleanup`, {
                         method: 'POST',
                         headers: {
@@ -3156,7 +3192,7 @@
             list.innerHTML = '<div class="loader" style="margin: 20px auto;"></div>';
 
             try {
-                const idToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+                const idToken = await getFreshToken();
                 const response = await fetch(`${BASE_API_URL}/admin/backups`, {
                     headers: { 'Authorization': `Bearer ${idToken}` }
                 });
@@ -3186,7 +3222,10 @@
 
         async function downloadArchiveFile(fileName) {
             try {
-                const idToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+                let idToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+                if (!idToken && auth && auth.currentUser) {
+                    idToken = await auth.currentUser.getIdToken();
+                }
                 window.location.href = `/api/admin/backups/download?file=${fileName}&authorization=${idToken}`;
                 
                 // Note: Direct href with token in query is a simple way, 
@@ -3211,7 +3250,7 @@
             btn.disabled = true;
 
             try {
-                const idToken = localStorage.getItem('tidb_token') || sessionStorage.getItem('tidb_token');
+                const idToken = await getFreshToken();
                 const response = await fetch(`${BASE_API_URL}/admin/backups/download?file=${fileName}`, {
                     headers: { 'Authorization': `Bearer ${idToken}` }
                 });

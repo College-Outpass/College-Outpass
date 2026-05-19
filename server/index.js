@@ -92,7 +92,10 @@ app.use((req, res, next) => {
 // Auth Middleware
 async function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    let token = authHeader && authHeader.split(' ')[1];
+    if (!token && req.query.authorization) {
+        token = req.query.authorization;
+    }
     if (token == null) return res.sendStatus(401);
 
     try {
@@ -104,6 +107,7 @@ async function authenticateToken(req, res, next) {
                 let role = 'staff';
                 let campus = 'ALL';
                 let name = decodedToken.name || '';
+                let userData;
 
                 const adminDoc = await db.collection('admins').doc(decodedToken.uid).get();
                 if (adminDoc.exists) {
@@ -125,10 +129,15 @@ async function authenticateToken(req, res, next) {
 
                 req.user = { uid: decodedToken.uid, email, role, campus, name };
                 return next();
-            } catch (fbErr) {}
+            } catch (fbErr) {
+                console.error("❌ Firebase ID Token verification failed:", fbErr.message);
+            }
+        } else {
+            console.error("❌ Firebase Admin SDK is not initialized (no apps active)");
         }
         res.sendStatus(403);
     } catch (e) {
+        console.error("❌ Error inside authenticateToken middleware:", e.message);
         res.sendStatus(403);
     }
 }
@@ -426,7 +435,7 @@ cron.schedule('0 0 * * *', () => {
 });
 
 app.post('/api/admin/cleanup', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+    if (req.user.role !== 'admin' && req.user.role !== 'hod') return res.status(403).json({ error: 'Unauthorized' });
     const result = await performCleanup();
     if (result.success) res.json(result);
     else res.status(500).json(result);
@@ -434,7 +443,7 @@ app.post('/api/admin/cleanup', authenticateToken, async (req, res) => {
 
 // --- LIST BACKUPS FOR HOD ---
 app.get('/api/admin/backups', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+    if (req.user.role !== 'admin' && req.user.role !== 'hod') return res.status(403).json({ error: 'Unauthorized' });
     
     try {
         const bucket = admin.storage().bucket();
@@ -455,7 +464,7 @@ app.get('/api/admin/backups', authenticateToken, async (req, res) => {
 
 // --- DOWNLOAD BACKUP ---
 app.get('/api/admin/backups/download', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+    if (req.user.role !== 'admin' && req.user.role !== 'hod') return res.status(403).json({ error: 'Unauthorized' });
     
     const fileName = req.query.file;
     if (!fileName) return res.status(400).json({ error: 'File name required' });
