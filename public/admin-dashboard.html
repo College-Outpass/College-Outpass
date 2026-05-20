@@ -2031,8 +2031,36 @@
             async function generateSilentPDF(item) {
                 return new Promise((resolve, reject) => {
                     try {
+                        if (!item) {
+                            return reject(new Error('Record item is undefined or null'));
+                        }
+
                         if (item.type === 'outpass') {
-                            const outpassData = item.fullData;
+                            const rawData = item.fullData || {};
+                            const outpassData = {
+                                passNumber: rawData.passNumber || item.passNumber || `OUTPASS-${item.id ? item.id.substring(0, 8) : 'unknown'}`,
+                                issuedDate: rawData.issuedDate || item.date || 'N/A',
+                                issuedTime: rawData.issuedTime || item.reportingTime || '--',
+                                studentId: rawData.studentId || item.studentId || 'N/A',
+                                studentName: rawData.studentName || item.studentName || 'Student',
+                                category: rawData.category || item.category || '--',
+                                section: rawData.section || '',
+                                fatherName: rawData.fatherName || '',
+                                whatsappNumber: rawData.whatsappNumber || rawData.whatsapp || '',
+                                requestedBy: rawData.requestedBy || '',
+                                reason: rawData.reason || item.reason || 'N/A',
+                                status: rawData.status || item.status || 'pending',
+                                outDate: rawData.outDate || item.date || 'N/A',
+                                inDate: rawData.inDate || item.inDate || 'N/A',
+                                issuedBy: rawData.issuedBy || item.issuedBy || 'Staff',
+                                authorizedBy: rawData.authorizedBy || item.authorizedBy || 'Principal',
+                                campus: item.campus || rawData.campus || 'UNKNOWN_CAMPUS',
+                                createdBy: rawData.createdBy || item.createdBy || 'Unknown',
+                                studentPhoto: rawData.studentPhoto || '',
+                                parentPhoto: rawData.parentPhoto || '',
+                                authorizedLetterPhoto: rawData.authorizedLetterPhoto || ''
+                            };
+
                             const campusInfo = getCampusInfoFromOutpass(outpassData);
 
                             // Update PDF template with data
@@ -2042,12 +2070,12 @@
                             document.getElementById('pdfStudentId').textContent = outpassData.studentId;
                             document.getElementById('pdfStudentName').textContent = outpassData.studentName;
                             document.getElementById('pdfCategory').textContent = outpassData.category;
-                            document.getElementById('pdfSection').textContent = outpassData.section;
-                            document.getElementById('pdfFatherName').textContent = outpassData.fatherName;
-                            document.getElementById('pdfWhatsApp').textContent = outpassData.whatsappNumber || outpassData.whatsapp;
-                            document.getElementById('pdfRequestedBy').textContent = outpassData.requestedBy;
+                            document.getElementById('pdfSection').textContent = outpassData.section || '--';
+                            document.getElementById('pdfFatherName').textContent = outpassData.fatherName || '--';
+                            document.getElementById('pdfWhatsApp').textContent = outpassData.whatsappNumber || '--';
+                            document.getElementById('pdfRequestedBy').textContent = outpassData.requestedBy || '--';
                             document.getElementById('pdfReason').textContent = outpassData.reason;
-                            document.getElementById('pdfStatus').textContent = outpassData.status;
+                            document.getElementById('pdfStatus').textContent = outpassData.status.toUpperCase();
                             document.getElementById('pdfOutDate').textContent = formatDateForPDF(outpassData.outDate);
                             document.getElementById('pdfInDate').textContent = formatDateForPDF(outpassData.inDate);
                             document.getElementById('pdfIssuedByName').textContent = outpassData.issuedBy;
@@ -2150,7 +2178,24 @@
                                 }).catch(err => reject(err));
                             }, 1000);
                         } else if (item.type === 'mediSlip') {
-                            const mediSlipData = item.fullData;
+                            const rawData = item.fullData || {};
+                            const mediSlipData = {
+                                mediSlipNumber: rawData.mediSlipNumber || rawData.MediSlipNumber || item.passNumber || `MEDSLIP-${item.id ? item.id.substring(0, 8) : 'unknown'}`,
+                                studentId: rawData.studentId || item.studentId || 'N/A',
+                                studentName: rawData.studentName || item.studentName || 'Student',
+                                date: rawData.date || item.date || 'N/A',
+                                temperature: rawData.temperature || '',
+                                startTime: rawData.startTime || '',
+                                endTime: rawData.endTime || '',
+                                medicineGiven: rawData.medicineGiven || item.medicineGiven || '--',
+                                reason: rawData.reason || item.reason || 'N/A',
+                                issuedBy: rawData.issuedBy || item.issuedBy || 'Staff',
+                                authorizedBy: rawData.authorizedBy || item.authorizedBy || 'Principal',
+                                status: rawData.status || item.status || 'pending',
+                                campus: item.campus || rawData.campus || 'UNKNOWN_CAMPUS',
+                                createdBy: rawData.createdBy || item.createdBy || 'Unknown'
+                            };
+
                             const campusInfo = getCampusInfoFromMediSlip(mediSlipData);
 
                             document.getElementById('mediSlipNumber').textContent = mediSlipData.mediSlipNumber;
@@ -2168,9 +2213,9 @@
                             document.getElementById('mediSlipCampusEmail').textContent = campusInfo.email;
 
                             const statusElement = document.getElementById('mediSlipStatus');
-                            statusElement.textContent = mediSlipData.status;
+                            statusElement.textContent = mediSlipData.status.toUpperCase();
                             statusElement.className = 'medi-slip-status-box';
-                            if (mediSlipData.status === 'APPROVED') {
+                            if (mediSlipData.status.toUpperCase() === 'APPROVED') {
                                 statusElement.classList.add('status-approved');
                             } else {
                                 statusElement.classList.add('status-rejected');
@@ -2980,7 +3025,8 @@
                 } catch (pdfErr) {
                     console.error(`Error generating PDF for ${displayName}:`, pdfErr);
                     failCount++;
-                    progressDetails.innerHTML += `❌ Error on ${displayName}: ${pdfErr.message || pdfErr}\n`;
+                    const detailedError = pdfErr.stack ? `${pdfErr.message || pdfErr}\n   Stack: ${pdfErr.stack.split('\n').slice(0, 3).join('\n   ')}` : (pdfErr.message || pdfErr);
+                    progressDetails.innerHTML += `❌ Error on ${displayName}: ${detailedError}\n`;
                     progressDetails.scrollTop = progressDetails.scrollHeight;
                 }
             }
