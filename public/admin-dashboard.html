@@ -1573,6 +1573,18 @@
                         <p style="font-size: 13px; color: #666;">
                             This will find the <strong>oldest date</strong> with records across all campuses, save them to a local Excel backup on the server, and then delete them from Firebase to free up storage. 
                         </p>
+                        <!-- Sleek Force Local Server Toggle -->
+                        <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+                            <label style="display: inline-flex; align-items: center; cursor: pointer; user-select: none;">
+                                <div style="position: relative;">
+                                    <input type="checkbox" id="forceLocalServerCheckbox" style="display: none;">
+                                    <div id="forceLocalServerBg" style="width: 44px; height: 22px; background-color: #ccc; border-radius: 11px; transition: background-color 0.2s; position: relative;">
+                                        <div id="forceLocalServerDot" style="position: absolute; left: 2px; top: 2px; width: 18px; height: 18px; background-color: white; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"></div>
+                                    </div>
+                                </div>
+                                <span style="font-size: 12px; font-weight: 600; color: #666; margin-left: 8px;">🔗 Force Local Backup Server (port 5000)</span>
+                            </label>
+                        </div>
                     </div>
                     <button class="btn-refresh" id="cleanupBtn" style="background: linear-gradient(135deg, #fd7e14, #ff8e3c); border: none; box-shadow: 0 4px 12px rgba(253, 126, 20, 0.3); padding: 12px 20px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">
                         <span id="cleanupText">🧹 Manual Cleanup</span>
@@ -1852,11 +1864,25 @@
             }
         });
 
-        // Define API Base URL for all server communication (starts as cloud, self-heals to local if online)
-        let BASE_API_URL = 'https://college-outpass-api.onrender.com/api';
-        let isLocalServerOnline = false;
+        // Define API Base URL for all server communication (starts as cloud, self-heals to local if online, or forces local if checked)
+        let BASE_API_URL = localStorage.getItem('forceLocalServer') === 'true'
+            ? 'http://localhost:5000/api'
+            : 'https://college-outpass-api.onrender.com/api';
+        let isLocalServerOnline = localStorage.getItem('forceLocalServer') === 'true';
 
         async function detectLocalServer() {
+            if (localStorage.getItem('forceLocalServer') === 'true') {
+                console.log('🔌 Forced Local Express Server at localhost:5000 via localStorage preference.');
+                // Update health UI if elements are loaded
+                const healthStatusEl = document.getElementById('serverHealthStatus');
+                const healthIconEl = document.getElementById('serverHealthIcon');
+                if (healthStatusEl && healthIconEl) {
+                    healthIconEl.style.color = "#2ecc71";
+                    healthStatusEl.textContent = "Local Server Online (Forced)";
+                }
+                return;
+            }
+
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 1200);
@@ -1921,6 +1947,64 @@
             document.getElementById('endDate').addEventListener('change', applyFilters);
             document.getElementById('clearDateBtn').addEventListener('click', clearDateFilters);
             document.getElementById('downloadExcelBtn').addEventListener('click', downloadExcel);
+            
+            // Force Local Server Toggle visual state and click listener
+            const forceCheckbox = document.getElementById('forceLocalServerCheckbox');
+            const forceBg = document.getElementById('forceLocalServerBg');
+            const forceDot = document.getElementById('forceLocalServerDot');
+
+            if (forceCheckbox && forceBg && forceDot) {
+                const isForced = localStorage.getItem('forceLocalServer') === 'true';
+                forceCheckbox.checked = isForced;
+                
+                if (isForced) {
+                    forceBg.style.backgroundColor = '#2e7d32'; // forest green
+                    forceDot.style.transform = 'translateX(22px)';
+                    
+                    const healthStatusEl = document.getElementById('serverHealthStatus');
+                    const healthIconEl = document.getElementById('serverHealthIcon');
+                    if (healthStatusEl && healthIconEl) {
+                        healthIconEl.style.color = "#2ecc71";
+                        healthStatusEl.textContent = "Local Server Online (Forced)";
+                    }
+                } else {
+                    forceBg.style.backgroundColor = '#ccc';
+                    forceDot.style.transform = 'translateX(0px)';
+                }
+
+                forceCheckbox.addEventListener('change', function() {
+                    const checked = this.checked;
+                    localStorage.setItem('forceLocalServer', checked ? 'true' : 'false');
+                    
+                    if (checked) {
+                        forceBg.style.backgroundColor = '#2e7d32';
+                        forceDot.style.transform = 'translateX(22px)';
+                        BASE_API_URL = 'http://localhost:5000/api';
+                        isLocalServerOnline = true;
+                        
+                        const healthStatusEl = document.getElementById('serverHealthStatus');
+                        const healthIconEl = document.getElementById('serverHealthIcon');
+                        if (healthStatusEl && healthIconEl) {
+                            healthIconEl.style.color = "#2ecc71";
+                            healthStatusEl.textContent = "Local Server Online (Forced)";
+                        }
+                    } else {
+                        forceBg.style.backgroundColor = '#ccc';
+                        forceDot.style.transform = 'translateX(0px)';
+                        BASE_API_URL = 'https://college-outpass-api.onrender.com/api';
+                        isLocalServerOnline = false;
+                        
+                        const healthStatusEl = document.getElementById('serverHealthStatus');
+                        const healthIconEl = document.getElementById('serverHealthIcon');
+                        if (healthStatusEl && healthIconEl) {
+                            healthStatusEl.textContent = "Checking Cloud Server...";
+                        }
+                        
+                        // Redetect local server dynamically
+                        detectLocalServer();
+                    }
+                });
+            }
             
             // Stats cards click events
             document.getElementById('cardTotal').addEventListener('click', () => {
@@ -2312,7 +2396,11 @@
                 } catch (error) {
                     console.error('Cleanup Error:', error);
                     statusDiv.style.color = '#dc3545';
-                    statusDiv.textContent = `❌ Error: ${error.message}`;
+                    if (BASE_API_URL.includes('localhost') || BASE_API_URL.includes('127.0.0.1')) {
+                        statusDiv.innerHTML = `❌ <strong>Error: ${error.message}</strong><br><span style="font-size: 12px; color: #a94442; margin-top: 5px; display: block;">⚠️ The dashboard could not connect to your local backup server. Please make sure you have started it by double-clicking <code>run_local.bat</code> in the project folder!</span>`;
+                    } else {
+                        statusDiv.textContent = `❌ Error: ${error.message}`;
+                    }
                 } finally {
                     cleanupBtn.disabled = false;
                     cleanupText.style.display = 'inline';
@@ -3558,7 +3646,14 @@
                     list.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No backups found in the archive vault.</div>';
                 }
             } catch (error) {
-                list.innerHTML = `<div style="text-align: center; color: #dc3545; padding: 20px;">❌ Error loading archives: ${error.message}</div>`;
+                if (BASE_API_URL.includes('localhost') || BASE_API_URL.includes('127.0.0.1')) {
+                    list.innerHTML = `<div style="text-align: center; color: #dc3545; padding: 20px; font-weight: 600;">
+                        ❌ Error loading archives: ${error.message}<br>
+                        <span style="font-size: 12px; color: #888; font-weight: 400; display: block; margin-top: 5px;">⚠️ Please make sure your local backup server is running by double-clicking <code>run_local.bat</code> in the project folder!</span>
+                    </div>`;
+                } else {
+                    list.innerHTML = `<div style="text-align: center; color: #dc3545; padding: 20px;">❌ Error loading archives: ${error.message}</div>`;
+                }
             }
         }
 
