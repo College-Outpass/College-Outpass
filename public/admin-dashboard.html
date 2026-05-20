@@ -2028,7 +2028,7 @@
             document.getElementById('modalCloseBtn').onclick = closePDFModal;
             
             // Helper to generate a PDF silently and return it as base64-encoded string
-            async function generateSilentPDF(item) {
+            window.generateSilentPDF = async function(item) {
                 if (!item) {
                     throw new Error('Record item is undefined or null');
                 }
@@ -2387,7 +2387,7 @@
                             statusDiv.textContent = `⏳ [PDF Backup] Generating & uploading PDF ${i + 1} of ${totalCount} (${displayName})...`;
 
                             try {
-                                const pdfBackup = await generateSilentPDF(item);
+                                const pdfBackup = await window.generateSilentPDF(item);
                                 
                                 // Upload PDF to the server
                                 const uploadResponse = await fetch(`${BASE_API_URL}/admin/backup/upload-pdf`, {
@@ -3039,7 +3039,7 @@
 
                 try {
                     // Generate PDF silently
-                    const pdfBackup = await generateSilentPDF(item);
+                    const pdfBackup = await window.generateSilentPDF(item);
                     
                     // Add it directly to the JSZip instance as a Blob (prevents empty files)
                     zip.file(pdfBackup.filename, pdfBackup.pdfBlob);
