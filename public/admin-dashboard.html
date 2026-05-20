@@ -2145,8 +2145,8 @@
                                     }
 
                                     const filename = `${outpassData.passNumber}_${outpassData.studentName}.pdf`.replace(/[^a-zA-Z0-9\s-_\.]/g, '');
-                                    const pdfBase64 = pdf.output('datauristring');
-                                    resolve({ filename, pdfBase64, campus: item.campus });
+                                    const pdfBlob = pdf.output('blob');
+                                    resolve({ filename, pdfBlob, campus: item.campus });
                                 }).catch(err => reject(err));
                             }, 1000);
                         } else if (item.type === 'mediSlip') {
@@ -2208,8 +2208,8 @@
                                     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
 
                                     const filename = `${mediSlipData.mediSlipNumber}_${mediSlipData.studentName}.pdf`.replace(/[^a-zA-Z0-9\s-_\.]/g, '');
-                                    const pdfBase64 = pdf.output('datauristring');
-                                    resolve({ filename, pdfBase64, campus: item.campus });
+                                    const pdfBlob = pdf.output('blob');
+                                    resolve({ filename, pdfBlob, campus: item.campus });
                                 }).catch(err => reject(err));
                             }, 500);
                         } else {
@@ -2974,11 +2974,8 @@
                     // Generate PDF silently
                     const pdfBackup = await generateSilentPDF(item);
                     
-                    // Extract base64 representation of PDF
-                    const base64Data = pdfBackup.pdfBase64.split(',')[1];
-                    
-                    // Add it to the JSZip instance
-                    zip.file(pdfBackup.filename, base64Data, { base64: true });
+                    // Add it directly to the JSZip instance as a Blob (prevents empty files)
+                    zip.file(pdfBackup.filename, pdfBackup.pdfBlob);
                     successCount++;
                 } catch (pdfErr) {
                     console.error(`Error generating PDF for ${displayName}:`, pdfErr);
