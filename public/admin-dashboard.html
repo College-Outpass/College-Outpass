@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1e3c72">
     <title>AGM Dashboard - Sri Chaitanya Hostel System</title>
+    <!-- JSZip for browser ZIP packaging -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -1524,10 +1526,12 @@
         <div class="data-table-section">
             <div class="table-header">
                 <h3>📋 All Campus Applications</h3>
-                <div style="display: flex; gap: 12px; align-items: center;">
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                     <input type="text" class="search-box" id="searchInput" placeholder="Search by name, ID...">
                     <button class="btn-refresh" id="refreshBtn">🔄 Refresh</button>
                     <button class="btn-excel" id="downloadExcelBtn">📊 Export Excel</button>
+                    <button class="btn-excel" id="downloadZipBtn" style="background: linear-gradient(135deg, #e65100, #ff9800); border: none; box-shadow: 0 4px 12px rgba(230, 81, 0, 0.25);">📦 Download PDFs (ZIP)</button>
+                    <button class="btn-refresh" id="deleteFilteredBtn" style="background: linear-gradient(135deg, #d32f2f, #f44336); border: none; box-shadow: 0 4px 12px rgba(211, 47, 47, 0.25); color: white;">🗑️ Delete Filtered</button>
                 </div>
             </div>
 
@@ -1560,41 +1564,6 @@
                     <input type="date" class="date-input" id="endDate">
                     <button class="btn-clear-date" id="clearDateBtn">Clear Dates</button>
                 </div>
-            </div>
-
-            <!-- Database Maintenance Section (HOD EXCLUSIVE) -->
-            <div class="data-table-section" style="margin-top: 20px; border-left: 5px solid #ffc107;">
-                <div class="table-header">
-                    <h3>⚙️ Database Maintenance</h3>
-                </div>
-                <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; background: #fffdf5; padding: 15px; border-radius: 10px;">
-                    <div style="flex: 1; min-width: 300px;">
-                        <p style="margin-bottom: 5px; font-weight: 700; color: #856404;">🧹 Storage Cleanup (Archive & Delete)</p>
-                        <p style="font-size: 13px; color: #666;">
-                            This will find the <strong>oldest date</strong> with records across all campuses, save them to a local Excel backup on the server, and then delete them from Firebase to free up storage. 
-                        </p>
-                        <!-- Sleek Force Local Server Toggle -->
-                        <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
-                            <label style="display: inline-flex; align-items: center; cursor: pointer; user-select: none;">
-                                <div style="position: relative;">
-                                    <input type="checkbox" id="forceLocalServerCheckbox" style="display: none;">
-                                    <div id="forceLocalServerBg" style="width: 44px; height: 22px; background-color: #ccc; border-radius: 11px; transition: background-color 0.2s; position: relative;">
-                                        <div id="forceLocalServerDot" style="position: absolute; left: 2px; top: 2px; width: 18px; height: 18px; background-color: white; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"></div>
-                                    </div>
-                                </div>
-                                <span style="font-size: 12px; font-weight: 600; color: #666; margin-left: 8px;">🔗 Force Local Backup Server (port 5000)</span>
-                            </label>
-                        </div>
-                    </div>
-                    <button class="btn-refresh" id="cleanupBtn" style="background: linear-gradient(135deg, #fd7e14, #ff8e3c); border: none; box-shadow: 0 4px 12px rgba(253, 126, 20, 0.3); padding: 12px 20px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">
-                        <span id="cleanupText">🧹 Manual Cleanup</span>
-                        <span id="cleanupLoader" class="loader" style="display: none; width: 15px; height: 15px; border-width: 2px; margin-left: 8px;"></span>
-                    </button>
-                    <button class="btn-excel" id="viewBackupsBtn" style="background: linear-gradient(135deg, #2e7d32, #4caf50); border: none; box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3); padding: 12px 20px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">
-                        📦 View Archive Vault
-                    </button>
-                </div>
-                <div id="cleanupStatus" style="margin-top: 10px; font-size: 13px; font-weight: 600; text-align: center; display: none;"></div>
             </div>
 
             <div class="table-wrapper">
@@ -1947,6 +1916,8 @@
             document.getElementById('endDate').addEventListener('change', applyFilters);
             document.getElementById('clearDateBtn').addEventListener('click', clearDateFilters);
             document.getElementById('downloadExcelBtn').addEventListener('click', downloadExcel);
+            document.getElementById('downloadZipBtn').addEventListener('click', downloadFilteredPDFsAsZip);
+            document.getElementById('deleteFilteredBtn').addEventListener('click', deleteFilteredRecords);
             
             // Force Local Server Toggle visual state and click listener
             const forceCheckbox = document.getElementById('forceLocalServerCheckbox');
@@ -2250,166 +2221,171 @@
                 });
             }
 
-            // Database Maintenance - Cleanup logic
-            document.getElementById('cleanupBtn').addEventListener('click', async function() {
-                if (!confirm('⚠️ Are you sure you want to cleanup oldest records across ALL campuses? This will archive them to an Excel file on the server, generate individual PDF backups, and delete them from the database to save storage.')) {
-                    return;
-                }
-
-                const cleanupBtn = document.getElementById('cleanupBtn');
-                const cleanupText = document.getElementById('cleanupText');
-                const cleanupLoader = document.getElementById('cleanupLoader');
-                const statusDiv = document.getElementById('cleanupStatus');
-
-                cleanupBtn.disabled = true;
-                cleanupText.style.display = 'none';
-                cleanupLoader.style.display = 'inline-block';
-                statusDiv.style.display = 'block';
-                statusDiv.style.color = '#856404';
-                statusDiv.textContent = '⏳ Analyzing database records...';
-
-                try {
-                    // 1. Identify the oldest date
-                    if (allData.length === 0) {
-                        alert('✨ No records found to clean up.');
-                        statusDiv.style.display = 'none';
-                        cleanupBtn.disabled = false;
-                        cleanupText.style.display = 'inline';
-                        cleanupLoader.style.display = 'none';
+            const legacyCleanupBtn = document.getElementById('cleanupBtn');
+            if (legacyCleanupBtn) {
+                legacyCleanupBtn.addEventListener('click', async function() {
+                    if (!confirm('⚠️ Are you sure you want to cleanup oldest records across ALL campuses? This will archive them to an Excel file on the server, generate individual PDF backups, and delete them from the database to save storage.')) {
                         return;
                     }
 
-                    const dates = allData.map(item => {
-                        const d = getItemDate(item);
-                        return d ? d.toISOString().split('T')[0] : null;
-                    }).filter(d => d !== null);
+                    const cleanupBtn = document.getElementById('cleanupBtn');
+                    const cleanupText = document.getElementById('cleanupText');
+                    const cleanupLoader = document.getElementById('cleanupLoader');
+                    const statusDiv = document.getElementById('cleanupStatus');
 
-                    if (dates.length === 0) {
-                        throw new Error('Could not determine record dates.');
-                    }
+                    cleanupBtn.disabled = true;
+                    cleanupText.style.display = 'none';
+                    cleanupLoader.style.display = 'inline-block';
+                    statusDiv.style.display = 'block';
+                    statusDiv.style.color = '#856404';
+                    statusDiv.textContent = '⏳ Analyzing database records...';
 
-                    const sortedDates = [...new Set(dates)].sort();
-                    const oldestDate = sortedDates[0];
+                    try {
+                        // 1. Identify the oldest date
+                        if (allData.length === 0) {
+                            alert('✨ No records found to clean up.');
+                            statusDiv.style.display = 'none';
+                            cleanupBtn.disabled = false;
+                            cleanupText.style.display = 'inline';
+                            cleanupLoader.style.display = 'none';
+                            return;
+                        }
 
-                    // Don't delete today's only records
-                    if (sortedDates.length <= 1) {
-                        statusDiv.style.color = '#155724';
-                        statusDiv.textContent = `✨ Only records for ${oldestDate} found. Skipping cleanup to preserve today's data.`;
+                        const dates = allData.map(item => {
+                            const d = getItemDate(item);
+                            return d ? d.toISOString().split('T')[0] : null;
+                        }).filter(d => d !== null);
+
+                        if (dates.length === 0) {
+                            throw new Error('Could not determine record dates.');
+                        }
+
+                        const sortedDates = [...new Set(dates)].sort();
+                        const oldestDate = sortedDates[0];
+
+                        // Don't delete today's only records
+                        if (sortedDates.length <= 1) {
+                            statusDiv.style.color = '#155724';
+                            statusDiv.textContent = `✨ Only records for ${oldestDate} found. Skipping cleanup to preserve today's data.`;
+                            cleanupBtn.disabled = false;
+                            cleanupText.style.display = 'inline';
+                            cleanupLoader.style.display = 'none';
+                            return;
+                        }
+
+                        const recordsToBackup = allData.filter(item => {
+                            const d = getItemDate(item);
+                            const itemDate = d ? d.toISOString().split('T')[0] : null;
+                            return itemDate === oldestDate;
+                        });
+
+                        const totalCount = recordsToBackup.length;
+                        console.log(`📦 Found ${totalCount} records from ${oldestDate} to backup silently.`);
+
+                        const idToken = await getFreshToken();
+
+                        // 2. Generate and Upload PDFs silently one by one
+                        for (let i = 0; i < totalCount; i++) {
+                            const item = recordsToBackup[i];
+                            const displayName = item.studentName || (item.fullData && item.fullData.studentName) || 'Student';
+                            
+                            // Safely deduce filename to see if it's already backed up
+                            const rawNumber = (item.fullData && (item.fullData.passNumber || item.fullData.mediSlipNumber)) || item.passNumber || item.mediSlipNumber || 'document';
+                            const sName = item.studentName || (item.fullData && item.fullData.studentName) || 'Student';
+                            const filename = `${rawNumber}_${sName}`.replace(/[^a-zA-Z0-9\s-_\.]/g, '') + '.pdf';
+                            
+                            statusDiv.textContent = `⏳ [PDF Backup] Checking record ${i + 1} of ${totalCount} (${displayName})...`;
+                            
+                            try {
+                                // Check if the PDF file already exists on the local server disk
+                                const checkUrl = `${BASE_API_URL}/admin/backup/check-pdf?campus=${encodeURIComponent(item.campus)}&filename=${encodeURIComponent(filename)}`;
+                                const checkResponse = await fetch(checkUrl, {
+                                    method: 'GET',
+                                    headers: {
+                                        'Authorization': `Bearer ${idToken}`
+                                    }
+                                });
+                                
+                                if (checkResponse.ok) {
+                                    const checkResult = await checkResponse.json();
+                                    if (checkResult.exists) {
+                                        console.log(`ℹ️ PDF already exists on local server for ${displayName} (${filename}). Skipping.`);
+                                        continue; // Skip generation and upload!
+                                    }
+                                }
+                            } catch (checkErr) {
+                                console.error(`Error checking PDF existence for ${displayName}:`, checkErr);
+                            }
+
+                            statusDiv.textContent = `⏳ [PDF Backup] Generating & uploading PDF ${i + 1} of ${totalCount} (${displayName})...`;
+
+                            try {
+                                const pdfBackup = await generateSilentPDF(item);
+                                
+                                // Upload PDF to the server
+                                const uploadResponse = await fetch(`${BASE_API_URL}/admin/backup/upload-pdf`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${idToken}`,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        campus: pdfBackup.campus,
+                                        filename: pdfBackup.filename,
+                                        pdfBase64: pdfBackup.pdfBase64
+                                    })
+                                });
+
+                                const uploadResult = await uploadResponse.json();
+                                if (!uploadResponse.ok || !uploadResult.success) {
+                                    throw new Error(uploadResult.error || 'Failed to save PDF on server');
+                                }
+                            } catch (pdfErr) {
+                                console.error(`Error archiving PDF for ${displayName}:`, pdfErr);
+                            }
+                        }
+
+                        // 3. Trigger Excel compilation and Firebase cleanup
+                        statusDiv.textContent = `⏳ Archiving excel backups & performing Firestore cleanup...`;
+                        const response = await fetch(`${BASE_API_URL}/admin/cleanup`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${idToken}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            statusDiv.style.color = '#155724';
+                            statusDiv.textContent = `✅ Successfully backed up all Excel files & ${totalCount} PDFs, and cleared database for ${oldestDate}!`;
+                            // Refresh dashboard statistics after cleanup
+                            loadAllData();
+                        } else {
+                            throw new Error(result.error || result.message || 'Cleanup failed');
+                        }
+                    } catch (error) {
+                        console.error('Cleanup Error:', error);
+                        statusDiv.style.color = '#dc3545';
+                        if (BASE_API_URL.includes('localhost') || BASE_API_URL.includes('127.0.0.1')) {
+                            statusDiv.innerHTML = `❌ <strong>Error: ${error.message}</strong><br><span style="font-size: 12px; color: #a94442; margin-top: 5px; display: block;">⚠️ The dashboard could not connect to your local backup server. Please make sure you have started it by double-clicking <code>run_local.bat</code> in the project folder!</span>`;
+                        } else {
+                            statusDiv.textContent = `❌ Error: ${error.message}`;
+                        }
+                    } finally {
                         cleanupBtn.disabled = false;
                         cleanupText.style.display = 'inline';
                         cleanupLoader.style.display = 'none';
-                        return;
                     }
-
-                    const recordsToBackup = allData.filter(item => {
-                        const d = getItemDate(item);
-                        const itemDate = d ? d.toISOString().split('T')[0] : null;
-                        return itemDate === oldestDate;
-                    });
-
-                    const totalCount = recordsToBackup.length;
-                    console.log(`📦 Found ${totalCount} records from ${oldestDate} to backup silently.`);
-
-                    const idToken = await getFreshToken();
-
-                    // 2. Generate and Upload PDFs silently one by one
-                    for (let i = 0; i < totalCount; i++) {
-                        const item = recordsToBackup[i];
-                        const displayName = item.studentName || (item.fullData && item.fullData.studentName) || 'Student';
-                        
-                        // Safely deduce filename to see if it's already backed up
-                        const rawNumber = (item.fullData && (item.fullData.passNumber || item.fullData.mediSlipNumber)) || item.passNumber || item.mediSlipNumber || 'document';
-                        const sName = item.studentName || (item.fullData && item.fullData.studentName) || 'Student';
-                        const filename = `${rawNumber}_${sName}`.replace(/[^a-zA-Z0-9\s-_\.]/g, '') + '.pdf';
-                        
-                        statusDiv.textContent = `⏳ [PDF Backup] Checking record ${i + 1} of ${totalCount} (${displayName})...`;
-                        
-                        try {
-                            // Check if the PDF file already exists on the local server disk
-                            const checkUrl = `${BASE_API_URL}/admin/backup/check-pdf?campus=${encodeURIComponent(item.campus)}&filename=${encodeURIComponent(filename)}`;
-                            const checkResponse = await fetch(checkUrl, {
-                                method: 'GET',
-                                headers: {
-                                    'Authorization': `Bearer ${idToken}`
-                                }
-                            });
-                            
-                            if (checkResponse.ok) {
-                                const checkResult = await checkResponse.json();
-                                if (checkResult.exists) {
-                                    console.log(`ℹ️ PDF already exists on local server for ${displayName} (${filename}). Skipping.`);
-                                    continue; // Skip generation and upload!
-                                }
-                            }
-                        } catch (checkErr) {
-                            console.error(`Error checking PDF existence for ${displayName}:`, checkErr);
-                        }
-
-                        statusDiv.textContent = `⏳ [PDF Backup] Generating & uploading PDF ${i + 1} of ${totalCount} (${displayName})...`;
-
-                        try {
-                            const pdfBackup = await generateSilentPDF(item);
-                            
-                            // Upload PDF to the server
-                            const uploadResponse = await fetch(`${BASE_API_URL}/admin/backup/upload-pdf`, {
-                                method: 'POST',
-                                headers: {
-                                    'Authorization': `Bearer ${idToken}`,
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    campus: pdfBackup.campus,
-                                    filename: pdfBackup.filename,
-                                    pdfBase64: pdfBackup.pdfBase64
-                                })
-                            });
-
-                            const uploadResult = await uploadResponse.json();
-                            if (!uploadResponse.ok || !uploadResult.success) {
-                                throw new Error(uploadResult.error || 'Failed to save PDF on server');
-                            }
-                        } catch (pdfErr) {
-                            console.error(`Error archiving PDF for ${displayName}:`, pdfErr);
-                        }
-                    }
-
-                    // 3. Trigger Excel compilation and Firebase cleanup
-                    statusDiv.textContent = `⏳ Archiving excel backups & performing Firestore cleanup...`;
-                    const response = await fetch(`${BASE_API_URL}/admin/cleanup`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${idToken}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        statusDiv.style.color = '#155724';
-                        statusDiv.textContent = `✅ Successfully backed up all Excel files & ${totalCount} PDFs, and cleared database for ${oldestDate}!`;
-                        // Refresh dashboard statistics after cleanup
-                        loadAllData();
-                    } else {
-                        throw new Error(result.error || result.message || 'Cleanup failed');
-                    }
-                } catch (error) {
-                    console.error('Cleanup Error:', error);
-                    statusDiv.style.color = '#dc3545';
-                    if (BASE_API_URL.includes('localhost') || BASE_API_URL.includes('127.0.0.1')) {
-                        statusDiv.innerHTML = `❌ <strong>Error: ${error.message}</strong><br><span style="font-size: 12px; color: #a94442; margin-top: 5px; display: block;">⚠️ The dashboard could not connect to your local backup server. Please make sure you have started it by double-clicking <code>run_local.bat</code> in the project folder!</span>`;
-                    } else {
-                        statusDiv.textContent = `❌ Error: ${error.message}`;
-                    }
-                } finally {
-                    cleanupBtn.disabled = false;
-                    cleanupText.style.display = 'inline';
-                    cleanupLoader.style.display = 'none';
-                }
-            });
+                });
+            }
 
             // View Backups Logic
-            document.getElementById('viewBackupsBtn').addEventListener('click', openBackupsModal);
+            const viewBackupsBtnEl = document.getElementById('viewBackupsBtn');
+            if (viewBackupsBtnEl) {
+                viewBackupsBtnEl.addEventListener('click', openBackupsModal);
+            }
 
             document.getElementById('modalDownloadBtn').onclick = function() {
                 if (currentPdfBlob && currentPdfFilename) {
@@ -2935,6 +2911,263 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        let zipCancelled = false;
+        let deleteCancelled = false;
+
+        async function downloadFilteredPDFsAsZip() {
+            if (filteredData.length === 0) {
+                alert('No filtered applications found to download!');
+                return;
+            }
+
+            const totalCount = filteredData.length;
+            const confirmMsg = `You are about to compile ${totalCount} PDF files as a ZIP directly in your browser.\n\n` +
+                               `This runs completely locally. Large datasets may take a few minutes.\n` +
+                               `Do you want to proceed?`;
+            
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            // Show progress modal
+            const progressModal = document.getElementById('zipProgressModal');
+            const progressText = document.getElementById('zipProgressText');
+            const progressBar = document.getElementById('zipProgressBar');
+            const progressDetails = document.getElementById('zipProgressDetails');
+            const cancelBtn = document.getElementById('cancelZipBtn');
+
+            progressModal.style.display = 'flex';
+            progressBar.style.width = '0%';
+            progressText.textContent = `Initializing PDF generation queue...`;
+            progressDetails.innerHTML = `Starting compilation for ${totalCount} records...\n`;
+            zipCancelled = false;
+
+            cancelBtn.onclick = function() {
+                zipCancelled = true;
+                progressDetails.innerHTML += `⚠️ Cancellation requested. Completing current task...\n`;
+                cancelBtn.disabled = true;
+                cancelBtn.textContent = 'Cancelling...';
+            };
+
+            const zip = new JSZip();
+            let successCount = 0;
+            let failCount = 0;
+
+            for (let i = 0; i < totalCount; i++) {
+                if (zipCancelled) {
+                    break;
+                }
+
+                const item = filteredData[i];
+                const displayName = item.studentName || (item.fullData && item.fullData.studentName) || 'Student';
+                
+                // Update Progress UI
+                const progressPercent = Math.round((i / totalCount) * 100);
+                progressBar.style.width = `${progressPercent}%`;
+                progressText.textContent = `Generating PDF ${i + 1} of ${totalCount}`;
+                progressDetails.innerHTML += `Generating [${i+1}/${totalCount}]: ${displayName} (${item.type === 'outpass' ? 'Outpass' : 'MediSlip'})...\n`;
+                progressDetails.scrollTop = progressDetails.scrollHeight;
+
+                try {
+                    // Generate PDF silently
+                    const pdfBackup = await generateSilentPDF(item);
+                    
+                    // Extract base64 representation of PDF
+                    const base64Data = pdfBackup.pdfBase64.split(',')[1];
+                    
+                    // Add it to the JSZip instance
+                    zip.file(pdfBackup.filename, base64Data, { base64: true });
+                    successCount++;
+                } catch (pdfErr) {
+                    console.error(`Error generating PDF for ${displayName}:`, pdfErr);
+                    failCount++;
+                    progressDetails.innerHTML += `❌ Error on ${displayName}: ${pdfErr.message || pdfErr}\n`;
+                    progressDetails.scrollTop = progressDetails.scrollHeight;
+                }
+            }
+
+            if (zipCancelled) {
+                progressModal.style.display = 'none';
+                cancelBtn.disabled = false;
+                cancelBtn.textContent = 'Cancel';
+                alert('ZIP generation cancelled.');
+                return;
+            }
+
+            // Finish Progress Bar
+            progressBar.style.width = '100%';
+            progressText.textContent = `Packaging files into ZIP...`;
+            progressDetails.innerHTML += `Finished compiling. Compressing ${successCount} files...\n`;
+            progressDetails.scrollTop = progressDetails.scrollHeight;
+
+            try {
+                // Generate ZIP blob
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                
+                // Create dynamic descriptive filename
+                const activeCampusFilter = document.getElementById('campusFilter').value;
+                const activeTypeFilter = document.getElementById('typeFilter').value;
+                
+                let campusPart = 'ALL_CAMPUSES';
+                if (activeCampusFilter && activeCampusFilter !== 'ALL_CAMPUSES') {
+                    campusPart = activeCampusFilter;
+                }
+                
+                let typePart = 'ALL_TYPES';
+                if (activeTypeFilter) {
+                    typePart = activeTypeFilter === 'outpass' ? 'Outpasses' : 'MediSlips';
+                }
+                
+                const timestamp = new Date().toISOString().slice(0, 10) + '_' + new Date().toTimeString().slice(0, 8).replace(/:/g, '-');
+                const zipFilename = `${campusPart}_${typePart}_PDFs_${timestamp}.zip`;
+
+                // Trigger Browser Download
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(zipBlob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', zipFilename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                progressDetails.innerHTML += `📦 ZIP archive downloaded: ${zipFilename}\n`;
+                progressDetails.scrollTop = progressDetails.scrollHeight;
+                
+                setTimeout(() => {
+                    progressModal.style.display = 'none';
+                    alert(`🎉 Success! ${successCount} PDF files have been packaged and downloaded as a single ZIP file.\n\nDownloaded as: ${zipFilename}`);
+                }, 1000);
+            } catch (zipErr) {
+                console.error('Error generating ZIP:', zipErr);
+                progressDetails.innerHTML += `❌ ZIP Generation Error: ${zipErr.message || zipErr}\n`;
+                alert(`Error generating ZIP file: ${zipErr.message || zipErr}`);
+                progressModal.style.display = 'none';
+            }
+        }
+
+        async function deleteFilteredRecords() {
+            if (filteredData.length === 0) {
+                alert('No filtered applications found to delete!');
+                return;
+            }
+
+            const totalCount = filteredData.length;
+            
+            // 1st warning
+            const firstConfirm = `⚠️ WARNING: You are about to PERMANENTLY delete the ${totalCount} currently filtered records from Firebase Firestore.\n\n` +
+                                 `Make sure you have already downloaded their ZIP/Excel backups!\n` +
+                                 `This action CANNOT be undone.\n\n` +
+                                 `Do you want to proceed?`;
+            
+            if (!confirm(firstConfirm)) {
+                return;
+            }
+
+            // 2nd final confirmation
+            const typedConfirm = prompt(`⚠️ FINAL SECURITY CHECK ⚠️\n\n` +
+                                        `This will permanently wipe ${totalCount} records from the database and free up storage.\n` +
+                                        `Please type "DELETE" (all caps) to confirm:`);
+            
+            if (typedConfirm !== 'DELETE') {
+                alert('Confirmation mismatch. Deletion cancelled.');
+                return;
+            }
+
+            // Show progress modal
+            const progressModal = document.getElementById('zipProgressModal');
+            const progressText = document.getElementById('zipProgressText');
+            const progressBar = document.getElementById('zipProgressBar');
+            const progressDetails = document.getElementById('zipProgressDetails');
+            const cancelBtn = document.getElementById('cancelZipBtn');
+
+            // Customize progress modal for Deletion
+            progressModal.style.display = 'flex';
+            progressBar.style.width = '0%';
+            progressText.textContent = `Initializing deletion queue...`;
+            progressDetails.innerHTML = `Starting deletion of ${totalCount} records...\n`;
+            
+            // Change modal title and icon dynamically to match delete action
+            const modalTitle = progressModal.querySelector('h3');
+            const modalIcon = progressModal.querySelector('div');
+            
+            const originalTitle = modalTitle ? modalTitle.textContent : 'Preparing ZIP Backup';
+            const originalIcon = modalIcon ? modalIcon.textContent : '📦';
+            
+            if (modalTitle) modalTitle.textContent = 'Deleting Records';
+            if (modalIcon) modalIcon.textContent = '🗑️';
+            if (progressBar) progressBar.style.background = 'linear-gradient(135deg, #d32f2f, #f44336)';
+
+            deleteCancelled = false;
+
+            cancelBtn.onclick = function() {
+                deleteCancelled = true;
+                progressDetails.innerHTML += `⚠️ Cancellation requested. Stopping after current deletion...\n`;
+                cancelBtn.disabled = true;
+                cancelBtn.textContent = 'Stopping...';
+            };
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (let i = 0; i < totalCount; i++) {
+                if (deleteCancelled) {
+                    break;
+                }
+
+                const item = filteredData[i];
+                const displayName = item.studentName || (item.fullData && item.fullData.studentName) || 'Student';
+                const docId = item.id;
+                const collectionName = item.type === 'outpass' ? 'outpasses' : 'mediSlips';
+                
+                // Update Progress UI
+                const progressPercent = Math.round((i / totalCount) * 100);
+                progressBar.style.width = `${progressPercent}%`;
+                progressText.textContent = `Deleting ${i + 1} of ${totalCount}`;
+                progressDetails.innerHTML += `Deleting [${i+1}/${totalCount}]: ${displayName} (${item.type === 'outpass' ? 'Outpass' : 'MediSlip'})...\n`;
+                progressDetails.scrollTop = progressDetails.scrollHeight;
+
+                try {
+                    // Delete directly from Firebase
+                    await db.collection(collectionName).doc(docId).delete();
+                    successCount++;
+                } catch (delErr) {
+                    console.error(`Error deleting doc ${docId}:`, delErr);
+                    failCount++;
+                    progressDetails.innerHTML += `❌ Error deleting ${displayName}: ${delErr.message || delErr}\n`;
+                    progressDetails.scrollTop = progressDetails.scrollHeight;
+                }
+            }
+
+            // Restore modal UI defaults
+            if (modalTitle) modalTitle.textContent = originalTitle;
+            if (modalIcon) modalIcon.textContent = originalIcon;
+            if (progressBar) progressBar.style.background = 'linear-gradient(135deg, #e65100, #ff9800)';
+            cancelBtn.disabled = false;
+            cancelBtn.textContent = 'Cancel';
+
+            if (deleteCancelled) {
+                progressModal.style.display = 'none';
+                alert(`Deletion stopped. ${successCount} records were deleted, ${failCount} failed.`);
+                // Reload data to reflect partial deletions
+                loadAllData();
+                return;
+            }
+
+            // Finish Progress Bar
+            progressBar.style.width = '100%';
+            progressText.textContent = `Finalizing...`;
+            progressDetails.innerHTML += `Finished! Successfully deleted ${successCount} records.\n`;
+            progressDetails.scrollTop = progressDetails.scrollHeight;
+
+            setTimeout(() => {
+                progressModal.style.display = 'none';
+                alert(`🎉 Done! ${successCount} records have been successfully deleted from Firebase Firestore.\n\nDatabase storage space is now cleared!`);
+                // Reload data
+                loadAllData();
+            }, 1000);
         }
 
         // Function to download PDF for a specific outpass (Silent download - no visible process)
@@ -3895,6 +4128,22 @@
                     <!-- Images will be injected here for preview -->
                 </div>
             </div>
+        </div>
+    </div>
+    <!-- ZIP generation & deletion progress overlay modal -->
+    <div id="zipProgressModal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 99999;">
+        <div style="width: 450px; max-width: 90%; background: #ffffff; color: #333333; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); padding: 30px; text-align: center; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box;">
+            <div style="font-size: 50px; margin-bottom: 20px; transition: transform 0.3s;">📦</div>
+            <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 15px; color: #e65100;">Preparing ZIP Backup</h3>
+            <p id="zipProgressText" style="font-size: 15px; line-height: 1.6; color: #555; margin-bottom: 25px;">Initializing silent PDF generation queue...</p>
+            
+            <div style="width: 100%; background-color: #f0f0f0; border-radius: 10px; height: 10px; overflow: hidden; margin-bottom: 20px; border: 1px solid #e0e0e0;">
+                <div id="zipProgressBar" style="width: 0%; height: 100%; background: linear-gradient(135deg, #e65100, #ff9800); border-radius: 10px; transition: width 0.3s ease;"></div>
+            </div>
+            
+            <div id="zipProgressDetails" style="width: 100%; font-size: 12px; color: #888; font-family: monospace; background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #eee; text-align: left; height: 80px; overflow-y: auto; box-sizing: border-box; white-space: pre-wrap;">Queue started...</div>
+            
+            <button id="cancelZipBtn" class="btn-refresh" style="margin-top: 20px; background: #e0e0e0; color: #333; border: none; border-radius: 6px; padding: 10px 20px; font-weight: 600; cursor: pointer; transition: all 0.3s;">Cancel</button>
         </div>
     </div>
 </body>
