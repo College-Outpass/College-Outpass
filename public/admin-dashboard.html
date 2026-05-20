@@ -2174,7 +2174,8 @@
 
                                     const filename = `${outpassData.passNumber}_${outpassData.studentName}.pdf`.replace(/[^a-zA-Z0-9\s-_\.]/g, '');
                                     const pdfBlob = pdf.output('blob');
-                                    resolve({ filename, pdfBlob, campus: item.campus });
+                                    const pdfBase64 = pdf.output('datauristring').split(',')[1];
+                                    resolve({ filename, pdfBlob, pdfBase64, campus: item.campus });
                                 }).catch(err => reject(err));
                             }, 1000);
                         } else if (item.type === 'mediSlip') {
@@ -2254,7 +2255,8 @@
 
                                     const filename = `${mediSlipData.mediSlipNumber}_${mediSlipData.studentName}.pdf`.replace(/[^a-zA-Z0-9\s-_\.]/g, '');
                                     const pdfBlob = pdf.output('blob');
-                                    resolve({ filename, pdfBlob, campus: item.campus });
+                                    const pdfBase64 = pdf.output('datauristring').split(',')[1];
+                                    resolve({ filename, pdfBlob, pdfBase64, campus: item.campus });
                                 }).catch(err => reject(err));
                             }, 500);
                         } else {
@@ -3079,15 +3081,41 @@
                 progressDetails.innerHTML += `📦 ZIP archive downloaded: ${zipFilename}\n`;
                 progressDetails.scrollTop = progressDetails.scrollHeight;
                 
-                setTimeout(() => {
-                    progressModal.style.display = 'none';
-                    alert(`🎉 Success! ${successCount} PDF files have been packaged and downloaded as a single ZIP file.\n\nDownloaded as: ${zipFilename}`);
-                }, 1000);
+                if (failCount > 0) {
+                    progressText.textContent = `Completed with ${failCount} errors`;
+                    progressDetails.innerHTML += `⚠️ Process completed but ${failCount} file(s) failed to generate. Check errors above.\n`;
+                    progressDetails.scrollTop = progressDetails.scrollHeight;
+                    
+                    // Convert Cancel button to a functional Close button
+                    cancelBtn.disabled = false;
+                    cancelBtn.textContent = 'Close';
+                    cancelBtn.onclick = function() {
+                        progressModal.style.display = 'none';
+                        // Reset button back to 'Cancel' for next operations
+                        cancelBtn.textContent = 'Cancel';
+                    };
+                    
+                    alert(`⚠️ ZIP generated with errors!\n\nSuccessfully packaged: ${successCount} files.\nFailed to generate: ${failCount} files.\n\nThe successfully compiled files have been downloaded.\nPlease review the error logs in the progress modal before closing it.`);
+                } else {
+                    setTimeout(() => {
+                        progressModal.style.display = 'none';
+                        alert(`🎉 Success! ${successCount} PDF files have been packaged and downloaded as a single ZIP file.\n\nDownloaded as: ${zipFilename}`);
+                    }, 1000);
+                }
             } catch (zipErr) {
                 console.error('Error generating ZIP:', zipErr);
                 progressDetails.innerHTML += `❌ ZIP Generation Error: ${zipErr.message || zipErr}\n`;
+                progressDetails.scrollTop = progressDetails.scrollHeight;
+                
+                progressText.textContent = `ZIP Generation Failed`;
+                cancelBtn.disabled = false;
+                cancelBtn.textContent = 'Close';
+                cancelBtn.onclick = function() {
+                    progressModal.style.display = 'none';
+                    cancelBtn.textContent = 'Cancel'; // reset
+                };
+                
                 alert(`Error generating ZIP file: ${zipErr.message || zipErr}`);
-                progressModal.style.display = 'none';
             }
         }
 
