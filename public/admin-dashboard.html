@@ -2231,7 +2231,36 @@
                     // 2. Generate and Upload PDFs silently one by one
                     for (let i = 0; i < totalCount; i++) {
                         const item = recordsToBackup[i];
-                        const displayName = item.studentName || 'Student';
+                        const displayName = item.studentName || (item.fullData && item.fullData.studentName) || 'Student';
+                        
+                        // Safely deduce filename to see if it's already backed up
+                        const rawNumber = (item.fullData && (item.fullData.passNumber || item.fullData.mediSlipNumber)) || item.passNumber || item.mediSlipNumber || 'document';
+                        const sName = item.studentName || (item.fullData && item.fullData.studentName) || 'Student';
+                        const filename = `${rawNumber}_${sName}`.replace(/[^a-zA-Z0-9\s-_\.]/g, '') + '.pdf';
+                        
+                        statusDiv.textContent = `⏳ [PDF Backup] Checking record ${i + 1} of ${totalCount} (${displayName})...`;
+                        
+                        try {
+                            // Check if the PDF file already exists on the local server disk
+                            const checkUrl = `${BASE_API_URL}/admin/backup/check-pdf?campus=${encodeURIComponent(item.campus)}&filename=${encodeURIComponent(filename)}`;
+                            const checkResponse = await fetch(checkUrl, {
+                                method: 'GET',
+                                headers: {
+                                    'Authorization': `Bearer ${idToken}`
+                                }
+                            });
+                            
+                            if (checkResponse.ok) {
+                                const checkResult = await checkResponse.json();
+                                if (checkResult.exists) {
+                                    console.log(`ℹ️ PDF already exists on local server for ${displayName} (${filename}). Skipping.`);
+                                    continue; // Skip generation and upload!
+                                }
+                            }
+                        } catch (checkErr) {
+                            console.error(`Error checking PDF existence for ${displayName}:`, checkErr);
+                        }
+
                         statusDiv.textContent = `⏳ [PDF Backup] Generating & uploading PDF ${i + 1} of ${totalCount} (${displayName})...`;
 
                         try {

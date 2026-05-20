@@ -504,6 +504,28 @@ app.post('/api/admin/cleanup', authenticateToken, async (req, res) => {
     else res.status(500).json(result);
 });
 
+// --- CHECK IF PDF BACKUP EXISTS ---
+app.get('/api/admin/backup/check-pdf', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin' && req.user.role !== 'hod') return res.status(403).json({ error: 'Unauthorized' });
+    
+    try {
+        const { campus, filename } = req.query;
+        if (!campus || !filename) {
+            return res.status(400).json({ error: 'Missing campus or filename' });
+        }
+
+        const sanitizedCampus = campus.trim().replace(/[^a-zA-Z0-9\s-_]/g, '');
+        const filePath = path.join(localBackupDir, sanitizedCampus, 'PDFs', filename);
+
+        const exists = fs.existsSync(filePath);
+        res.json({ exists });
+    } catch (err) {
+        console.error('❌ Error checking backup PDF:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // --- UPLOAD BACKUP PDF ---
 app.post('/api/admin/backup/upload-pdf', authenticateToken, async (req, res) => {
     if (req.user.role !== 'admin' && req.user.role !== 'hod') return res.status(403).json({ error: 'Unauthorized' });
