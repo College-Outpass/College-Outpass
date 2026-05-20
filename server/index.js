@@ -96,7 +96,7 @@ async function authenticateToken(req, res, next) {
     if (!token && req.query.authorization) {
         token = req.query.authorization;
     }
-    if (token == null) return res.sendStatus(401);
+    if (token == null) return res.status(401).json({ error: 'Unauthorized: No token provided' });
 
     try {
         if (admin.apps.length) {
@@ -131,14 +131,15 @@ async function authenticateToken(req, res, next) {
                 return next();
             } catch (fbErr) {
                 console.error("❌ Firebase ID Token verification failed:", fbErr.message);
+                return res.status(403).json({ error: 'Forbidden: Invalid or expired token. Please log out and log back in.' });
             }
         } else {
             console.error("❌ Firebase Admin SDK is not initialized (no apps active)");
+            return res.status(503).json({ error: 'Service Unavailable: Firebase not initialized on server.' });
         }
-        res.sendStatus(403);
     } catch (e) {
         console.error("❌ Error inside authenticateToken middleware:", e.message);
-        res.sendStatus(403);
+        return res.status(403).json({ error: 'Forbidden: Token validation error.' });
     }
 }
 
@@ -502,6 +503,39 @@ app.post('/api/admin/cleanup', authenticateToken, async (req, res) => {
     if (result.success) res.json(result);
     else res.status(500).json(result);
 });
+
+// --- UPLOAD BACKUP PDF ---
+app.post('/api/admin/backup/upload-pdf', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin' && req.user.role !== 'hod') return res.status(403).json({ error: 'Unauthorized' });
+    
+    try {
+        const { campus, filename, pdfBase64 } = req.body;
+        if (!campus || !filename || !pdfBase64) {
+            return res.status(400).json({ error: 'Missing campus, filename, or pdfBase64 data' });
+        }
+
+        const sanitizedCampus = campus.trim().replace(/[^a-zA-Z0-9\s-_]/g, '');
+        const campusFolder = path.join(localBackupDir, sanitizedCampus);
+        const pdfFolder = path.join(campusFolder, 'PDFs');
+
+        if (!fs.existsSync(pdfFolder)) {
+            fs.mkdirSync(pdfFolder, { recursive: true });
+        }
+
+        // Strip any potential data URL prefixes
+        const base64Data = pdfBase64.replace(/^data:application\/pdf;filename=[^;]+;base64,/, "").replace(/^data:application\/pdf;base64,/, "");
+        const filePath = path.join(pdfFolder, filename);
+
+        fs.writeFileSync(filePath, base64Data, 'base64');
+        console.log(`✅ Saved backup PDF locally: ${filePath}`);
+
+        res.json({ success: true, message: `PDF saved successfully` });
+    } catch (err) {
+        console.error('❌ Error saving backup PDF:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 
 // --- LIST BACKUPS FOR HOD ---
 app.get('/api/admin/backups', authenticateToken, async (req, res) => {

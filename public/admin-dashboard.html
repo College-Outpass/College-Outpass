@@ -1821,7 +1821,8 @@
                 const healthStatusEl = document.getElementById('serverHealthStatus');
                 const healthIconEl = document.getElementById('serverHealthIcon');
                 // Use the base API URL to wake up the instance
-                const API_URL = 'https://college-outpass-api.onrender.com/api';
+                const API_URL = BASE_API_URL;
+                const isLocal = API_URL.includes('localhost') || API_URL.includes('127.0.0.1');
 
                 try {
                     const startTime = Date.now();
@@ -1834,25 +1835,58 @@
                     if (duration > 15) {
                         // If it took > 15s, it was definitely waking up from sleep
                         healthIconEl.style.color = "#f1c40f";
-                        healthStatusEl.textContent = "Cloud Active (Woke up from sleep)";
+                        healthStatusEl.textContent = isLocal ? "Local Server Active" : "Cloud Active (Woke up from sleep)";
                         console.log(`🚀 Server was sleeping. Wake-up took ${duration.toFixed(1)}s`);
                     } else {
                         healthIconEl.style.color = "#2ecc71";
-                        healthStatusEl.textContent = "Cloud Server Online";
+                        healthStatusEl.textContent = isLocal ? "Local Server Online" : "Cloud Server Online";
                     }
                     
                     // Keep alive: Ping every 5 minutes while dashboard is open (prevent sleep)
                     setTimeout(checkServerHealth, 300000);
                 } catch (e) {
                     healthIconEl.style.color = "#e74c3c";
-                    healthStatusEl.textContent = "Cloud Server Offline";
+                    healthStatusEl.textContent = isLocal ? "Local Server Offline" : "Cloud Server Offline";
                     console.error("Health check failed:", e);
                 }
             }
         });
 
-        // Define API Base URL for all server communication
-        const BASE_API_URL = 'https://college-outpass-api.onrender.com/api';
+        // Define API Base URL for all server communication (starts as cloud, self-heals to local if online)
+        let BASE_API_URL = 'https://college-outpass-api.onrender.com/api';
+        let isLocalServerOnline = false;
+
+        async function detectLocalServer() {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1200);
+
+                const response = await fetch('http://localhost:5000/api/health', {
+                    signal: controller.signal,
+                    mode: 'cors'
+                });
+                clearTimeout(timeoutId);
+
+                if (response.ok) {
+                    BASE_API_URL = 'http://localhost:5000/api';
+                    isLocalServerOnline = true;
+                    console.log('🔌 Auto-detected Local Express Server at localhost:5000. Redirecting API requests.');
+                    
+                    // Update health UI if elements are loaded
+                    const healthStatusEl = document.getElementById('serverHealthStatus');
+                    const healthIconEl = document.getElementById('serverHealthIcon');
+                    if (healthStatusEl && healthIconEl) {
+                        healthIconEl.style.color = "#2ecc71";
+                        healthStatusEl.textContent = "Local Server Online";
+                    }
+                }
+            } catch (e) {
+                console.log('☁️ Local Express server not detected on port 5000. Using Cloud API.');
+            }
+        }
+        
+        // Execute detection immediately
+        detectLocalServer();
 
         // Helper to map email to campus if field is missing (fixes "not defined" error)
         function getCampusFromEmail(email) {
@@ -1938,9 +1972,203 @@
             document.getElementById('zoomOutBtn').onclick = () => updateZoom(-10);
             document.getElementById('modalCloseBtn').onclick = closePDFModal;
             
+            // Helper to generate a PDF silently and return it as base64-encoded string
+            async function generateSilentPDF(item) {
+                return new Promise((resolve, reject) => {
+                    try {
+                        if (item.type === 'outpass') {
+                            const outpassData = item.fullData;
+                            const campusInfo = getCampusInfoFromOutpass(outpassData);
+
+                            // Update PDF template with data
+                            document.getElementById('pdfPassNumber').textContent = outpassData.passNumber;
+                            document.getElementById('pdfDate').textContent = outpassData.issuedDate;
+                            document.getElementById('pdfTime').textContent = outpassData.issuedTime;
+                            document.getElementById('pdfStudentId').textContent = outpassData.studentId;
+                            document.getElementById('pdfStudentName').textContent = outpassData.studentName;
+                            document.getElementById('pdfCategory').textContent = outpassData.category;
+                            document.getElementById('pdfSection').textContent = outpassData.section;
+                            document.getElementById('pdfFatherName').textContent = outpassData.fatherName;
+                            document.getElementById('pdfWhatsApp').textContent = outpassData.whatsappNumber || outpassData.whatsapp;
+                            document.getElementById('pdfRequestedBy').textContent = outpassData.requestedBy;
+                            document.getElementById('pdfReason').textContent = outpassData.reason;
+                            document.getElementById('pdfStatus').textContent = outpassData.status;
+                            document.getElementById('pdfOutDate').textContent = formatDateForPDF(outpassData.outDate);
+                            document.getElementById('pdfInDate').textContent = formatDateForPDF(outpassData.inDate);
+                            document.getElementById('pdfIssuedByName').textContent = outpassData.issuedBy;
+                            document.getElementById('pdfAuthorizedByName').textContent = outpassData.authorizedBy || 'Principal';
+                            document.getElementById('pdfCampusName').textContent = campusInfo.name;
+                            document.getElementById('pdfCampusEmail').textContent = campusInfo.email;
+
+                            const statusElement = document.getElementById('pdfStatus');
+                            statusElement.className = '';
+                            statusElement.classList.add(`status-${outpassData.status.toLowerCase()}`);
+
+                            const pdfStudentPhotoImg = document.getElementById('pdfStudentPhotoImg');
+                            if (outpassData.studentPhoto) {
+                                pdfStudentPhotoImg.crossOrigin = 'anonymous';
+                                pdfStudentPhotoImg.src = outpassData.studentPhoto;
+                                document.getElementById('pdfStudentPhoto').style.display = 'block';
+                            } else {
+                                document.getElementById('pdfStudentPhoto').style.display = 'none';
+                            }
+
+                            const pdfParentPhotoImg = document.getElementById('pdfParentPhotoImg');
+                            if (outpassData.parentPhoto) {
+                                pdfParentPhotoImg.crossOrigin = 'anonymous';
+                                pdfParentPhotoImg.src = outpassData.parentPhoto;
+                                document.getElementById('pdfParentPhoto').style.display = 'block';
+                            } else {
+                                document.getElementById('pdfParentPhoto').style.display = 'none';
+                            }
+
+                            const pdfTemplate = document.getElementById('pdfTemplate');
+                            pdfTemplate.style.display = 'block';
+                            pdfTemplate.style.position = 'fixed';
+                            pdfTemplate.style.left = '-9999px';
+                            pdfTemplate.style.top = '0';
+                            pdfTemplate.style.width = '210mm';
+                            pdfTemplate.style.zIndex = '-9999';
+
+                            setTimeout(() => {
+                                html2canvas(pdfTemplate, {
+                                    scale: 2,
+                                    useCORS: true,
+                                    allowTaint: false,
+                                    logging: false,
+                                    backgroundColor: '#ffffff'
+                                }).then(async (canvas) => {
+                                    pdfTemplate.style.display = 'none';
+
+                                    const { jsPDF } = window.jspdf;
+                                    const pdf = new jsPDF({
+                                        orientation: 'portrait',
+                                        unit: 'mm',
+                                        format: 'a4'
+                                    });
+
+                                    const imgData = canvas.toDataURL('image/png', 1.0);
+                                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                                    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
+
+                                    // Page 2: Authorized Letter if exists
+                                    if (outpassData.authorizedLetterPhoto) {
+                                        const authorizedLetterImg = document.getElementById('authorizedLetterFullPhotoImg');
+                                        authorizedLetterImg.crossOrigin = 'anonymous';
+                                        authorizedLetterImg.src = outpassData.authorizedLetterPhoto;
+
+                                        const authorizedLetterTemplate = document.getElementById('authorizedLetterPdfTemplate');
+                                        authorizedLetterTemplate.style.display = 'block';
+                                        authorizedLetterTemplate.style.position = 'absolute';
+                                        authorizedLetterTemplate.style.left = '0';
+                                        authorizedLetterTemplate.style.top = '0';
+                                        authorizedLetterTemplate.style.zIndex = '-1';
+
+                                        await new Promise((res) => {
+                                            if (authorizedLetterImg.complete) res();
+                                            else { authorizedLetterImg.onload = res; authorizedLetterImg.onerror = res; }
+                                        });
+
+                                        await new Promise(res => setTimeout(res, 500));
+
+                                        const authorizedLetterCanvas = await html2canvas(authorizedLetterTemplate, {
+                                            scale: 2,
+                                            useCORS: true,
+                                            allowTaint: false,
+                                            logging: false,
+                                            backgroundColor: '#ffffff',
+                                            width: 794,
+                                            height: 1123
+                                        });
+
+                                        authorizedLetterTemplate.style.display = 'none';
+                                        pdf.addPage();
+                                        const authorizedLetterImgData = authorizedLetterCanvas.toDataURL('image/png', 1.0);
+                                        const authorizedLetterPdfHeight = (authorizedLetterCanvas.height * pdfWidth) / authorizedLetterCanvas.width;
+                                        pdf.addImage(authorizedLetterImgData, 'PNG', 0, 0, pdfWidth, authorizedLetterPdfHeight, '', 'FAST');
+                                    }
+
+                                    const filename = `${outpassData.passNumber}_${outpassData.studentName}.pdf`.replace(/[^a-zA-Z0-9\s-_\.]/g, '');
+                                    const pdfBase64 = pdf.output('datauristring');
+                                    resolve({ filename, pdfBase64, campus: item.campus });
+                                }).catch(err => reject(err));
+                            }, 1000);
+                        } else if (item.type === 'mediSlip') {
+                            const mediSlipData = item.fullData;
+                            const campusInfo = getCampusInfoFromMediSlip(mediSlipData);
+
+                            document.getElementById('mediSlipNumber').textContent = mediSlipData.mediSlipNumber;
+                            document.getElementById('mediSlipStudentId').textContent = mediSlipData.studentId;
+                            document.getElementById('mediSlipStudentName').textContent = mediSlipData.studentName;
+                            document.getElementById('mediSlipDate').textContent = formatDateForPDF(mediSlipData.date);
+                            document.getElementById('mediSlipTemperature').textContent = (mediSlipData.temperature || 'None') + '°F';
+                            document.getElementById('mediSlipStartTime').textContent = formatTimeForPDF(mediSlipData.startTime);
+                            document.getElementById('mediSlipEndTime').textContent = formatTimeForPDF(mediSlipData.endTime);
+                            document.getElementById('mediSlipMedicineGiven').textContent = mediSlipData.medicineGiven || '--';
+                            document.getElementById('mediSlipReason').textContent = mediSlipData.reason;
+                            document.getElementById('mediSlipIssuedByDisplay').textContent = mediSlipData.issuedBy;
+                            document.getElementById('mediSlipAuthorizedByDisplay').textContent = mediSlipData.authorizedBy || 'Principal';
+                            document.getElementById('mediSlipCampusName').textContent = campusInfo.name;
+                            document.getElementById('mediSlipCampusEmail').textContent = campusInfo.email;
+
+                            const statusElement = document.getElementById('mediSlipStatus');
+                            statusElement.textContent = mediSlipData.status;
+                            statusElement.className = 'medi-slip-status-box';
+                            if (mediSlipData.status === 'APPROVED') {
+                                statusElement.classList.add('status-approved');
+                            } else {
+                                statusElement.classList.add('status-rejected');
+                            }
+
+                            const pdfTemplate = document.getElementById('mediSlipPdfTemplate');
+                            pdfTemplate.style.display = 'block';
+                            pdfTemplate.style.position = 'absolute';
+                            pdfTemplate.style.left = '0';
+                            pdfTemplate.style.top = '0';
+                            pdfTemplate.style.zIndex = '-1';
+
+                            setTimeout(() => {
+                                html2canvas(pdfTemplate, {
+                                    scale: 2,
+                                    useCORS: true,
+                                    allowTaint: true,
+                                    logging: false,
+                                    backgroundColor: '#ffffff',
+                                    imageTimeout: 15000,
+                                    removeContainer: false
+                                }).then(async canvas => {
+                                    pdfTemplate.style.display = 'none';
+
+                                    const { jsPDF } = window.jspdf;
+                                    const pdf = new jsPDF({
+                                        orientation: 'portrait',
+                                        unit: 'mm',
+                                        format: 'a4'
+                                    });
+
+                                    const imgData = canvas.toDataURL('image/png', 1.0);
+                                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                                    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
+
+                                    const filename = `${mediSlipData.mediSlipNumber}_${mediSlipData.studentName}.pdf`.replace(/[^a-zA-Z0-9\s-_\.]/g, '');
+                                    const pdfBase64 = pdf.output('datauristring');
+                                    resolve({ filename, pdfBase64, campus: item.campus });
+                                }).catch(err => reject(err));
+                            }, 500);
+                        } else {
+                            reject(new Error('Unknown record type'));
+                        }
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+            }
+
             // Database Maintenance - Cleanup logic
             document.getElementById('cleanupBtn').addEventListener('click', async function() {
-                if (!confirm('⚠️ Are you sure you want to cleanup oldest records across ALL campuses? This will archive them to an Excel file on the server and delete them from the database to save storage.')) {
+                if (!confirm('⚠️ Are you sure you want to cleanup oldest records across ALL campuses? This will archive them to an Excel file on the server, generate individual PDF backups, and delete them from the database to save storage.')) {
                     return;
                 }
 
@@ -1954,10 +2182,86 @@
                 cleanupLoader.style.display = 'inline-block';
                 statusDiv.style.display = 'block';
                 statusDiv.style.color = '#856404';
-                statusDiv.textContent = '⏳ Processing cleanup... Please wait.';
+                statusDiv.textContent = '⏳ Analyzing database records...';
 
                 try {
+                    // 1. Identify the oldest date
+                    if (allData.length === 0) {
+                        alert('✨ No records found to clean up.');
+                        statusDiv.style.display = 'none';
+                        cleanupBtn.disabled = false;
+                        cleanupText.style.display = 'inline';
+                        cleanupLoader.style.display = 'none';
+                        return;
+                    }
+
+                    const dates = allData.map(item => {
+                        const d = getItemDate(item);
+                        return d ? d.toISOString().split('T')[0] : null;
+                    }).filter(d => d !== null);
+
+                    if (dates.length === 0) {
+                        throw new Error('Could not determine record dates.');
+                    }
+
+                    const sortedDates = [...new Set(dates)].sort();
+                    const oldestDate = sortedDates[0];
+
+                    // Don't delete today's only records
+                    if (sortedDates.length <= 1) {
+                        statusDiv.style.color = '#155724';
+                        statusDiv.textContent = `✨ Only records for ${oldestDate} found. Skipping cleanup to preserve today's data.`;
+                        cleanupBtn.disabled = false;
+                        cleanupText.style.display = 'inline';
+                        cleanupLoader.style.display = 'none';
+                        return;
+                    }
+
+                    const recordsToBackup = allData.filter(item => {
+                        const d = getItemDate(item);
+                        const itemDate = d ? d.toISOString().split('T')[0] : null;
+                        return itemDate === oldestDate;
+                    });
+
+                    const totalCount = recordsToBackup.length;
+                    console.log(`📦 Found ${totalCount} records from ${oldestDate} to backup silently.`);
+
                     const idToken = await getFreshToken();
+
+                    // 2. Generate and Upload PDFs silently one by one
+                    for (let i = 0; i < totalCount; i++) {
+                        const item = recordsToBackup[i];
+                        const displayName = item.studentName || 'Student';
+                        statusDiv.textContent = `⏳ [PDF Backup] Generating & uploading PDF ${i + 1} of ${totalCount} (${displayName})...`;
+
+                        try {
+                            const pdfBackup = await generateSilentPDF(item);
+                            
+                            // Upload PDF to the server
+                            const uploadResponse = await fetch(`${BASE_API_URL}/admin/backup/upload-pdf`, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${idToken}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    campus: pdfBackup.campus,
+                                    filename: pdfBackup.filename,
+                                    pdfBase64: pdfBackup.pdfBase64
+                                })
+                            });
+
+                            const uploadResult = await uploadResponse.json();
+                            if (!uploadResponse.ok || !uploadResult.success) {
+                                throw new Error(uploadResult.error || 'Failed to save PDF on server');
+                            }
+                        } catch (pdfErr) {
+                            console.error(`Error archiving PDF for ${displayName}:`, pdfErr);
+                        }
+                    }
+
+                    // 3. Trigger Excel compilation and Firebase cleanup
+                    statusDiv.textContent = `⏳ Archiving excel backups & performing Firestore cleanup...`;
                     const response = await fetch(`${BASE_API_URL}/admin/cleanup`, {
                         method: 'POST',
                         headers: {
@@ -1970,7 +2274,7 @@
 
                     if (result.success) {
                         statusDiv.style.color = '#155724';
-                        statusDiv.textContent = `✅ ${result.message}`;
+                        statusDiv.textContent = `✅ Successfully backed up all Excel files & ${totalCount} PDFs, and cleared database for ${oldestDate}!`;
                         // Refresh dashboard statistics after cleanup
                         loadAllData();
                     } else {
