@@ -1457,20 +1457,60 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* HOD Academic Transition CSS */
+        /* Premium Tab System */
+        .dashboard-tabs {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.65);
+            padding: 5px;
+            border-radius: 12px;
+            border: 1px solid rgba(30, 60, 114, 0.15);
+            box-shadow: 0 4px 15px rgba(30, 60, 114, 0.05);
+            width: fit-content;
+        }
+
+        .tab-btn {
+            background: transparent;
+            color: #4b5563;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 9px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            color: #1e3c72;
+            background: rgba(30, 60, 114, 0.06);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            box-shadow: 0 4px 10px rgba(30, 60, 114, 0.25);
+        }
+
+        /* HOD Academic Transition CSS (Compact View) */
         .academic-transition-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            margin-top: 20px;
-            margin-bottom: 25px;
+            gap: 16px;
+            margin-top: 15px;
+            margin-bottom: 15px;
         }
 
         .academic-transition-card {
             background: rgba(255, 255, 255, 0.98);
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            padding: 18px 22px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.8);
             display: flex;
             flex-direction: column;
@@ -1487,7 +1527,7 @@
 
         .academic-transition-card:not(.locked):hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
         }
 
         .academic-transition-card.delete-card {
@@ -1499,9 +1539,9 @@
         }
 
         .academic-transition-card h4 {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -1509,10 +1549,10 @@
         }
 
         .academic-transition-card .card-description {
-            font-size: 14px;
+            font-size: 13px;
             color: #6c757d;
-            line-height: 1.5;
-            margin-bottom: 20px;
+            line-height: 1.4;
+            margin-bottom: 12px;
             flex-grow: 1;
         }
 
@@ -1603,6 +1643,11 @@
             </div>
         </div>
 
+        <div class="dashboard-tabs">
+            <button class="tab-btn active" data-tab="records">📊 Outpass & Medical Records</button>
+            <button class="tab-btn" data-tab="transition">🎓 Student Roster Transition</button>
+        </div>
+
         <div class="stats-grid">
             <div class="stat-card total" id="cardTotal">
                 <div class="stat-icon">📋</div>
@@ -1633,7 +1678,7 @@
         </div>
 
         <!-- Student Academic Transition Management Section -->
-        <div class="data-table-section" id="academicTransitionSection" style="margin-top: 25px; margin-bottom: 25px;">
+        <div class="data-table-section" id="academicTransitionSection" style="margin-top: 25px; margin-bottom: 25px; display: none;">
             <div class="table-header" style="flex-direction: column; align-items: flex-start; gap: 12px;">
                 <div style="display: flex; align-items: center; gap: 10px; width: 100%; justify-content: space-between; flex-wrap: wrap;">
                     <h3 style="margin: 0;">🎓 Student Directory Transition Management</h3>
@@ -1732,7 +1777,7 @@
             </div>
         </div>
 
-        <div class="data-table-section">
+        <div class="data-table-section" id="recordsSection">
             <div class="table-header">
                 <h3>📋 All Campus Applications</h3>
                 <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
@@ -2226,7 +2271,7 @@
             });
 
             function scrollToTable() {
-                const tableSection = document.querySelector('.data-table-section');
+                const tableSection = document.getElementById('recordsSection');
                 if (tableSection) {
                     tableSection.scrollIntoView({ behavior: 'smooth' });
                 }
@@ -3126,6 +3171,33 @@
                 }
                 return data;
             }
+
+            // Premium Tab Switching System
+            const tabButtons = document.querySelectorAll('.dashboard-tabs .tab-btn');
+            const statsGrid = document.querySelector('.stats-grid');
+            const recordsSection = document.getElementById('recordsSection');
+            const transitionSection = document.getElementById('academicTransitionSection');
+
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const selectedTab = this.getAttribute('data-tab');
+                    
+                    // Toggle active class on tab buttons
+                    tabButtons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // Toggle visibility of sections
+                    if (selectedTab === 'records') {
+                        if (statsGrid) statsGrid.style.display = 'grid';
+                        if (recordsSection) recordsSection.style.display = 'block';
+                        if (transitionSection) transitionSection.style.display = 'none';
+                    } else if (selectedTab === 'transition') {
+                        if (statsGrid) statsGrid.style.display = 'none';
+                        if (recordsSection) recordsSection.style.display = 'none';
+                        if (transitionSection) transitionSection.style.display = 'block';
+                    }
+                });
+            });
         }
 
         function loadAllData() {
