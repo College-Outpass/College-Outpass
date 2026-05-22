@@ -28,7 +28,7 @@ service cloud.firestore {
       // Campus validation is done in the application code
       allow create: if isAuthenticated() && isPrincipal();
       
-      allow update: if isAuthenticated() && isPrincipal();
+      allow update: if isAuthenticated() && (isPrincipal() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['whatsappNumber', 'updatedAt']));
       
       allow delete: if isAuthenticated() && isPrincipal();
     }

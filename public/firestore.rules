@@ -22,7 +22,8 @@ service cloud.firestore {
     // Students collection
     match /students/{studentId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && isPrincipal();
+      allow create, delete: if isAuthenticated() && isPrincipal();
+      allow update: if isAuthenticated() && (isPrincipal() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['whatsappNumber', 'updatedAt']));
     }
     
     // Outpasses collection

@@ -1867,6 +1867,14 @@
 
                     <div class="form-row">
                         <div class="form-group">
+                            <label for="mediWhatsappNumber">WhatsApp Number *</label>
+                            <input type="tel" id="mediWhatsappNumber" placeholder="Enter Student ID first to load data" required
+                                disabled style="background-color: #e9ecef; cursor: not-allowed;">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
                             <label for="mediDate">Issued Date *</label>
                             <input type="date" id="mediDate" required>
                         </div>
@@ -2223,6 +2231,14 @@
                     <div class="medi-slip-info-item">
                         <div class="info-label">Date</div>
                         <div class="info-value date-time-value" id="mediSlipDate">16/10/2025</div>
+                    </div>
+                    <div class="medi-slip-info-item">
+                        <div class="info-label">Section</div>
+                        <div class="info-value" id="mediSlipSection">--</div>
+                    </div>
+                    <div class="medi-slip-info-item">
+                        <div class="info-label">WhatsApp Number</div>
+                        <div class="info-value" id="mediSlipWhatsappNumber">--</div>
                     </div>
                 </div>
 
@@ -2689,6 +2705,7 @@
 
         // Variable to store original WhatsApp number when data is loaded
         let originalWhatsappNumber = null;
+        let originalMediWhatsappNumber = null;
 
         // Function to enable/disable student data fields
         function setStudentFieldsEnabled(enabled) {
@@ -2784,22 +2801,35 @@
 
         // Function to enable/disable medical slip student name field
         function setMediSlipStudentFieldEnabled(enabled) {
-            const fields = ['mediStudentName', 'mediCategory', 'mediSection'];
+            const fields = ['mediStudentName', 'mediCategory', 'mediSection', 'mediWhatsappNumber'];
             fields.forEach(fieldId => {
                 const field = document.getElementById(fieldId);
                 if (field) {
-                    field.disabled = !enabled;
-                    if (enabled) {
-                        field.style.backgroundColor = '#ffffff';
-                        field.style.cursor = 'text';
-                        if (fieldId !== 'mediCategory') {
+                    if (fieldId === 'mediWhatsappNumber') {
+                        if (enabled) {
+                            field.disabled = false;
+                            field.style.backgroundColor = '#ffffff';
+                            field.style.cursor = 'text';
                             field.removeAttribute('readonly');
+                        } else {
+                            field.disabled = true;
+                            field.style.backgroundColor = '#e9ecef';
+                            field.style.cursor = 'not-allowed';
                         }
                     } else {
-                        field.style.backgroundColor = '#e9ecef';
-                        field.style.cursor = 'not-allowed';
-                        if (fieldId === 'mediCategory') {
-                            field.setAttribute('readonly', 'readonly');
+                        field.disabled = !enabled;
+                        if (enabled) {
+                            field.style.backgroundColor = '#ffffff';
+                            field.style.cursor = 'text';
+                            if (fieldId !== 'mediCategory') {
+                                field.removeAttribute('readonly');
+                            }
+                        } else {
+                            field.style.backgroundColor = '#e9ecef';
+                            field.style.cursor = 'not-allowed';
+                            if (fieldId === 'mediCategory') {
+                                field.setAttribute('readonly', 'readonly');
+                            }
                         }
                     }
                 }
@@ -2811,6 +2841,11 @@
             document.getElementById('mediStudentName').value = '';
             document.getElementById('mediCategory').value = '';
             document.getElementById('mediSection').value = '';
+            const mediWhatsappNumberField = document.getElementById('mediWhatsappNumber');
+            if (mediWhatsappNumberField) {
+                mediWhatsappNumberField.value = '';
+            }
+            originalMediWhatsappNumber = null;
             setMediSlipStudentFieldEnabled(false);
         }
 
@@ -2847,6 +2882,19 @@
             if (result.section) {
                 document.getElementById('mediSection').value = result.section;
             }
+            if (result.whatsappNumber) {
+                const mediWhatsappNumberField = document.getElementById('mediWhatsappNumber');
+                if (mediWhatsappNumberField) {
+                    mediWhatsappNumberField.value = result.whatsappNumber;
+                }
+                originalMediWhatsappNumber = result.whatsappNumber;
+            } else {
+                const mediWhatsappNumberField = document.getElementById('mediWhatsappNumber');
+                if (mediWhatsappNumberField) {
+                    mediWhatsappNumberField.value = '';
+                }
+                originalMediWhatsappNumber = null;
+            }
 
             // Show success message
             showMediSlipSuccess('✅ Student data loaded automatically! Fields are now enabled.');
@@ -2875,32 +2923,47 @@
                 // Check if student already exists
                 const existingStudent = await studentRef.get();
 
+                const isPrincipalUser = localStorage.getItem('isPrincipal') === 'true';
+
                 if (!existingStudent.exists) {
-                    // Create new student record
-                    await studentRef.set({
-                        studentId: studentId,
-                        studentName: studentData.studentName,
-                        category: studentData.category,
-                        section: studentData.section,
-                        fatherName: studentData.fatherName,
-                        whatsappNumber: studentData.whatsappNumber,
-                        campus: campusId,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    // Create new student record (only allowed for principal)
+                    if (isPrincipalUser) {
+                        await studentRef.set({
+                            studentId: studentId,
+                            studentName: studentData.studentName || '',
+                            category: studentData.category || '',
+                            section: studentData.section || '',
+                            fatherName: studentData.fatherName || '',
+                            whatsappNumber: studentData.whatsappNumber || '',
+                            campus: campusId,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
                 } else {
                     // Update existing student record (only if same campus or no campus set)
                     const existingData = existingStudent.data();
                     if (!existingData.campus || existingData.campus === campusId) {
-                        await studentRef.update({
-                            studentName: studentData.studentName,
-                            category: studentData.category,
-                            section: studentData.section,
-                            fatherName: studentData.fatherName,
-                            whatsappNumber: studentData.whatsappNumber,
-                            campus: campusId,
-                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
+                        if (isPrincipalUser) {
+                            // Principal can update everything
+                            const payload = {
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            };
+                            if (studentData.studentName !== undefined) payload.studentName = studentData.studentName;
+                            if (studentData.category !== undefined) payload.category = studentData.category;
+                            if (studentData.section !== undefined) payload.section = studentData.section;
+                            if (studentData.fatherName !== undefined) payload.fatherName = studentData.fatherName;
+                            if (studentData.whatsappNumber !== undefined) payload.whatsappNumber = studentData.whatsappNumber;
+                            await studentRef.update(payload);
+                        } else {
+                            // Non-principal can ONLY update whatsappNumber and updatedAt
+                            if (studentData.whatsappNumber !== undefined) {
+                                await studentRef.update({
+                                    whatsappNumber: studentData.whatsappNumber,
+                                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                });
+                            }
+                        }
                     }
                 }
             } catch (error) {
@@ -3585,10 +3648,10 @@
                 // Check if WhatsApp number was "NA" and has been updated (only if not duplicate)
                 if (!isDuplicate) {
                     const currentWhatsappNumber = outpassData.whatsappNumber.trim();
-                    const wasNA = originalWhatsappNumber &&
-                        (originalWhatsappNumber.toUpperCase() === 'NA' ||
-                            originalWhatsappNumber.trim() === '' ||
-                            originalWhatsappNumber.trim().toUpperCase() === 'N/A');
+                    const wasNA = !originalWhatsappNumber ||
+                        originalWhatsappNumber.trim() === '' ||
+                        originalWhatsappNumber.trim().toUpperCase() === 'NA' ||
+                        originalWhatsappNumber.trim().toUpperCase() === 'N/A';
 
                     // If original was "NA" and current value is different and valid, update database
                     if (wasNA && currentWhatsappNumber &&
@@ -3721,6 +3784,14 @@
                     return;
                 }
 
+                let whatsappNumberValue = document.getElementById('mediWhatsappNumber').value.trim();
+                if (whatsappNumberValue.toUpperCase() !== 'NA' && whatsappNumberValue.toUpperCase() !== 'N/A' && whatsappNumberValue !== '') {
+                    const cleanNumber = whatsappNumberValue.replace(/\D/g, '');
+                    if (cleanNumber.length >= 10) {
+                        whatsappNumberValue = cleanNumber;
+                    }
+                }
+
                 const mediSlipNumber = await generateMediSlipNumber();
 
                 const mediSlipData = {
@@ -3728,6 +3799,7 @@
                     studentName: studentName,
                     category: category,
                     section: section,
+                    whatsappNumber: whatsappNumberValue,
                     date: date,
                     startTime: startTime,
                     endTime: endTime,
@@ -3746,6 +3818,43 @@
 
                 const docRef = await db.collection('mediSlips').add(mediSlipData);
                 lastMediSlipDocId = docRef.id;
+
+                // Check if WhatsApp number was "NA" and has been updated
+                const wasNA = !originalMediWhatsappNumber ||
+                    originalMediWhatsappNumber.trim() === '' ||
+                    originalMediWhatsappNumber.trim().toUpperCase() === 'NA' ||
+                    originalMediWhatsappNumber.trim().toUpperCase() === 'N/A';
+
+                // If original was "NA" and current value is different and valid, update database
+                if (wasNA && whatsappNumberValue &&
+                    whatsappNumberValue.toUpperCase() !== 'NA' &&
+                    whatsappNumberValue.toUpperCase() !== 'N/A' &&
+                    whatsappNumberValue.trim() !== '') {
+                    const cleanNumber = whatsappNumberValue.replace(/\D/g, '');
+                    if (cleanNumber.length >= 10) {
+                        try {
+                            const studentRef = db.collection('students').doc(fullStudentId);
+                            await studentRef.update({
+                                whatsappNumber: cleanNumber, // Save cleaned number
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            console.log('✅ Updated WhatsApp number in database from NA to:', cleanNumber);
+                            originalMediWhatsappNumber = cleanNumber; // Update original tracker locally
+                        } catch (error) {
+                            console.error('Error updating WhatsApp number in database:', error);
+                        }
+                    }
+                }
+
+                // Call saveStudentData for future auto-fill
+                await saveStudentData({
+                    studentId: fullStudentId,
+                    studentName: studentName,
+                    category: category,
+                    section: section,
+                    whatsappNumber: whatsappNumberValue
+                });
+
                 generateMediSlipPdfBtn.disabled = false;
                 showMediSlipSuccess('✅ Medi Slip data uploaded successfully to database! You can now generate PDF.');
                 uploadMediSlipDataText.style.display = 'inline';
@@ -4080,7 +4189,8 @@
 
             const fields = [
                 'mediStudentName', 'mediDate', 'mediStartTime',
-                'mediEndTime', 'mediTemperature', 'mediReason', 'mediStatus', 'mediIssuedBy', 'mediAuthorizedBy'
+                'mediEndTime', 'mediTemperature', 'mediReason', 'mediStatus', 'mediIssuedBy', 'mediAuthorizedBy',
+                'mediWhatsappNumber'
             ];
 
             for (let field of fields) {
@@ -4100,6 +4210,19 @@
                 showMediSlipError('End Time must be after Start Time');
                 document.getElementById('mediEndTime').focus();
                 return false;
+            }
+
+            const mediWhatsappNumber = document.getElementById('mediWhatsappNumber').value.trim();
+
+            // Allow "NA" or "N/A" as a valid value, otherwise validate as 10-digit number
+            if (mediWhatsappNumber.toUpperCase() !== 'NA' && mediWhatsappNumber.toUpperCase() !== 'N/A' && mediWhatsappNumber !== '') {
+                const cleanNumber = mediWhatsappNumber.replace(/\D/g, '');
+
+                if (cleanNumber.length < 10) {
+                    showMediSlipError('Please enter a valid 10-digit WhatsApp number or "NA" if not available');
+                    document.getElementById('mediWhatsappNumber').focus();
+                    return false;
+                }
             }
 
             return true;
@@ -4374,6 +4497,8 @@
                     document.getElementById('mediSlipStudentName').textContent = mediSlipData.studentName;
                     document.getElementById('mediSlipCategory').textContent = mediSlipData.category || '--';
                     document.getElementById('mediSlipDate').textContent = formatDateForPDF(mediSlipData.date);
+                    document.getElementById('mediSlipSection').textContent = mediSlipData.section || '--';
+                    document.getElementById('mediSlipWhatsappNumber').textContent = mediSlipData.whatsappNumber || '--';
                     document.getElementById('mediSlipTemperature').textContent = (mediSlipData.temperature || 'None') + '°F';
                     document.getElementById('mediSlipStartTime').textContent = formatTimeForPDF(mediSlipData.startTime || mediSlipData.time);
                     document.getElementById('mediSlipEndTime').textContent = formatTimeForPDF(mediSlipData.endTime || mediSlipData.time);
@@ -4885,6 +5010,13 @@ For queries, contact hostel office.`;
 
         // Auto-format phone number
         document.getElementById('whatsappNumber').addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 10) {
+                value = value.slice(0, 12);
+            }
+            e.target.value = value;
+        });
+        document.getElementById('mediWhatsappNumber').addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length > 10) {
                 value = value.slice(0, 12);

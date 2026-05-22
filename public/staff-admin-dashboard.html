@@ -1139,6 +1139,100 @@
             width: 100%;
         }
 
+        /* Academic Transition CSS */
+        .academic-transition-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 20px;
+            margin-bottom: 25px;
+        }
+
+        .academic-transition-card {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .academic-transition-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .academic-transition-card.delete-card {
+            border-left: 5px solid #dc3545;
+        }
+
+        .academic-transition-card.upload-card {
+            border-left: 5px solid #28a745;
+        }
+
+        .academic-transition-card h4 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1e3c72;
+        }
+
+        .academic-transition-card .card-description {
+            font-size: 14px;
+            color: #6c757d;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .btn-upload-records {
+            background: #e9ecef;
+            color: #6c757d;
+            border: 1px solid #ced4da;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: not-allowed;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            box-shadow: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .btn-upload-records.active {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
+        }
+
+        .btn-upload-records.active:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(30, 60, 114, 0.4);
+        }
+
+        .btn-upload-records.active:disabled {
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 992px) {
+            .academic-transition-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 768px) {
             .nav-container { flex-direction: column; gap: 12px; }
             .stats-grid { grid-template-columns: 1fr; }
@@ -1209,63 +1303,83 @@
                 </div>
             </div>
 
-            <!-- Student Data Upload Section -->
-            <div class="data-table-section" style="margin-top: 20px;">
-                <div class="table-header" style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3>📤 Upload Student Data</h3>
-                    <button id="deleteStudentDataBtn" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3); transition: all 0.3s; white-space: nowrap;" 
-                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(220, 53, 69, 0.4)';" 
-                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(220, 53, 69, 0.3)';"
-                            title="Delete all student data for your campus">
-                        🗑️ Delete Campus Data
-                    </button>
-                </div>
-                <div style="background: rgba(255, 255, 255, 0.98); padding: 20px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);">
-                    <p style="margin-bottom: 15px; color: #6c757d; font-size: 14px;">
-                        Upload an Excel file (.xlsx or .csv) with student data. The file should contain columns: 
-                        <strong>SCS Number, Student Name, Category, Section, Father's Name, WhatsApp Number, Campus</strong><br>
-                        <span style="color: #dc3545; font-size: 13px;">⚠️ Important: Campus column must match your campus. Only students from your campus will be uploaded.</span>
-                    </p>
-                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                        <input type="file" id="studentDataFileInput" accept=".xlsx,.xls,.csv" style="display: none;">
-                        <button class="btn-excel" onclick="document.getElementById('studentDataFileInput').click()">
-                            📁 Choose Excel File
-                        </button>
-                        <button class="btn-refresh" id="uploadStudentDataBtn" style="display: none;">
-                            <span id="uploadStudentDataText">📤 Upload Student Data</span>
-                            <span id="uploadStudentDataLoader" class="loader" style="display: none; margin-left: 8px;"></span>
-                        </button>
-                        <a href="student_data_sample.csv" download="student_data_sample.csv" class="btn-excel" style="text-decoration: none; display: inline-block;">
-                            📥 Download Sample File
-                        </a>
-                        <span id="selectedFileName" style="color: #2a5298; font-weight: 600; font-size: 14px;"></span>
+            <!-- Academic Transition Section -->
+            <div class="academic-transition-grid">
+                <!-- Left Panel: Delete Old Campus Data -->
+                <div class="academic-transition-card delete-card">
+                    <div>
+                        <h4>🧹 Clear Campus Student Data</h4>
+                        <p class="card-description">
+                            Use this tool at the start of a new academic year to clear out old student records for your campus. 
+                            Active outpass logs, medical slip logs, and staff credentials will not be affected. 
+                        </p>
                     </div>
-                    <div id="uploadStatusMessage" style="margin-top: 15px; padding: 12px; border-radius: 8px; display: none;"></div>
+                    <div>
+                        <button id="deleteStudentDataBtn" style="width: 100%; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3); transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;"
+                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(220, 53, 69, 0.4)';" 
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(220, 53, 69, 0.3)';"
+                                title="Delete all student data for your campus">
+                            🗑️ Delete Campus Data
+                        </button>
+                    </div>
                     
                     <!-- Inline Delete Confirmation UI -->
-                    <div id="deleteConfirmationBox" style="display: none; margin-top: 20px; padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
-                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-                            <span style="font-size: 32px;">⚠️</span>
+                    <div id="deleteConfirmationBox" style="display: none; margin-top: 20px; padding: 15px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                            <span style="font-size: 24px;">⚠️</span>
                             <div style="flex: 1;">
-                                <h4 style="margin: 0; color: #856404; font-size: 18px; font-weight: 700;">Delete All Student Data</h4>
-                                <p style="margin: 5px 0 0 0; color: #856404; font-size: 14px;" id="deleteConfirmationMessage"></p>
+                                <h5 style="margin: 0; color: #856404; font-size: 15px; font-weight: 700;">Confirm Data Deletion</h5>
+                                <p style="margin: 3px 0 0 0; color: #856404; font-size: 12px; line-height: 1.3;" id="deleteConfirmationMessage"></p>
                             </div>
                         </div>
-                        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffc107;">
-                            <p style="margin: 0 0 10px 0; color: #721c24; font-weight: 600; font-size: 14px;">⚠️ This action cannot be undone!</p>
-                            <p style="margin: 0; color: #6c757d; font-size: 13px;">Type <strong style="color: #dc3545;">DELETE</strong> in the field below to confirm:</p>
-                            <input type="text" id="deleteConfirmInput" placeholder="Type DELETE here" style="width: 100%; margin-top: 10px; padding: 10px; border: 2px solid #dc3545; border-radius: 6px; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;" autocomplete="off">
+                        <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #ffc107;">
+                            <p style="margin: 0 0 8px 0; color: #721c24; font-weight: 600; font-size: 12px;">⚠️ This action cannot be undone!</p>
+                            <p style="margin: 0; color: #6c757d; font-size: 11px;">Type <strong style="color: #dc3545;">DELETE</strong> to confirm:</p>
+                            <input type="text" id="deleteConfirmInput" placeholder="Type DELETE here" style="width: 100%; margin-top: 8px; padding: 8px; border: 2px solid #dc3545; border-radius: 6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;" autocomplete="off">
                         </div>
-                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                            <button id="cancelDeleteBtn" style="background: #6c757d; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s;" 
+                        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                            <button id="cancelDeleteBtn" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s;"
                                     onmouseover="this.style.background='#5a6268'; this.style.transform='translateY(-2px)';" 
                                     onmouseout="this.style.background='#6c757d'; this.style.transform='translateY(0)';">
                                 Cancel
                             </button>
-                            <button id="confirmDeleteBtn" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: not-allowed; opacity: 0.5; transition: all 0.3s;" disabled>
+                            <button id="confirmDeleteBtn" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: not-allowed; opacity: 0.5; transition: all 0.3s;" disabled>
                                 Delete All Data
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Upload New Campus Data -->
+                <div class="academic-transition-card upload-card">
+                    <div>
+                        <h4>📤 Import New Student Records</h4>
+                        <p class="card-description">
+                            Upload a new Excel (.xlsx, .xls) or CSV file containing student records. 
+                            The file must include: <strong>SCS Number, Student Name, Category, Section, Father's Name, WhatsApp Number, Campus</strong>.
+                            <br><span style="color: #dc3545; font-size: 12px; font-weight: 500; display: inline-block; margin-top: 5px;">⚠️ Campus column value must match your registered campus: <strong id="campusRequiredLabel"></strong></span>
+                        </p>
+                    </div>
+                    <div>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <input type="file" id="studentDataFileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+                            
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <button class="btn-excel" onclick="document.getElementById('studentDataFileInput').click()" style="display: inline-flex; align-items: center; gap: 8px;">
+                                    📁 Choose File
+                                </button>
+                                <a href="student_data_sample.csv" download="student_data_sample.csv" class="btn-excel" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #6c757d, #495057); box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);">
+                                    📥 Sample Format
+                                </a>
+                                <span id="selectedFileName" style="color: #1e3c72; font-weight: 600; font-size: 13px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                            </div>
+
+                            <button class="btn-upload-records" id="uploadStudentDataBtn" disabled>
+                                <span id="uploadStudentDataText">📤 Upload Student Data</span>
+                                <span id="uploadStudentDataLoader" class="loader" style="display: none; margin-left: 8px; width: 14px; height: 14px; border: 2px solid #ffffff; border-top: 2px solid transparent; border-radius: 50%; animation: spin 1s linear infinite;"></span>
+                            </button>
+                        </div>
+                        <div id="uploadStatusMessage" style="margin-top: 12px; padding: 10px; border-radius: 8px; display: none; font-size: 13px; line-height: 1.4;"></div>
                     </div>
                 </div>
             </div>
@@ -1491,6 +1605,10 @@
         function updateCampusDisplay() {
             const displayName = CAMPUS_DISPLAY_NAMES[currentCampus] || currentCampus;
             document.getElementById('currentCampus').textContent = displayName;
+            const campusLabel = document.getElementById('campusRequiredLabel');
+            if (campusLabel) {
+                campusLabel.textContent = displayName;
+            }
         }
 
         function loadAllData() {
@@ -2444,14 +2562,22 @@ if (item.type === 'outpass') {
             
             let selectedFile = null;
             
+            function resetUploadBtnStyle() {
+                uploadStudentDataBtn.disabled = true;
+                uploadStudentDataBtn.classList.remove('active');
+            }
+            
             // File selection handler
             studentDataFileInput.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
                     selectedFile = file;
                     selectedFileName.textContent = `Selected: ${file.name}`;
-                    uploadStudentDataBtn.style.display = 'inline-block';
+                    uploadStudentDataBtn.disabled = false;
+                    uploadStudentDataBtn.classList.add('active');
                     uploadStatusMessage.style.display = 'none';
+                } else {
+                    resetUploadBtnStyle();
                 }
             });
             
@@ -2589,12 +2715,20 @@ if (item.type === 'outpass') {
                             if (existingDoc.exists) {
                                 // Update existing (merge with existing campus if different)
                                 const existingData = existingDoc.data();
+                                // Preserve existing WhatsApp number if Excel column is empty/NA/N/A
+                                let finalWhatsappNumber = student.whatsappNumber;
+                                const isNewWhatsappEmpty = !finalWhatsappNumber || 
+                                                           finalWhatsappNumber.toUpperCase() === 'NA' || 
+                                                           finalWhatsappNumber.toUpperCase() === 'N/A';
+                                if (isNewWhatsappEmpty && existingData && existingData.whatsappNumber) {
+                                    finalWhatsappNumber = existingData.whatsappNumber;
+                                }
                                 batch.update(studentRef, {
                                     studentName: student.studentName,
                                     category: student.category,
                                     section: student.section,
                                     fatherName: student.fatherName,
-                                    whatsappNumber: student.whatsappNumber,
+                                    whatsappNumber: finalWhatsappNumber,
                                     campus: student.campus, // Update campus
                                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                                 });
@@ -2640,7 +2774,7 @@ if (item.type === 'outpass') {
                     selectedFile = null;
                     studentDataFileInput.value = '';
                     selectedFileName.textContent = '';
-                    uploadStudentDataBtn.style.display = 'none';
+                    resetUploadBtnStyle();
                     
                 } catch (error) {
                     console.error('Error uploading student data:', error);
@@ -2648,7 +2782,12 @@ if (item.type === 'outpass') {
                 } finally {
                     uploadStudentDataText.style.display = 'inline';
                     uploadStudentDataLoader.style.display = 'none';
-                    uploadStudentDataBtn.disabled = false;
+                    if (selectedFile) {
+                        uploadStudentDataBtn.disabled = false;
+                        uploadStudentDataBtn.classList.add('active');
+                    } else {
+                        resetUploadBtnStyle();
+                    }
                 }
             });
             
