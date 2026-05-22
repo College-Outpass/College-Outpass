@@ -16,7 +16,8 @@ service cloud.firestore {
              email == 'electroniccityprincipal@srichaitanyaschool.net' ||
              email == 'srinivasnaidu.m@srichaitanyaschool.net' ||
              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
     
     // Students collection - for student data upload and auto-fill
