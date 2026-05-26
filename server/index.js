@@ -75,7 +75,17 @@ initializeFirebase();
 
 console.log('🚀 Firebase-Only Mode Active (Pure Cloud Architecture)');
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps/curl) or 'null' origin (like local file:// files)
+        if (!origin || origin === 'null') {
+            callback(null, true);
+        } else {
+            callback(null, true); // Set to true to echo back the origin of the request
+        }
+    },
+    credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret12345';
