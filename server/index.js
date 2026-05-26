@@ -657,7 +657,7 @@ app.get('/api/admin/backups/download', authenticateToken, async (req, res) => {
 // Final fallback for static files
 app.use(express.static(path.join(__dirname, '../public')));
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Firebase-Only Server running on port ${PORT}`);
 });
