@@ -72,3 +72,9 @@ node_modules/
 key.json
 key.json 
 .env 
+
+# Local Backups and Excel Sheets
+Backup/
+Excel Files/
+*.zip
+*.xlsx

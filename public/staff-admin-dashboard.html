@@ -1198,6 +1198,12 @@
                 <div class="stat-label">This Month</div>
                 <div class="stat-value" id="monthCount">0</div>
             </div>
+            <div class="stat-card storage" id="cardStorage">
+                <div class="stat-icon">💾</div>
+                <div class="stat-label">Storage Usage</div>
+                <div class="stat-value" id="storagePercent">0%</div>
+                <div style="font-size: 11px; margin-top: 5px; color: #666;" id="storageDetail">Checking capacity...</div>
+            </div>
         </div>
 
         <div class="data-table-section">
@@ -1590,17 +1596,25 @@
                 return itemDate >= oneMonthAgo;
             }).length;
 
-            document.getElementById('totalCount').textContent = total;
-            document.getElementById('todayCount').textContent = todayCount;
-            document.getElementById('weekCount').textContent = weekCount;
-            document.getElementById('monthCount').textContent = monthCount;
+            const totalCountEl = document.getElementById('totalCount');
+            const todayCountEl = document.getElementById('todayCount');
+            const weekCountEl = document.getElementById('weekCount');
+            const monthCountEl = document.getElementById('monthCount');
+
+            if (totalCountEl) totalCountEl.textContent = total;
+            if (todayCountEl) todayCountEl.textContent = todayCount;
+            if (weekCountEl) weekCountEl.textContent = weekCount;
+            if (monthCountEl) monthCountEl.textContent = monthCount;
 
             // Update Storage Usage (Estimated based on 10k records limit for free tier or 1GB)
             // This is a simplified calculation for the UI
             const usagePercent = Math.min(100, (total / 5000) * 100).toFixed(1);
             const usageMB = (total * 0.3).toFixed(1); // Rough estimate: 0.3MB per record including photos
-            document.getElementById('storagePercent').textContent = usagePercent + '%';
-            document.getElementById('storageDetail').textContent = `${usageMB}MB of 1GB Free Tier Used`;
+            
+            const storagePercentEl = document.getElementById('storagePercent');
+            const storageDetailEl = document.getElementById('storageDetail');
+            if (storagePercentEl) storagePercentEl.textContent = usagePercent + '%';
+            if (storageDetailEl) storageDetailEl.textContent = `${usageMB}MB of 1GB Free Tier Used`;
         }
 
         function getItemDate(item) {

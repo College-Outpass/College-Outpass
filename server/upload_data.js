@@ -42,18 +42,41 @@ async function uploadData() {
         const row = data[i];
         try {
             // Normalize column names
-            const scsNumber = (row['SCS Number'] || row['SCSNumber'] || row['SCS_Number'] || row['scs_number'] || '').toString().trim().toUpperCase();
+            const scsNumber = (row['SCS Number'] || row['SCSNumber'] || row['SCS_Number'] || row['scs_number'] || row['Admission No'] || row['AdmissionNo'] || '').toString().trim().toUpperCase();
             const studentName = (row['Student Name'] || row['StudentName'] || row['student_name'] || row['Name'] || '').toString().trim();
-            const category = (row['Category'] || row['Choose Category'] || row['category'] || '').toString().trim();
+            const category = (row['Category'] || row['Choose Category'] || row['category'] || row['Class'] || row['class'] || '').toString().trim();
             const section = (row['Section'] || row['section'] || '').toString().trim();
-            const fatherName = (row["Father's Name"] || row['FathersName'] || row['Father Name'] || row['father_name'] || '').toString().trim();
+            const fatherName = (row["Father's Name"] || row['FathersName'] || row['Father Name'] || row['father_name'] || row['FatherName'] || '').toString().trim();
             const whatsappNumber = (row['WhatsApp Number'] || row['WhatsAppNumber'] || row['whatsapp_number'] || row['Phone'] || '').toString().trim();
-            const fileCampus = (row['Campus'] || row['campus'] || '').toString().trim().toUpperCase();
+            
+            let fileCampus = (row['Campus'] || row['campus'] || '').toString().trim().toUpperCase();
 
             if (!scsNumber) continue;
 
             const normalizedSCS = scsNumber.startsWith('SCS') ? scsNumber : 'SCS' + scsNumber.replace(/SCS/gi, '');
             if (!studentName) continue;
+
+            // Fallback: If Campus column is missing, check the Branch column
+            if (!fileCampus && (row['Branch'] || row['branch'])) {
+                const branchVal = (row['Branch'] || row['branch'] || '').toString().trim().toUpperCase();
+                const sectionVal = (section || '').toUpperCase();
+                
+                if (branchVal.includes('NEET BOYS') || branchVal.includes('NEET_BOYS')) {
+                    fileCampus = 'ECITY_NEET_BOYS';
+                } else if (branchVal.includes('ENGINEERING GIRLS') || branchVal.includes('ENGG_GIRLS') || branchVal.includes('ENGG GIRLS')) {
+                    fileCampus = 'ECITY_ENGG_GIRLS_RESIDENTIAL';
+                } else if (branchVal.includes('INTERNATIONAL') || branchVal.includes('SCHOOL')) {
+                    fileCampus = 'ECITY_SCHOOL';
+                } else if (branchVal.includes('PU COLLEGE ELECTRONIC CITY') || branchVal.includes('ELECTRONIC CITY')) {
+                    if (sectionVal.includes('ICON') || sectionVal.includes('IPL') || sectionVal.includes('ENGG')) {
+                        fileCampus = 'ECITY_ENGG_GIRLS_RESIDENTIAL';
+                    } else {
+                        fileCampus = 'ECITY_GIRLS_RESIDENTIAL';
+                    }
+                } else if (branchVal.includes('SARJAPURA')) {
+                    fileCampus = 'ECITY_SCHOOL';
+                }
+            }
 
             const normalizedFileCampus = fileCampus
                 .replace(/\s+/g, '_')

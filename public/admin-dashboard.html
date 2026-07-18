@@ -2999,20 +2999,48 @@
                         const row = jsonData[i];
                         const rowNum = i + 2;
 
-                        const scsNumber = (row['SCS Number'] || row['SCSNumber'] || row['SCS_Number'] || row['scs_number'] || '').toString().trim().toUpperCase();
+                        const scsNumber = (row['SCS Number'] || row['SCSNumber'] || row['SCS_Number'] || row['scs_number'] || row['Admission No'] || row['AdmissionNo'] || '').toString().trim().toUpperCase();
                         const studentName = (row['Student Name'] || row['StudentName'] || row['student_name'] || row['Name'] || '').toString().trim();
-                        const category = (row['Category'] || row['Choose Category'] || row['category'] || '').toString().trim();
+                        const category = (row['Category'] || row['Choose Category'] || row['category'] || row['Class'] || row['class'] || '').toString().trim();
                         const section = (row['Section'] || row['section'] || '').toString().trim();
-                        const fatherName = (row["Father's Name"] || row['FathersName'] || row['Father Name'] || row['father_name'] || '').toString().trim();
+                        const fatherName = (row["Father's Name"] || row['FathersName'] || row['Father Name'] || row['father_name'] || row['FatherName'] || '').toString().trim();
                         const whatsappNumber = (row['WhatsApp Number'] || row['WhatsAppNumber'] || row['whatsapp_number'] || row['Phone'] || '').toString().trim();
-                        const fileCampus = (row['Campus'] || row['campus'] || '').toString().trim().toUpperCase();
+                        
+                        let fileCampus = (row['Campus'] || row['campus'] || '').toString().trim().toUpperCase();
+                        
+                        // Fallback: If Campus column is missing, check the Branch column
+                        if (!fileCampus && (row['Branch'] || row['branch'])) {
+                            const branchVal = (row['Branch'] || row['branch'] || '').toString().trim().toUpperCase();
+                            const sectionVal = (section || '').toUpperCase();
+                            
+                            if (branchVal.includes('NEET BOYS') || branchVal.includes('NEET_BOYS')) {
+                                fileCampus = 'ECITY_NEET_BOYS';
+                            } else if (branchVal.includes('ENGINEERING GIRLS') || branchVal.includes('ENGG_GIRLS') || branchVal.includes('ENGG GIRLS')) {
+                                fileCampus = 'ECITY_ENGG_GIRLS_RESIDENTIAL';
+                            } else if (branchVal.includes('INTERNATIONAL') || branchVal.includes('SCHOOL')) {
+                                fileCampus = 'ECITY_SCHOOL';
+                            } else if (branchVal.includes('PU COLLEGE ELECTRONIC CITY') || branchVal.includes('ELECTRONIC CITY')) {
+                                if (sectionVal.includes('ICON') || sectionVal.includes('IPL') || sectionVal.includes('ENGG')) {
+                                    fileCampus = 'ECITY_ENGG_GIRLS_RESIDENTIAL';
+                                } else {
+                                    fileCampus = 'ECITY_GIRLS_RESIDENTIAL';
+                                }
+                            } else if (branchVal.includes('SARJAPURA')) {
+                                fileCampus = 'ECITY_SCHOOL';
+                            }
+                        }
 
-                        if (!scsNumber || scsNumber.length < 8) {
-                            errors.push(`Row ${rowNum}: Invalid or missing SCS Number. Must be 5, 6, or 7 digits (e.g., SCS12345, SCS123456)`);
-                            continue;
+                        // Fallback: If both Campus and Branch columns are missing, default to selected targetCampus
+                        if (!fileCampus) {
+                            fileCampus = targetCampus;
                         }
 
                         const normalizedSCS = scsNumber.startsWith('SCS') ? scsNumber : 'SCS' + scsNumber.replace(/SCS/gi, '');
+                        if (!normalizedSCS || normalizedSCS.length < 8) {
+                            errors.push(`Row ${rowNum}: Invalid or missing SCS/Admission Number. Must be 5, 6, or 7 digits (e.g., SCS12345)`);
+                            continue;
+                        }
+
                         if (!/^SCS\d{5,7}$/.test(normalizedSCS)) {
                             errors.push(`Row ${rowNum}: Invalid SCS Number format "${normalizedSCS}". Must be SCS followed by 5, 6, or 7 digits`);
                             continue;
@@ -3020,11 +3048,6 @@
 
                         if (!studentName) {
                             errors.push(`Row ${rowNum}: Missing Student Name`);
-                            continue;
-                        }
-
-                        if (!fileCampus) {
-                            errors.push(`Row ${rowNum}: Missing Campus. Campus must match your selected campus (${targetCampus})`);
                             continue;
                         }
 
@@ -3366,10 +3389,15 @@
                 return itemDate >= oneMonthAgo;
             }).length;
 
-            document.getElementById('totalCount').textContent = total;
-            document.getElementById('todayCount').textContent = todayCount;
-            document.getElementById('weekCount').textContent = weekCount;
-            document.getElementById('monthCount').textContent = monthCount;
+            const totalCountEl = document.getElementById('totalCount');
+            const todayCountEl = document.getElementById('todayCount');
+            const weekCountEl = document.getElementById('weekCount');
+            const monthCountEl = document.getElementById('monthCount');
+
+            if (totalCountEl) totalCountEl.textContent = total;
+            if (todayCountEl) todayCountEl.textContent = todayCount;
+            if (weekCountEl) weekCountEl.textContent = weekCount;
+            if (monthCountEl) monthCountEl.textContent = monthCount;
 
             // --- DATABASE USAGE ESTIMATION (HOD EXCLUSIVE) ---
             try {
@@ -3393,25 +3421,28 @@
                 const usageLabel = document.getElementById('usageLabel');
                 const usagePercentEl = document.getElementById('usagePercent');
                 
-                usagePercentEl.textContent = usagePercent.toFixed(1) + '%';
-                usageLabel.textContent = `${estimatedTotalMB.toFixed(1)}MB of 1GB Free Tier Used`;
+                if (usagePercentEl) usagePercentEl.textContent = usagePercent.toFixed(1) + '%';
+                if (usageLabel) usageLabel.textContent = `${estimatedTotalMB.toFixed(1)}MB of 1GB Free Tier Used`;
                 
                 // Color coding based on usage
                 const cardUsage = document.getElementById('cardUsage');
-                if (usagePercent > 80) {
-                    cardUsage.style.borderTop = '4px solid #dc3545';
-                    usagePercentEl.style.color = '#dc3545';
-                    usageLabel.innerHTML = '⚠️ <strong>CRITICAL: Near 1GB Limit</strong>';
-                } else if (usagePercent > 50) {
-                    cardUsage.style.borderTop = '4px solid #fd7e14';
-                    usagePercentEl.style.color = '#fd7e14';
-                } else {
-                    cardUsage.style.borderTop = '4px solid #28a745';
-                    usagePercentEl.style.color = '#28a745';
+                if (cardUsage) {
+                    if (usagePercent > 80) {
+                        cardUsage.style.borderTop = '4px solid #dc3545';
+                        if (usagePercentEl) usagePercentEl.style.color = '#dc3545';
+                        if (usageLabel) usageLabel.innerHTML = '⚠️ <strong>CRITICAL: Near 1GB Limit</strong>';
+                    } else if (usagePercent > 50) {
+                        cardUsage.style.borderTop = '4px solid #fd7e14';
+                        if (usagePercentEl) usagePercentEl.style.color = '#fd7e14';
+                    } else {
+                        cardUsage.style.borderTop = '4px solid #28a745';
+                        if (usagePercentEl) usagePercentEl.style.color = '#28a745';
+                    }
                 }
             } catch (e) {
                 console.error("Error calculating storage usage:", e);
-                document.getElementById('usagePercent').textContent = 'N/A';
+                const usagePercentEl = document.getElementById('usagePercent');
+                if (usagePercentEl) usagePercentEl.textContent = 'N/A';
             }
         }
 

@@ -25,9 +25,9 @@ service cloud.firestore {
       // Allow read if user is authenticated (campus filtering done in app code)
       allow read: if isAuthenticated();
       
-      // Allow write (create/update) if user is principal
+      // Allow write (create/update) if user is principal or authenticated (for manual creation by wardens)
       // Campus validation is done in the application code
-      allow create: if isAuthenticated() && isPrincipal();
+      allow create: if isAuthenticated();
       
       allow update: if isAuthenticated() && (isPrincipal() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['whatsappNumber', 'updatedAt']));
       

@@ -1586,6 +1586,167 @@
                 margin-bottom: 8px;
             }
         }
+
+        /* ==================== ADD STUDENT MODAL & BUTTON ==================== */
+        .btn-manual-add {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(56, 239, 125, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .btn-manual-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 239, 125, 0.4);
+        }
+
+        .student-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+            padding: 20px;
+        }
+
+        .student-modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+            animation: modalFadeIn 0.3s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes modalFadeIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .student-modal-header {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .student-modal-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .student-modal-close {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .student-modal-close:hover {
+            transform: scale(1.1);
+        }
+
+        .student-modal-body {
+            padding: 24px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .student-modal-body .form-group {
+            margin-bottom: 18px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .student-modal-body label {
+            font-size: 14px;
+            margin-bottom: 6px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .student-modal-body input {
+            padding: 12px 14px;
+            font-size: 15px;
+            width: 100%;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            background: #f8f9fa;
+            color: #2c3e50;
+            transition: all 0.3s;
+        }
+
+        .student-modal-body input:focus {
+            outline: none;
+            border-color: #1e3c72;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(30, 60, 114, 0.1);
+        }
+
+        .student-modal-footer {
+            padding: 16px 24px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-modal-cancel {
+            background: #e1e8ed;
+            color: #2c3e50;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-modal-cancel:hover {
+            background: #cbd5e0;
+        }
+
+        .btn-modal-submit {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
+        }
+
+        .btn-modal-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(30, 60, 114, 0.4);
+        }
     </style>
 </head>
 
@@ -1628,6 +1789,11 @@
                             <label for="studentId">Student ID *</label>
                             <input type="text" id="studentId" placeholder="" required>
                             <div class="student-id-hint">Enter Only 5, 6 or 7 digits ID(e.g.,23456, 234567, 2345672)
+                            </div>
+                            <div id="addStudentBtnContainer" style="display: none; margin-top: 10px;">
+                                <button type="button" id="addStudentManualBtn" class="btn-manual-add">
+                                    ➕ Add Student Manually
+                                </button>
                             </div>
                         </div>
 
@@ -2297,6 +2463,51 @@
         </div>
     </div>
 
+    <!-- Modern Add Student Modal Overlay -->
+    <div id="addStudentModal" class="student-modal">
+        <div class="student-modal-content">
+            <div class="student-modal-header">
+                <h3>Add New Student Record</h3>
+                <button id="closeAddStudentModal" class="student-modal-close">✕</button>
+            </div>
+            <div class="student-modal-body">
+                <div id="modalSuccessMessage" class="success-message" style="display: none; font-size: 14px; padding: 12px;"></div>
+                <div id="modalErrorMessage" class="error-message" style="display: none; font-size: 14px; padding: 12px;"></div>
+                
+                <form id="addStudentManualForm">
+                    <div class="form-group">
+                        <label for="newStudentId">Student ID (SCS Number) *</label>
+                        <input type="text" id="newStudentId" readonly disabled style="background-color: #e9ecef;">
+                    </div>
+                    <div class="form-group">
+                        <label for="newStudentName">Student Name *</label>
+                        <input type="text" id="newStudentName" required placeholder="Enter student's full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="newCategory">Category *</label>
+                        <input type="text" id="newCategory" required placeholder="e.g., 11th Class, 12th Class">
+                    </div>
+                    <div class="form-group">
+                        <label for="newSection">Section *</label>
+                        <input type="text" id="newSection" required placeholder="e.g., AMS60 - 11A">
+                    </div>
+                    <div class="form-group">
+                        <label for="newFatherName">Father's Name *</label>
+                        <input type="text" id="newFatherName" required placeholder="Enter father's name">
+                    </div>
+                    <div class="form-group">
+                        <label for="newWhatsappNumber">WhatsApp Number *</label>
+                        <input type="tel" id="newWhatsappNumber" required placeholder="10-digit mobile number">
+                    </div>
+                </form>
+            </div>
+            <div class="student-modal-footer">
+                <button id="cancelAddStudent" class="btn-modal-cancel">Cancel</button>
+                <button id="submitAddStudent" class="btn-modal-submit" type="button">Submit Record</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modern Full-Screen Camera Modal -->
     <div id="cameraModal" class="camera-modal">
         <div class="camera-overlay-header">
@@ -2745,6 +2956,11 @@
             document.getElementById('whatsappNumber').value = '';
             originalWhatsappNumber = null; // Clear stored original WhatsApp number
             setStudentFieldsEnabled(false);
+            
+            const addBtnContainer = document.getElementById('addStudentBtnContainer');
+            if (addBtnContainer) {
+                addBtnContainer.style.display = 'none';
+            }
         }
 
         // Function to auto-fill outpass form with student data
@@ -2759,6 +2975,10 @@
                     showError('⚠️ ' + result.message);
                 } else if (result.error === 'MISSING_ID') {
                     showError('⚠️ ' + result.message);
+                    const addBtnContainer = document.getElementById('addStudentBtnContainer');
+                    if (addBtnContainer) {
+                        addBtnContainer.style.display = 'block';
+                    }
                 } else if (result.error === 'INVALID_ID') {
                     // Don't show error for invalid ID while typing
                     return;
@@ -2766,6 +2986,12 @@
                     showError('⚠️ ' + (result.message || 'Error loading student data'));
                 }
                 return;
+            }
+
+            // Hide add student button if student is found
+            const addBtnContainer = document.getElementById('addStudentBtnContainer');
+            if (addBtnContainer) {
+                addBtnContainer.style.display = 'none';
             }
 
             // Enable fields and auto-fill form fields
@@ -5020,6 +5246,165 @@ For queries, contact hostel office.`;
             }
             e.target.value = value;
         });
+        // ==================== ADD STUDENT MODAL LOGIC ====================
+        const addStudentModal = document.getElementById('addStudentModal');
+        const addStudentManualBtn = document.getElementById('addStudentManualBtn');
+        const closeAddStudentModal = document.getElementById('closeAddStudentModal');
+        const cancelAddStudent = document.getElementById('cancelAddStudent');
+        const submitAddStudent = document.getElementById('submitAddStudent');
+        
+        // Show modal
+        if (addStudentManualBtn) {
+            addStudentManualBtn.addEventListener('click', () => {
+                const enteredId = document.getElementById('studentId').value.trim().toUpperCase();
+                document.getElementById('newStudentId').value = enteredId;
+                
+                // Clear inputs
+                document.getElementById('newStudentName').value = '';
+                document.getElementById('newCategory').value = '';
+                document.getElementById('newSection').value = '';
+                document.getElementById('newFatherName').value = '';
+                document.getElementById('newWhatsappNumber').value = '';
+                
+                // Hide messages
+                document.getElementById('modalSuccessMessage').style.display = 'none';
+                document.getElementById('modalErrorMessage').style.display = 'none';
+                
+                addStudentModal.style.display = 'flex';
+            });
+        }
+        
+        // Close modal
+        function closeStudentModal() {
+            addStudentModal.style.display = 'none';
+        }
+        
+        if (closeAddStudentModal) closeAddStudentModal.addEventListener('click', closeStudentModal);
+        if (cancelAddStudent) cancelAddStudent.addEventListener('click', closeStudentModal);
+        
+        // Submit student record
+        if (submitAddStudent) {
+            submitAddStudent.addEventListener('click', async () => {
+                const studentId = document.getElementById('newStudentId').value.trim().toUpperCase();
+                const studentName = document.getElementById('newStudentName').value.trim();
+                const category = document.getElementById('newCategory').value.trim();
+                const section = document.getElementById('newSection').value.trim();
+                const fatherName = document.getElementById('newFatherName').value.trim();
+                const whatsappNumber = document.getElementById('newWhatsappNumber').value.trim();
+                
+                // Validation
+                if (!studentName || !category || !section || !fatherName || !whatsappNumber) {
+                    showModalError('⚠️ Please fill in all required fields.');
+                    return;
+                }
+                
+                if (!/^\d{10}$/.test(whatsappNumber)) {
+                    showModalError('⚠️ WhatsApp Number must be exactly 10 digits.');
+                    return;
+                }
+                
+                submitAddStudent.disabled = true;
+                submitAddStudent.innerHTML = '⏳ Saving...';
+                
+                try {
+                    const user = auth.currentUser || (localStorage.getItem('userEmail') ? { email: localStorage.getItem('userEmail') } : null);
+                    if (!user) {
+                        showModalError('⚠️ User session not found. Please log in again.');
+                        submitAddStudent.disabled = false;
+                        submitAddStudent.innerHTML = 'Submit Record';
+                        return;
+                    }
+                    
+                    const campusInfo = getCampusInfoFromUserEmail(user.email);
+                    if (!campusInfo) {
+                        showModalError('⚠️ Campus details not found for this user.');
+                        submitAddStudent.disabled = false;
+                        submitAddStudent.innerHTML = 'Submit Record';
+                        return;
+                    }
+                    const campusId = campusInfo.campusId;
+                    
+                    const db = firebase.firestore();
+                    const studentRef = db.collection('students').doc(studentId);
+                    
+                    // Check if already exists
+                    const doc = await studentRef.get();
+                    if (doc.exists) {
+                        showModalError('⚠️ A student with this ID already exists.');
+                        submitAddStudent.disabled = false;
+                        submitAddStudent.innerHTML = 'Submit Record';
+                        return;
+                    }
+                    
+                    await studentRef.set({
+                        studentId: studentId,
+                        studentName: studentName,
+                        category: category,
+                        section: section,
+                        fatherName: fatherName,
+                        whatsappNumber: whatsappNumber,
+                        campus: campusId,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    console.log('✅ Student manually added:', studentId);
+                    
+                    // Show success on modal
+                    showModalSuccess('The student record was submitted in the database. Create outpass now.');
+                    
+                    // Close modal and show success on main screen after brief delay
+                    setTimeout(async () => {
+                        closeStudentModal();
+                        
+                        // Hide the manual add button container
+                        document.getElementById('addStudentBtnContainer').style.display = 'none';
+                        
+                        // Trigger outpass auto fill (this will fetch the new student record)
+                        await autoFillOutpassForm(studentId);
+                        
+                        // Show success message on main page
+                        showSuccess('✅ The student record was submitted in the database. Create outpass now.');
+                    }, 1500);
+                    
+                } catch (error) {
+                    console.error('Error saving student:', error);
+                    showModalError('❌ Error saving student: ' + error.message);
+                } finally {
+                    submitAddStudent.disabled = false;
+                    submitAddStudent.innerHTML = 'Submit Record';
+                }
+            });
+        }
+        
+        function showModalError(msg) {
+            const errDiv = document.getElementById('modalErrorMessage');
+            const succDiv = document.getElementById('modalSuccessMessage');
+            errDiv.textContent = msg;
+            errDiv.style.display = 'block';
+            succDiv.style.display = 'none';
+        }
+        
+        function showModalSuccess(msg) {
+            const errDiv = document.getElementById('modalErrorMessage');
+            const succDiv = document.getElementById('modalSuccessMessage');
+            succDiv.textContent = msg;
+            succDiv.style.display = 'block';
+            errDiv.style.display = 'none';
+        }
+
+        // Auto-format modal phone number input
+        const newWhatsappInput = document.getElementById('newWhatsappNumber');
+        if (newWhatsappInput) {
+            newWhatsappInput.addEventListener('input', function (e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 10) {
+                    value = value.slice(0, 10);
+                }
+                e.target.value = value;
+            });
+        }
+
         // Initial Check
         console.log("Dashboard Loaded - Firebase Mode Enabled");
     </script>
